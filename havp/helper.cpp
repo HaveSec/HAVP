@@ -52,8 +52,12 @@ int testread;
 ScannerFileHandler testlock;
 
 
-testlock.OpenAndLockFile();
-
+   if ( testlock.OpenAndLockFile() == false )
+   {
+      LogFile::ErrorMessage ("Could not open hardlock check file: %s\n", testlock.GetFileName() );
+      exit (-1);
+   }
+   
  if (( pid = fork() ) < 0)
  { return (-1); //Parent error
  } else if ( pid != 0) {
@@ -61,7 +65,7 @@ testlock.OpenAndLockFile();
   pid = wait( &status);
 
   testlock.DeleteFile();
-   
+         
   if ( WEXITSTATUS(status) == 0)
   {
       exit (-1);

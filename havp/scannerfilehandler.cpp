@@ -30,7 +30,9 @@ FileLength = 0;
    lock.l_start  = 0;    // Byte-Offset
    lock.l_whence = SEEK_SET;      // SEEK_SET, SEEK_CUR oder SEEK_END
    lock.l_len    = MAXFILELOCKSIZE;    // number of bytes; 0 = EOF
-    
+
+   strncpy( FileName, SCANTEMPFILE, MAXSCANTEMPFILELENGTH);
+          
    if ( (fd_scan = mkstemp( FileName )) < 0 )
    {
     LogFile::ErrorMessage ("Invalid Scanner-Tempfile: %s\n", SCANTEMPFILE );
@@ -172,8 +174,6 @@ bool ScannerFileHandler::ScanningComplete(){
 //Constructor
 ScannerFileHandler::ScannerFileHandler(){
 
-   strncpy( FileName, SCANTEMPFILE, MAXSCANTEMPFILELENGTH);
- 
 }
 
 //Destructor

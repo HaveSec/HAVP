@@ -46,6 +46,7 @@ bool unlock = false;
 
 string Header;
 string Body;
+string TempString;
 
 Host="";
 
@@ -107,10 +108,21 @@ string TransferToClient = "";
   if (  ContentLengthReference != 0 ){
      //We expect POST data
      Body="";
-     ToBrowser.RecvLength( &Body, ContentLengthReference);
-
+     if ( ToBrowser.RecvLength( &Body, ContentLengthReference) == false )
+     {
+     LogFile::ErrorMessage("Could not read Browser Post: %s Port %d\n", ToBrowser.Request.c_str(), Port);
+     return -17;
+     }
+     //IE Bug - send addtional \r\n
+     if ( ToBrowser.CheckForData() == true )
+     {
+     ToBrowser.Recv( &TempString, false);
+     if ( TempString == "\r\n" )
+       {
+        ToBrowser.RecvLength( &TempString, 2);
+       }
+     }
      ToServer.Send( &Body );
-     //IE macht fehler und sendet hier noch ein \r\n
     }
 
    if ( ToServer.ReadHeader(&Header) == false){

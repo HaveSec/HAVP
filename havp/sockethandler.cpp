@@ -19,6 +19,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 //Create Server Socket
 bool SocketHandler::CreateServer( int portT )
@@ -176,6 +177,33 @@ bool SocketHandler::SetDomainAndPort(const char *domainT, int portT)
 	} else {
 		return false;
     }
+}
+
+bool SocketHandler::CheckForData( )
+{
+ fd_set checkfd;
+ struct timeval Timeout;
+ Timeout.tv_sec = 0;
+ Timeout.tv_usec = 0;
+ 
+  //Enable nonblocking sockets
+  fcntl(sock_fd, F_SETFL, O_NONBLOCK);
+ 
+  FD_ZERO(&checkfd);
+  FD_SET(sock_fd,&checkfd);
+
+  int i = select( sock_fd+1 ,&checkfd, NULL, NULL, &Timeout);
+  
+  if (select( sock_fd+1 ,&checkfd, NULL, NULL, &Timeout) == 0){
+     //Disable nonblocking sockets
+     fcntl(sock_fd, F_SETFL, ~O_NONBLOCK);
+    return false;
+  }
+
+  //Disable nonblocking sockets
+  fcntl(sock_fd, F_SETFL, ~O_NONBLOCK);
+        
+return true;
 }
 
 

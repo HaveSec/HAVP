@@ -1854,7 +1854,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=havp
- VERSION=0.52
+ VERSION=0.53
 
 
 cat >>confdefs.h <<_ACEOF
@@ -5706,7 +5706,7 @@ fi;
 
 
 
-CXXFLAGS="$NOOPT_CXXFLAGS" CFLAGS="$NOOPT_CFLAGS"
+
 # Check whether --enable-shared or --disable-shared was given.
 if test "${enable_shared+set}" = set; then
   enableval="$enable_shared"

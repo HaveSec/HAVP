@@ -51,6 +51,8 @@ bool RecvLength ( string *sock_inT, ssize_t sock_lengthT );
 
 bool SetDomainAndPort(const char *domainT, int portT);
 
+bool CheckForData();
+
 int Close();
 
 	SocketHandler();

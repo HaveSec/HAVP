@@ -20,8 +20,8 @@
 //Init Clamav scanner engine
 bool ClamLibScanner::InitDatabase()
 {
-int ret;
-unsigned int no;
+int ret=0;
+unsigned int no=0;
 
 root = NULL;
 
