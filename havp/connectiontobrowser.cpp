@@ -17,7 +17,6 @@
 
 #include "connectiontobrowser.h"
 
-
 //Prepare Header for Server
 string ConnectionToBrowser::PrepareHeaderForServer()
 {
@@ -39,9 +38,9 @@ string header ="";
       
       temp = *it;
       transform(temp.begin(), temp.end(), temp.begin(), (int(*)(int))std::tolower );
-      host = "http://" + host;
-      location = temp.find(host,0);
-      length = host.length();
+      HostwithPort = "http://" + HostwithPort;
+      location = temp.find(HostwithPort,0);
+      length = HostwithPort.length();
       temp = it->replace( location, length, "" );
 
       //Use HTTP 1.0
@@ -87,11 +86,11 @@ return header;
 //Get host and port
 bool ConnectionToBrowser::GetHostAndPort( string *HostT, int *PortT )
 {
+unsigned int PositionPort;
+string PortConvert;
 
-  *HostT = host = "";
+  *HostT = Host = HostwithPort = "";
 
-  *PortT = 80;
-  
   vector<string>::iterator it;
 
   for (it = tokens.begin(); it != tokens.end(); ++it)
@@ -100,13 +99,24 @@ bool ConnectionToBrowser::GetHostAndPort( string *HostT, int *PortT )
     if( it->find( "Host:", 0 ) == 0 )
     {
       //Hostname to lowercase
-      host = it->substr(6, it->length()-8);
-      transform(host.begin(), host.end(), host.begin(), (int(*)(int))std::tolower );
-      *HostT = host;
+      HostwithPort = it->substr(6, it->length()-8);
+      transform(HostwithPort.begin(), HostwithPort.end(), HostwithPort.begin(), (int(*)(int))std::tolower );
+
+       if( ( PositionPort = HostwithPort.rfind( ":", string::npos )) != string::npos )
+        {
+          *HostT = HostwithPort.substr(0, PositionPort );
+           PortConvert = HostwithPort.substr( PositionPort+1, HostwithPort.length()-PositionPort );
+           *PortT = atoi( PortConvert.c_str() );
+           Host = *HostT;
+          return true;
+        }
+      *PortT = 80;
+      *HostT = Host = HostwithPort;
       return true;
     }
   }
   *HostT="";
+  *PortT = 0;
   return false;
 }
 

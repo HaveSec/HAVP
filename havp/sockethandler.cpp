@@ -214,6 +214,22 @@ return true;
 }
 
 
+bool SocketHandler::IsConnectionDropped()
+{
+char buffer[1];
+
+if( CheckForData() == true)
+{
+ if ( ::recv ( sock_fd, buffer, 1, MSG_PEEK ) == 0)
+ {
+  return true;
+ } 
+}
+    
+return false;
+}
+
+
 int SocketHandler::Close()
 {
   ::close(sock_fd);

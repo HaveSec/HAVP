@@ -55,6 +55,8 @@ bool SetDomainAndPort(const char *domainT, int portT);
 
 bool CheckForData();
 
+bool IsConnectionDropped();
+
 int Close();
 
 	SocketHandler();

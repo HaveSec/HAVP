@@ -29,7 +29,8 @@ class ConnectionToBrowser : public HTTPHandler  {
 
 private:
 
-string host;
+string HostwithPort;
+string Host;
 
 public:
 

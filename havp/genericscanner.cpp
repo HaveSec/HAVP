@@ -16,6 +16,8 @@
  ***************************************************************************/
 
 #include "genericscanner.h"
+#include <sys/types.h>
+#include <unistd.h>
 
 bool GenericScanner::PrepareScanning( void *GenericScannerT )
 {

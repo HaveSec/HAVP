@@ -156,6 +156,14 @@ string TransferToClient = "";
      return -8;
      }
 
+
+     //Does Browser drop connection
+     if(ToBrowser.IsConnectionDropped() == true )
+     {
+     LogFile::ErrorMessage("Browser dropped Connection: %s Port %d\n", ToBrowser.Request.c_str(), Port);
+     return -80;
+     }
+     
      //Body size check
      ContentLength += BodyLength;
      if ( (unlock == true) && ( ContentLength > ContentLengthReference ) )
@@ -276,8 +284,8 @@ if ( CommunicationAnswerT != -101 ){
 
 
  } else {
-    LogFile::AccessMessage("%s %d - Unknown Error\n", ToBrowser.Request.c_str(), Port);
-    LogFile::ErrorMessage("%s %d - Unknown Error\n", ToBrowser.Request.c_str(), Port);
+//    LogFile::AccessMessage("%s %d - Unknown Error\n", ToBrowser.Request.c_str(), Port);
+//    LogFile::ErrorMessage("%s %d - Unknown Error\n", ToBrowser.Request.c_str(), Port);
  } 
 return false;
 }
