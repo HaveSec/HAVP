@@ -22,6 +22,7 @@ string ConnectionToBrowser::PrepareHeaderForServer()
 {
 
 string header ="";
+unsigned int PortLocation;
 
   vector<string>::iterator it;
 
@@ -30,26 +31,38 @@ string header ="";
     //Change GET line
     if( ( it->find( "GET", 0) == 0) || ( it->find( "POST", 0 ) == 0 ) || ( it->find( "HEAD", 0 ) == 0 ) )
     {
+
       string temp = *it;
-      int location = temp.find(" HTTP",0);
+      int location = temp.rfind(" HTTP",string::npos);
       int length = temp.length();
       Request = temp.replace( location, length, "" );
-
       
       temp = *it;
       transform(temp.begin(), temp.end(), temp.begin(), (int(*)(int))std::tolower );
       HostwithPort = "http://" + HostwithPort;
+
+      //Mozilla put :80 (if spezified) in hostname but not in GET/POST/HEAD request
+       if( ( PortLocation = HostwithPort.rfind( ":80", string::npos )) != string::npos )
+        {
+         HostwithPort.replace( PortLocation, 3, "" );
+        }
+                                 
       location = temp.find(HostwithPort,0);
       length = HostwithPort.length();
       temp = it->replace( location, length, "" );
 
+      //Opera put :80 (if spezified) in GET/POST/HEAD request but not in hostname
+       if( ( PortLocation = temp.find( " :80/", 0 )) != string::npos )
+        {
+         temp.replace( PortLocation+1, 3, "" );
+        }      
+      
       //Use HTTP 1.0
-      location = temp.find("HTTP",0);
+      location = temp.rfind("HTTP",string::npos);
       length = temp.length();
       temp = temp.replace( location, length, "HTTP/1.0" );
       header += temp + "\r\n";
       continue;
-      //Change POST line
     } else if( it->find( "Proxy", 0 ) == 0 )
     {
      continue;

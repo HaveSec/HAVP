@@ -66,7 +66,7 @@ int Scanning ();
 
 bool InitSelfEngine();
 
-bool ScanningComplete();
+int ScanningComplete();
 
 char* GetFileName();
                                                                                                                                                          

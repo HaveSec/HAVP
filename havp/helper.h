@@ -22,4 +22,6 @@ int MakeDeamon();
 
 int HardLockTest ( );
 
+bool ChangeUserAndGroup();
+
 #endif

@@ -20,14 +20,16 @@
 
 #include "default.h"
 
-//#include <sys/types.h>
-//#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <fcntl.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #include <iostream>
+#include <string>
 
 using namespace std;
 

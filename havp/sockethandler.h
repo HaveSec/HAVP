@@ -24,7 +24,7 @@
 #include <netdb.h>
 
 #include <iostream>
-
+#include <string>
 using namespace std;
 
 class SocketHandler {

@@ -16,12 +16,15 @@
  ***************************************************************************/
 
 #include "scannerfilehandler.h"
+#include "default.h"
 
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/wait.h>
+#include <pwd.h>
+#include <grp.h>
 
  int MakeDeamon()
 {
@@ -93,3 +96,48 @@ ScannerFileHandler testlock;
   }
    exit (1);
 }
+
+
+
+bool ChangeUserAndGroup()
+{
+
+#ifdef GROUP
+
+struct group *group;
+
+if ((group = getgrnam ( GROUP )) == NULL)
+{
+cout << GROUP << " unknown Group" << endl;
+return false;
+}
+
+if ( setgid( group->gr_gid ) < 0 )
+{
+cout << "Could not change Group-ID" << endl;
+return false;
+}
+
+#endif
+
+#ifdef USER
+
+struct passwd *user;
+
+if ((user = getpwnam ( USER )) == NULL)
+{
+cout << USER << " unknown User" << endl;
+return false;  
+}
+
+if ( setuid( user->pw_uid ) < 0 )
+{
+cout << "Could not change User-ID" << endl;
+return false;
+}
+
+#endif
+
+return true;
+}
+

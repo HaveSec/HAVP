@@ -51,14 +51,6 @@ return Answer;
 }
 
 
-string GenericScanner::ReadErrorAnswer (){
-
-     string Answer = ErrorAnswer;
-
-return Answer;
-}
-
-
 //Constructor
 GenericScanner::GenericScanner( )
 {

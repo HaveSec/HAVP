@@ -22,6 +22,12 @@
 #include <config.h>
 #endif
 
+#include <iostream>
+#include <algorithm>
+#include <string>
+
+using namespace std; 
+
 #include "httphandler.h"
 
 

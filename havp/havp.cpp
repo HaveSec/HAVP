@@ -41,16 +41,28 @@ ProxyHandler Proxy;
 GenericScanner *VirusScanner = new (ClamLibScanner);
 
 
+if ( ChangeUserAndGroup( ) == false)
+  exit (-1);
+
+
+
 if (LogFile::InitLogFiles( ACCESSLOG, ERRORLOG ) == false){
   cout << "Could not create logfiles" << endl;
   exit (-1);
   }
-
+  
 #ifdef  DISPLAYINITIALMESSAGES  
 cout << "Starting Havp Version:" << VERSION << endl;
 #endif
 
+
 LogFile::ErrorMessage("Starting Havp Version: %s\n", VERSION);
+#ifdef USER
+LogFile::ErrorMessage ("Change to User %s\n", USER);
+#endif
+#ifdef GROUP
+LogFile::ErrorMessage ("Change to Group %s\n", GROUP);
+#endif
 
 if( HardLockTest ( )!= 1) {
   exit (-1);

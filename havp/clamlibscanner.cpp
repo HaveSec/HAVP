@@ -87,9 +87,9 @@ const char *virname;
    if ( (fd = open(FileName, O_RDONLY)) < 0)
    {
       LogFile::ErrorMessage ("Could not open file to scan: %s\n", FileName );
-      ScannerAnswer="Error -1";
+      ScannerAnswer="Could not open file to scan";
       close(fd);
-      exit (-1);
+      exit (2);
    }
 
    
@@ -98,14 +98,13 @@ const char *virname;
       LogFile::ErrorMessage ("Virus %s in file %s detect!\n", virname, FileName );
       ScannerAnswer=virname;
       close(fd);
-      exit (-2);
+      exit (1);
     } else {
 	   if(ret != CL_CLEAN){
         LogFile::ErrorMessage ("Error Virus scanner: %s %s\n", FileName, cl_perror(ret) );
-        ScannerAnswer= "Error -2";
-        ErrorAnswer = cl_perror(ret);
+        ScannerAnswer= cl_perror(ret);
         close(fd);
-        exit (-3);
+        exit (2);
         }
     }
 
@@ -126,7 +125,7 @@ return true;
 }
 
 
-bool ClamLibScanner::ScanningComplete() {
+int ClamLibScanner::ScanningComplete() {
 
 int status=0;
 
@@ -139,14 +138,9 @@ waitpid( ScannerPid, &status, 0);
 DeleteFile();
 
 
-//Virus found
-  if ( WEXITSTATUS(status) != 0)
-  {
-  ScannerAnswer = "";
-  return false;
- }
+//Virus found ? 0=No ; -1=Yes; -2=Scanfail
+return WEXITSTATUS(status);
 
-return true;
 }
 
 //Constructor

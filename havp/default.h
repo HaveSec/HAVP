@@ -20,6 +20,10 @@
 #define DEFAULT_H
 
 
+//Change to User and Group
+#define USER "nobody"
+#define GROUP "nobody"
+
 //Fork max server
 #define SERVERNUMBER 50
 

@@ -39,7 +39,7 @@ bool ReloadDatabase();
 
 bool InitSelfEngine();
 
-bool ScanningComplete();
+int ScanningComplete();
 
 int Scanning( );
 

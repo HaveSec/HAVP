@@ -46,7 +46,7 @@ string header ="";
    }//for
 
    header += "Proxy-Connection: Close\r\n\r\n";
-
+//cout << header << endl;
 return header;
 
 }

@@ -22,14 +22,17 @@
 
 #include <iostream>
 #include <vector>
+#include <string>
+
 //#include <stdlib.h>
-//#include <string>
 
 using namespace std;
 
 class HTTPHandler : public SocketHandler  {
 
 private:
+
+unsigned long ContentLength;
 
 protected:
 
@@ -41,7 +44,7 @@ bool ReadHeader( string *headerT );
 
 bool TokenizeHeader(string *linesT, const char *delimitersT );
 
-unsigned long GetContentLength(string* HeaderT);
+unsigned long GetContentLength( );
 
 ssize_t ReadBodyPart( string* bodyT );
 

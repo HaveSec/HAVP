@@ -166,7 +166,7 @@ bool ScannerFileHandler::InitSelfEngine(){
    return false;
 }
 
-bool ScannerFileHandler::ScanningComplete(){
+int ScannerFileHandler::ScanningComplete(){
    LogFile::ErrorMessage ("Programm Error: ScanningComplete\n");
    return false;
 }

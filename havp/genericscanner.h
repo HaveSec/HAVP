@@ -18,32 +18,29 @@
 #ifndef GENERICSCANNER_H
 #define GENERICSCANNER_H
 
-#include <pthread.h>
+#include <sys/types.h>
 
 #include <iostream>
+#include <string>
 
 using namespace std;
 
 
 class GenericScanner {
 
-private:
 
 protected:
 
-pid_t ScannerPid;
-
 string ScannerAnswer;
 
-string ErrorAnswer;
+pid_t ScannerPid;
+
 
 public:
 
 void WriteScannerAnswer ();
 
 string ReadScannerAnswer ();
-
-string ReadErrorAnswer ();
 
 bool PrepareScanning ( void *GenericScannerT );
 
@@ -56,7 +53,7 @@ virtual int Scanning () = 0;
 
 virtual bool InitSelfEngine() = 0;
 
-virtual bool ScanningComplete() = 0;
+virtual int ScanningComplete() = 0;
 
 virtual bool SetFileSize( unsigned long ContentLengthT ) = 0;
 
