@@ -1,0 +1,74 @@
+
+<!doctype linuxdoc system>
+<article>
+<title>The Havp Handbook
+<author>Christian Hilgers <tt>christian@hilgers.ag</tt>
+<date>Version 0.5 , Sa Feb 12 14:10:02 CET 2005
+<abstract>
+This Handbook describes Havp Version 0.5
+</abstract>
+
+<toc>
+
+<sect>Introduction
+<p>
+<sect1>Changes
+<p>
+
+<sect>Installation
+<p>
+<sect1>How to obtain Havp 
+<p>
+
+<sect1>Requirements
+<p>
+
+<sect1>Compilation and installation
+<p>
+
+In order to compile and install Havp on your system, type the following in
+the base directory of the Havp distribution:
+
+<tscreen><verb>
+% ./configure
+% make
+% make install
+</verb></tscreen>
+
+<p>
+Since Havp uses <verb>autoconf</verb> you should have not trouble
+compiling it.
+Should you run into problems please report them to the the author at 
+<htmlurl url="mailto:christian@hilgers.ag" name = "Christian Hilgers">
+
+
+<p>
+<sect> Usage <p>
+<sect1> General Usage
+<p>
+<sect> Another Section
+<p>
+
+<sect>Questions and Answers<p>
+
+<sect>Copyright<p>
+
+Havp Copyright 2005 Christian Hilgers , christian@hilgers.ag
+
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+<p>
+</article>
