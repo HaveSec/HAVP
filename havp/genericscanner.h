@@ -31,9 +31,7 @@ private:
 
 protected:
 
-pthread_t ScannerThread;
-
-static pthread_mutex_t scan_mutex;
+pid_t ScannerPid;
 
 string ScannerAnswer;
 
@@ -48,8 +46,6 @@ string ReadScannerAnswer ();
 string ReadErrorAnswer ();
 
 bool PrepareScanning ( void *GenericScannerT );
-
-static void *CallScanner ( void *prt );
 
 
 virtual bool InitDatabase() = 0;

@@ -15,19 +15,20 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "sockethandler.h"
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include "sockethandler.h"
 
 //Create Server Socket
-bool SocketHandler::CreateServer( int portT )
+bool SocketHandler::CreateServer( int portT, in_addr_t bind_addrT )
 {
   int i = 1;
 
   s_addr.sin_family = AF_INET;
-  s_addr.sin_addr.s_addr = INADDR_ANY;
+  s_addr.sin_addr.s_addr = bind_addrT;
   s_addr.sin_port = htons ( portT );
 
   sock_fd = socket ( AF_INET, SOCK_STREAM, 0 );
@@ -47,6 +48,12 @@ bool SocketHandler::CreateServer( int portT )
    return false;
 
   return true;
+}
+
+//Create Server Socket, convert ASCII address representation into binary one
+bool SocketHandler::CreateServer( int portT, const char *bind_addrT )
+{
+  return CreateServer( portT, bind_addrT == NULL ? INADDR_ANY : inet_addr( bind_addrT ) );
 }
 
 //Accept Client
@@ -192,7 +199,7 @@ bool SocketHandler::CheckForData( )
   FD_ZERO(&checkfd);
   FD_SET(sock_fd,&checkfd);
 
-  int i = select( sock_fd+1 ,&checkfd, NULL, NULL, &Timeout);
+  select( sock_fd+1 ,&checkfd, NULL, NULL, &Timeout);
   
   if (select( sock_fd+1 ,&checkfd, NULL, NULL, &Timeout) == 0){
      //Disable nonblocking sockets

@@ -175,7 +175,9 @@ string TransferToClient = "";
 
    if ( TransferData.length() > KEEPBACKBUFFER ){
   
+   //This check will not work at the moment
    //Virus already found
+/*
    if (( VirusScannerT->ReadScannerAnswer() != "Clean" ) && ( VirusScannerT->ReadScannerAnswer() != "" ) )
     {
 
@@ -186,8 +188,8 @@ string TransferToClient = "";
       return -100
       }
 			#endif
-   
     }
+*/
 
     //Send header only once
     if ( HeaderSend == false )

@@ -4,7 +4,7 @@ bin_PROGRAMS = havp
 ## INCLUDES were found outside kdevelop specific part
 
 havp_SOURCES = helper.cpp proxyhandler.cpp logfile.cpp clamlibscanner.cpp scannerfilehandler.cpp genericscanner.cpp connectiontoserver.cpp connectiontobrowser.cpp httphandler.cpp sockethandler.cpp havp.cpp 
-havp_LDADD   = -lclamav -lpthread
+havp_LDADD   = -lclamav
 
 SUBDIRS = docs 
 

@@ -16,6 +16,9 @@
  ***************************************************************************/
 
 #include "clamlibscanner.h"
+#include <sys/types.h>
+#include <sys/wait.h>
+
 
 //Init Clamav scanner engine
 bool ClamLibScanner::InitDatabase()
@@ -84,41 +87,32 @@ const char *virname;
    if ( (fd = open(FileName, O_RDONLY)) < 0)
    {
       LogFile::ErrorMessage ("Could not open file to scan: %s\n", FileName );
-      pthread_mutex_lock( &scan_mutex );
       ScannerAnswer="Error -1";
-      pthread_mutex_unlock( &scan_mutex );
       close(fd);
-      return -1;
+      exit (-1);
    }
 
    
     if((ret = cl_scandesc(fd, &virname, &size, root, &limits, CL_SCAN_STDOPT)) == CL_VIRUS)
      {
       LogFile::ErrorMessage ("Virus %s in file %s detect!\n", virname, FileName );
-      pthread_mutex_lock( &scan_mutex );
       ScannerAnswer=virname;
-      pthread_mutex_unlock( &scan_mutex );
       close(fd);
-      return -2;
+      exit (-2);
     } else {
 	   if(ret != CL_CLEAN){
         LogFile::ErrorMessage ("Error Virus scanner: %s %s\n", FileName, cl_perror(ret) );
-        pthread_mutex_lock( &scan_mutex );
         ScannerAnswer= "Error -2";
         ErrorAnswer = cl_perror(ret);
-        pthread_mutex_unlock( &scan_mutex );
         close(fd);
-        return -3;
+        exit (-3);
         }
     }
 
  close(fd);
-      pthread_mutex_lock( &scan_mutex );
-      ScannerAnswer="Clean";
-      pthread_mutex_unlock( &scan_mutex );
+ ScannerAnswer="Clean";
 
- 
-return 0;
+exit (0);
 }
 
 
@@ -134,20 +128,23 @@ return true;
 
 bool ClamLibScanner::ScanningComplete() {
 
+int status=0;
+
 UnlockFile();
 
 //Wait till scanning is complete
-pthread_join( ScannerThread, NULL);
+waitpid( ScannerPid, &status, 0);
 
 //Delete scanned file
 DeleteFile();
 
 
-//Virus already found
-if (( ReadScannerAnswer() != "Clean" ) && ( ReadScannerAnswer() != "" ) )
-{
+//Virus found
+  if ( WEXITSTATUS(status) != 0)
+  {
+  ScannerAnswer = "";
   return false;
-}
+ }
 
 return true;
 }

@@ -17,61 +17,45 @@
 
 #include "genericscanner.h"
 
-pthread_mutex_t GenericScanner::scan_mutex = PTHREAD_MUTEX_INITIALIZER;
-
 bool GenericScanner::PrepareScanning( void *GenericScannerT )
 {
+
 
 if ( InitSelfEngine() == false){
   return false; }
 
-if (pthread_create( &ScannerThread, NULL, GenericScanner::CallScanner , GenericScannerT )){
-   return false; }
-
-return true;
-}
-
-
-
-
-void *GenericScanner::CallScanner ( void *GenericScannerT ) {
-
+ if (( ScannerPid = fork() ) < 0)
+ {
+   return false; //Parent error
+ } else if ( ScannerPid != 0) {
+  //Parent
+  return true;
+ }
+ //Child
+  
 ((GenericScanner*)GenericScannerT)->Scanning();
 
-pthread_exit(0);
-
-return GenericScannerT;
+ exit (-3); //should never get here!!
+ return false;
 }
+
 
 
 string GenericScanner::ReadScannerAnswer (){
 
-string Answer;
-
-      pthread_mutex_lock( &scan_mutex );
-      Answer = ScannerAnswer;
-      pthread_mutex_unlock( &scan_mutex );
-
+  string Answer = ScannerAnswer;
+      
 return Answer;
 }
 
 
 string GenericScanner::ReadErrorAnswer (){
 
-string Answer;
-
-      pthread_mutex_lock( &scan_mutex );
-      Answer = ErrorAnswer;
-      pthread_mutex_unlock( &scan_mutex );
+     string Answer = ErrorAnswer;
 
 return Answer;
 }
 
-void GenericScanner::WriteScannerAnswer (){
-
-cout << ScannerAnswer << endl;
-
-}
 
 //Constructor
 GenericScanner::GenericScanner( )

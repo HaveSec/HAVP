@@ -37,7 +37,9 @@ struct sockaddr_in s_addr;
   
 public:
 
-bool CreateServer( int portT );
+bool CreateServer( int portT, in_addr_t bind_addrT = INADDR_ANY );
+ 
+bool CreateServer( int portT, const char *bind_addrT );
 
 bool AcceptClient ( SocketHandler *accept_socketT );
 

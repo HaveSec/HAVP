@@ -39,7 +39,10 @@
 #define TIMEFORMAT "%d/%m/%Y %H:%M:%S"
 
 //Port of proxy server
-#define PORT 8000
+#define PORT 8080
+
+//Address to bind to for listening: NULL for any, "127.0.0.1" for local, or specific address
+#define BIND_ADDRESS ( (char *) NULL )
 
 //Temporary scan file - File name characters followed by six Xs 
 //Hard lock must be enabled

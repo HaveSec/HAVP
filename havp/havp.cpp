@@ -57,7 +57,7 @@ if( HardLockTest ( )!= 1) {
   }
 
 
-if( ProxyServer.CreateServer( PORT ) == false) {
+if( ProxyServer.CreateServer( PORT, BIND_ADDRESS ) == false) {
   cout << "Could not create Server" << endl;
   LogFile::ErrorMessage("Could not create Server\n");
   exit (-1);
