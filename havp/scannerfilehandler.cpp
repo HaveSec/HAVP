@@ -30,14 +30,13 @@ FileLength = 0;
    lock.l_start  = 0;    // Byte-Offset
    lock.l_whence = SEEK_SET;      // SEEK_SET, SEEK_CUR oder SEEK_END
    lock.l_len    = MAXFILELOCKSIZE;    // number of bytes; 0 = EOF
-
-  FileName = tempnam( SCANDIRECTORY , "havp-");
-          
-   if ( (fd_scan = open(FileName.c_str(), O_RDWR|O_CREAT|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0)
+    
+   if ( (fd_scan = mkstemp( FileName )) < 0 )
    {
-    LogFile::ErrorMessage ("Could not open Scannerfile: %s\n", FileName.c_str() );
+    LogFile::ErrorMessage ("Invalid Scanner-Tempfile: %s\n", SCANTEMPFILE );
     return false;
-   }
+   } 
+
 
   write(fd_scan, "1", 1);
 
@@ -49,13 +48,14 @@ FileLength = 0;
 
   if ( fcntl(fd_scan, F_SETLK, &lock) < 0)
   {
-    LogFile::ErrorMessage ("Could not lock Scannerfile: %s\n", FileName.c_str() );
+    LogFile::ErrorMessage ("Could not lock Scannerfile: %s\n", FileName );
     return -1;
   }
 
 if (lseek(fd_scan, 0, SEEK_SET) == -1)
- LogFile::ErrorMessage ("Could not lseek Scannerfile: %s\n", FileName.c_str() );
+ LogFile::ErrorMessage ("Could not lseek Scannerfile: %s\n", FileName );
 
+ 
 return fd_scan;
 }
 
@@ -72,7 +72,7 @@ struct flock    lock;
   //Partial unlock file
   if ( fcntl(fd_scan, F_SETLK, &lock) < 0)
   {
-    LogFile::ErrorMessage ("Could not partial unlock Scannerfile: %s\n", FileName.c_str() );
+    LogFile::ErrorMessage ("Could not partial unlock Scannerfile: %s\n", FileName );
     close (fd_scan);
     return false;
   }
@@ -83,8 +83,8 @@ struct flock    lock;
 
 bool ScannerFileHandler::DeleteFile() {
 
- if ( unlink(FileName.c_str()) < 0 ){
-    LogFile::ErrorMessage ("Could not unlink: %s\n", FileName.c_str() );
+ if ( unlink(FileName) < 0 ){
+    LogFile::ErrorMessage ("Could not unlink: %s\n", FileName );
    return false;
    }
 
@@ -100,7 +100,7 @@ bool ScannerFileHandler::SetFileSize( unsigned long ContentLengthT )
  { return false; }
 
  if (lseek(fd_scan, 0, SEEK_SET) < 0)
- LogFile::ErrorMessage ("Could not lseek Scannerfile: %s\n", FileName.c_str() );
+ LogFile::ErrorMessage ("Could not lseek Scannerfile: %s\n", FileName );
 
  
 return true;
@@ -115,7 +115,7 @@ struct flock lock;
 FileLength = FileLength + lengthT;
 
    if ( write(fd_scan, dataT, lengthT) < 0 ) {
-    LogFile::ErrorMessage ("Could not write: %s\n", FileName.c_str() );
+    LogFile::ErrorMessage ("Could not write: %s\n", FileName );
       return false;
      }
 
@@ -130,7 +130,7 @@ if(unlockT == true )
   //partly unlock
   if ( fcntl(fd_scan, F_SETLK, &lock) < 0)
   {
-    LogFile::ErrorMessage ("Could not lock: %s\n", FileName.c_str() );
+    LogFile::ErrorMessage ("Could not lock: %s\n", FileName );
     return false;
   }
 }
@@ -138,9 +138,42 @@ if(unlockT == true )
 return true;
 }
 
+char * ScannerFileHandler::GetFileName()
+{
+return FileName;
+}
+
+
+bool ScannerFileHandler::InitDatabase(){
+   LogFile::ErrorMessage ("Programm Error: InitDatabase\n");
+   return false;
+}
+
+bool ScannerFileHandler::ReloadDatabase(){
+   LogFile::ErrorMessage ("Programm Error: ReloadDatabase\n");
+   return false;
+}
+
+int ScannerFileHandler::Scanning (){
+   LogFile::ErrorMessage ("Programm Error: Scanning\n");
+   return -1;
+}
+
+bool ScannerFileHandler::InitSelfEngine(){
+   LogFile::ErrorMessage ("Programm Error: InitSelfEngine\n");
+   return false;
+}
+
+bool ScannerFileHandler::ScanningComplete(){
+   LogFile::ErrorMessage ("Programm Error: ScanningComplete\n");
+   return false;
+}
 
 //Constructor
 ScannerFileHandler::ScannerFileHandler(){
+
+   strncpy( FileName, SCANTEMPFILE, MAXSCANTEMPFILELENGTH);
+ 
 }
 
 //Destructor

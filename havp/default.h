@@ -19,6 +19,7 @@
 #ifndef DEFAULT_H
 #define DEFAULT_H
 
+
 //Fork max server
 #define SERVERNUMBER 50
 
@@ -29,10 +30,10 @@
 #define CATCHONSCANNERERROR
 
 //Access log directory
-#define ACCESSLOG "/var/log/havp/access.txt"
+#define ACCESSLOG "/var/log/havp/access.log"
 
 //Error log directory
-#define ERRORLOG "/var/log/havp/error.txt"
+#define ERRORLOG "/var/log/havp/havp.log"
 
 //Time format
 #define TIMEFORMAT "%d/%m/%Y %H:%M:%S"
@@ -40,14 +41,20 @@
 //Port of proxy server
 #define PORT 8000
 
-//Temporary scan directory - hard lock must be enabled
-#define SCANDIRECTORY "/tmp/virus/"
+//Temporary scan file - File name characters followed by six Xs 
+//Hard lock must be enabled
+#define SCANTEMPFILE "/tmp/virus/havp-XXXXXX"
+//Maximum length of SCANTEMPFILE
+#define MAXSCANTEMPFILELENGTH 200 
+
+//Display initial messages
+#define DISPLAYINITIALMESSAGES
 
 //Disable Encoding - This is a work around for the IE 5.5 bug
 #define NOENCODING 1
 
 //Maximum client connection waiting for accept
-#define MAXCONNECTIONS  100
+#define MAXCONNECTIONS  1024
 
 //Bytes which will be hold back
 #define KEEPBACKBUFFER 50005

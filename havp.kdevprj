@@ -21,9 +21,9 @@ addcxxflags=
 bin_program=havp
 cflags=
 cppflags=
-cxxflags=\s-O0 -g3 -Wall
+cxxflags=\s-O1 -g3 -Wall
 ldadd=-lclamav -lpthread
-ldflags=\s  \s
+ldflags=\s            \s
 
 [General]
 AMChanged=false
@@ -33,7 +33,7 @@ debug_args=
 email=christian@hilgers.ag
 kdevprj_version=1.3
 lfv_open_groups=GNU,Header,Quellen
-make_options=\s-k -j1
+make_options=\s-j1
 makefiles=Makefile.am,havp/Makefile.am,havp/docs/Makefile.am,havp/docs/en/Makefile.am
 modifyMakefiles=true
 project_name=Havp
@@ -41,7 +41,7 @@ project_type=normal_cpp
 sgml_file=/home/hilgers/source/havp/havp/docs/en/index.sgml
 short_info=
 sub_dir=havp/
-version=0.51
+version=0.52
 version_control=None
 workspace=1
 
@@ -94,7 +94,7 @@ install_location=
 type=DATA
 
 [havp/Makefile.am]
-files=havp/havp.cpp,havp/sockethandler.cpp,havp/sockethandler.h,havp/default.h,havp/httphandler.cpp,havp/httphandler.h,havp/connectiontobrowser.cpp,havp/connectiontobrowser.h,havp/connectiontoserver.cpp,havp/connectiontoserver.h,havp/genericscanner.cpp,havp/genericscanner.h,havp/scannerfilehandler.cpp,havp/scannerfilehandler.h,havp/clamlibscanner.cpp,havp/clamlibscanner.h,havp/logfile.cpp,havp/logfile.h,havp/proxyhandler.cpp,havp/proxyhandler.h
+files=havp/havp.cpp,havp/sockethandler.cpp,havp/sockethandler.h,havp/default.h,havp/httphandler.cpp,havp/httphandler.h,havp/connectiontobrowser.cpp,havp/connectiontobrowser.h,havp/connectiontoserver.cpp,havp/connectiontoserver.h,havp/genericscanner.cpp,havp/genericscanner.h,havp/scannerfilehandler.cpp,havp/scannerfilehandler.h,havp/clamlibscanner.cpp,havp/clamlibscanner.h,havp/logfile.cpp,havp/logfile.h,havp/proxyhandler.cpp,havp/proxyhandler.h,havp/helper.cpp,havp/helper.h
 sub_dirs=docs
 type=prog_main
 
@@ -208,6 +208,18 @@ dist=true
 install=false
 install_location=
 type=SOURCE
+
+[havp/helper.cpp]
+dist=true
+install=false
+install_location=
+type=SOURCE
+
+[havp/helper.h]
+dist=true
+install=false
+install_location=
+type=HEADER
 
 [havp/httphandler.cpp]
 dist=true

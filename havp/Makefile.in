@@ -154,12 +154,12 @@ target_vendor = @target_vendor@
 ####### kdevelop will overwrite this part!!! (begin)##########
 bin_PROGRAMS = havp
 
-havp_SOURCES = proxyhandler.cpp logfile.cpp clamlibscanner.cpp scannerfilehandler.cpp genericscanner.cpp connectiontoserver.cpp connectiontobrowser.cpp httphandler.cpp sockethandler.cpp havp.cpp 
+havp_SOURCES = helper.cpp proxyhandler.cpp logfile.cpp clamlibscanner.cpp scannerfilehandler.cpp genericscanner.cpp connectiontoserver.cpp connectiontobrowser.cpp httphandler.cpp sockethandler.cpp havp.cpp 
 havp_LDADD = -lclamav -lpthread
 
 SUBDIRS = docs 
 
-EXTRA_DIST = havp.cpp sockethandler.cpp sockethandler.h default.h httphandler.cpp httphandler.h connectiontobrowser.cpp connectiontobrowser.h connectiontoserver.cpp connectiontoserver.h genericscanner.cpp genericscanner.h scannerfilehandler.cpp scannerfilehandler.h clamlibscanner.cpp clamlibscanner.h logfile.cpp logfile.h proxyhandler.cpp proxyhandler.h 
+EXTRA_DIST = havp.cpp sockethandler.cpp sockethandler.h default.h httphandler.cpp httphandler.h connectiontobrowser.cpp connectiontobrowser.h connectiontoserver.cpp connectiontoserver.h genericscanner.cpp genericscanner.h scannerfilehandler.cpp scannerfilehandler.h clamlibscanner.cpp clamlibscanner.h logfile.cpp logfile.h proxyhandler.cpp proxyhandler.h helper.cpp helper.h 
 
 ####### kdevelop will overwrite this part!!! (end)############
 # set the include path found by configure
@@ -175,19 +175,19 @@ CONFIG_CLEAN_FILES =
 bin_PROGRAMS = havp$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 
-am_havp_OBJECTS = proxyhandler.$(OBJEXT) logfile.$(OBJEXT) \
-	clamlibscanner.$(OBJEXT) scannerfilehandler.$(OBJEXT) \
-	genericscanner.$(OBJEXT) connectiontoserver.$(OBJEXT) \
-	connectiontobrowser.$(OBJEXT) httphandler.$(OBJEXT) \
-	sockethandler.$(OBJEXT) havp.$(OBJEXT)
+am_havp_OBJECTS = helper.$(OBJEXT) proxyhandler.$(OBJEXT) \
+	logfile.$(OBJEXT) clamlibscanner.$(OBJEXT) \
+	scannerfilehandler.$(OBJEXT) genericscanner.$(OBJEXT) \
+	connectiontoserver.$(OBJEXT) connectiontobrowser.$(OBJEXT) \
+	httphandler.$(OBJEXT) sockethandler.$(OBJEXT) havp.$(OBJEXT)
 #>- havp_OBJECTS = $(am_havp_OBJECTS)
 #>+ 8
 havp_final_OBJECTS = havp.all_cpp.o 
-havp_nofinal_OBJECTS = proxyhandler.$(OBJEXT) logfile.$(OBJEXT) \
-	clamlibscanner.$(OBJEXT) scannerfilehandler.$(OBJEXT) \
-	genericscanner.$(OBJEXT) connectiontoserver.$(OBJEXT) \
-	connectiontobrowser.$(OBJEXT) httphandler.$(OBJEXT) \
-	sockethandler.$(OBJEXT) havp.$(OBJEXT)
+havp_nofinal_OBJECTS = helper.$(OBJEXT) proxyhandler.$(OBJEXT) \
+	logfile.$(OBJEXT) clamlibscanner.$(OBJEXT) \
+	scannerfilehandler.$(OBJEXT) genericscanner.$(OBJEXT) \
+	connectiontoserver.$(OBJEXT) connectiontobrowser.$(OBJEXT) \
+	httphandler.$(OBJEXT) sockethandler.$(OBJEXT) havp.$(OBJEXT)
 @KDE_USE_FINAL_FALSE@havp_OBJECTS = $(havp_nofinal_OBJECTS)
 @KDE_USE_FINAL_TRUE@havp_OBJECTS = $(havp_final_OBJECTS)
 havp_DEPENDENCIES =
@@ -199,8 +199,8 @@ am__depfiles_maybe = depfiles
 #>- @AMDEP_TRUE@	./$(DEPDIR)/connectiontobrowser.Po \
 #>- @AMDEP_TRUE@	./$(DEPDIR)/connectiontoserver.Po \
 #>- @AMDEP_TRUE@	./$(DEPDIR)/genericscanner.Po ./$(DEPDIR)/havp.Po \
-#>- @AMDEP_TRUE@	./$(DEPDIR)/httphandler.Po ./$(DEPDIR)/logfile.Po \
-#>- @AMDEP_TRUE@	./$(DEPDIR)/proxyhandler.Po \
+#>- @AMDEP_TRUE@	./$(DEPDIR)/helper.Po ./$(DEPDIR)/httphandler.Po \
+#>- @AMDEP_TRUE@	./$(DEPDIR)/logfile.Po ./$(DEPDIR)/proxyhandler.Po \
 #>- @AMDEP_TRUE@	./$(DEPDIR)/scannerfilehandler.Po \
 #>- @AMDEP_TRUE@	./$(DEPDIR)/sockethandler.Po
 #>+ 17
@@ -208,16 +208,16 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@@KDE_USE_FINAL_TRUE@	@AMDEP_TRUE@	./$(DEPDIR)/connectiontobrowser.Po \
 @AMDEP_TRUE@@KDE_USE_FINAL_TRUE@	@AMDEP_TRUE@	./$(DEPDIR)/connectiontoserver.Po \
 @AMDEP_TRUE@@KDE_USE_FINAL_TRUE@	@AMDEP_TRUE@	./$(DEPDIR)/genericscanner.Po ./$(DEPDIR)/havp.Po \
-@AMDEP_TRUE@@KDE_USE_FINAL_TRUE@	@AMDEP_TRUE@	./$(DEPDIR)/httphandler.Po ./$(DEPDIR)/logfile.Po \
-@AMDEP_TRUE@@KDE_USE_FINAL_TRUE@	@AMDEP_TRUE@	./$(DEPDIR)/proxyhandler.Po \
+@AMDEP_TRUE@@KDE_USE_FINAL_TRUE@	@AMDEP_TRUE@	./$(DEPDIR)/helper.Po ./$(DEPDIR)/httphandler.Po \
+@AMDEP_TRUE@@KDE_USE_FINAL_TRUE@	@AMDEP_TRUE@	./$(DEPDIR)/logfile.Po ./$(DEPDIR)/proxyhandler.Po \
 @AMDEP_TRUE@@KDE_USE_FINAL_TRUE@	@AMDEP_TRUE@	./$(DEPDIR)/scannerfilehandler.Po \
 @AMDEP_TRUE@@KDE_USE_FINAL_TRUE@	@AMDEP_TRUE@	./$(DEPDIR)/sockethandler.Po
 @AMDEP_TRUE@@KDE_USE_FINAL_FALSE@DEP_FILES =   ./$(DEPDIR)/clamlibscanner.Po \
 @AMDEP_TRUE@@KDE_USE_FINAL_FALSE@	@AMDEP_TRUE@	./$(DEPDIR)/connectiontobrowser.Po \
 @AMDEP_TRUE@@KDE_USE_FINAL_FALSE@	@AMDEP_TRUE@	./$(DEPDIR)/connectiontoserver.Po \
 @AMDEP_TRUE@@KDE_USE_FINAL_FALSE@	@AMDEP_TRUE@	./$(DEPDIR)/genericscanner.Po ./$(DEPDIR)/havp.Po \
-@AMDEP_TRUE@@KDE_USE_FINAL_FALSE@	@AMDEP_TRUE@	./$(DEPDIR)/httphandler.Po ./$(DEPDIR)/logfile.Po \
-@AMDEP_TRUE@@KDE_USE_FINAL_FALSE@	@AMDEP_TRUE@	./$(DEPDIR)/proxyhandler.Po \
+@AMDEP_TRUE@@KDE_USE_FINAL_FALSE@	@AMDEP_TRUE@	./$(DEPDIR)/helper.Po ./$(DEPDIR)/httphandler.Po \
+@AMDEP_TRUE@@KDE_USE_FINAL_FALSE@	@AMDEP_TRUE@	./$(DEPDIR)/logfile.Po ./$(DEPDIR)/proxyhandler.Po \
 @AMDEP_TRUE@@KDE_USE_FINAL_FALSE@	@AMDEP_TRUE@	./$(DEPDIR)/scannerfilehandler.Po \
 @AMDEP_TRUE@@KDE_USE_FINAL_FALSE@	@AMDEP_TRUE@	./$(DEPDIR)/sockethandler.Po
 
@@ -309,6 +309,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/connectiontoserver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/genericscanner.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/havp.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/helper.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/httphandler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logfile.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proxyhandler.Po@am__quote@
@@ -484,7 +485,12 @@ GTAGS:
 
 distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
-DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+#>- DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+#>+ 4
+KDE_DIST=havp 
+
+DISTFILES= $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST) $(KDE_DIST)
+
 
 top_distdir = ..
 distdir = $(top_distdir)/$(PACKAGE)-$(VERSION)
@@ -646,11 +652,11 @@ force-reedit:
 
 
 #>+ 11
-havp.all_cpp.cpp: $(srcdir)/Makefile.in $(srcdir)/proxyhandler.cpp $(srcdir)/logfile.cpp $(srcdir)/clamlibscanner.cpp $(srcdir)/scannerfilehandler.cpp $(srcdir)/genericscanner.cpp $(srcdir)/connectiontoserver.cpp $(srcdir)/connectiontobrowser.cpp $(srcdir)/httphandler.cpp $(srcdir)/sockethandler.cpp $(srcdir)/havp.cpp 
+havp.all_cpp.cpp: $(srcdir)/Makefile.in $(srcdir)/helper.cpp $(srcdir)/proxyhandler.cpp $(srcdir)/logfile.cpp $(srcdir)/clamlibscanner.cpp $(srcdir)/scannerfilehandler.cpp $(srcdir)/genericscanner.cpp $(srcdir)/connectiontoserver.cpp $(srcdir)/connectiontobrowser.cpp $(srcdir)/httphandler.cpp $(srcdir)/sockethandler.cpp $(srcdir)/havp.cpp 
 	@echo 'creating havp.all_cpp.cpp ...'; \
 	rm -f havp.all_cpp.files havp.all_cpp.final; \
 	echo "#define KDE_USE_FINAL 1" >> havp.all_cpp.final; \
-	for file in proxyhandler.cpp logfile.cpp clamlibscanner.cpp scannerfilehandler.cpp genericscanner.cpp connectiontoserver.cpp connectiontobrowser.cpp httphandler.cpp sockethandler.cpp havp.cpp ; do \
+	for file in helper.cpp proxyhandler.cpp logfile.cpp clamlibscanner.cpp scannerfilehandler.cpp genericscanner.cpp connectiontoserver.cpp connectiontobrowser.cpp httphandler.cpp sockethandler.cpp havp.cpp ; do \
 	  echo "#include \"$$file\"" >> havp.all_cpp.files; \
 	  test ! -f $(srcdir)/$$file || egrep '^#pragma +implementation' $(srcdir)/$$file >> havp.all_cpp.final; \
 	done; \

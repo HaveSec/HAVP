@@ -107,7 +107,7 @@ string TransferToClient = "";
   if (  ContentLengthReference != 0 ){
      //We expect POST data
      Body="";
-     ToBrowser.RecvLength( &Body, ContentLength+2);
+     ToBrowser.RecvLength( &Body, ContentLengthReference);
 
      ToServer.Send( &Body );
      //IE macht fehler und sendet hier noch ein \r\n
@@ -158,6 +158,7 @@ string TransferToClient = "";
      //Expand file to scan
      if ( VirusScannerT->ExpandFile( (char *)Body.c_str(), Body.length() , unlock ) == false ){
        LogFile::ErrorMessage("Could not expand tempfile: %s Port %d\n", ToBrowser.Request.c_str(), Port);
+      return -20;
       }
 
    if ( TransferData.length() > KEEPBACKBUFFER ){

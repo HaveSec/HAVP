@@ -15,13 +15,13 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include "logfile.h"
 #include "default.h"
+#include "helper.h"
 #include "sockethandler.h"
 #include "genericscanner.h"
 #include "clamlibscanner.h"
@@ -31,23 +31,6 @@
 //#include <sys/types.h>
 //#include <unistd.h>
 
-
-int MakeDeamon()
-{
- pid_t deamon;
- if (( deamon = fork() ) < 0)
- { return (-1); //Parent error
- } else if ( deamon != 0) {
-  exit (0); //Parent exit
- }
-
- //Child
- setsid();
- chdir("/tmp/");
- umask(0);
- return (0);
-   
-}
                          
 int main(int argc, char *argv[])
 {
@@ -62,9 +45,16 @@ if (LogFile::InitLogFiles( ACCESSLOG, ERRORLOG ) == false){
   cout << "Could not create logfiles" << endl;
   exit (-1);
   }
-  
+
+#ifdef  DISPLAYINITIALMESSAGES  
 cout << "Starting Havp Version:" << VERSION << endl;
+#endif
+
 LogFile::ErrorMessage("Starting Havp Version: %s\n", VERSION);
+
+if( HardLockTest ( )!= 1) {
+  exit (-1);
+  }
 
 
 if( ProxyServer.CreateServer( PORT ) == false) {

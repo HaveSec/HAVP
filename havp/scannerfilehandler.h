@@ -43,7 +43,7 @@ int fd_scan;
 unsigned long FileLength;
 
 protected:
-string FileName;
+char FileName[MAXSCANTEMPFILELENGTH+1];
 
 public:
 
@@ -56,7 +56,20 @@ bool DeleteFile();
 bool SetFileSize( unsigned long ContentLengthT );
 
 bool ExpandFile( char *DataT, int lengthT,  bool unlockT );
-                  
+
+
+bool InitDatabase();
+
+bool ReloadDatabase();
+
+int Scanning ();
+
+bool InitSelfEngine();
+
+bool ScanningComplete();
+
+char* GetFileName();
+                                                                                                                                                         
 	ScannerFileHandler();
 	~ScannerFileHandler();
 };

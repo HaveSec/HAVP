@@ -360,7 +360,7 @@ distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
 #>- DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 #>+ 4
-KDE_DIST=todo authors configure.files copying readme stamp-h.in configure.in.in havp.kdevses subdirs install Makefile.dist 
+KDE_DIST=readme configure.files subdirs stamp-h.in copying todo authors install Makefile.dist configure.in.in havp.kdevses 
 
 DISTFILES= $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST) $(KDE_DIST)
 

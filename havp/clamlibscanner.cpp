@@ -64,6 +64,7 @@ bool ClamLibScanner::ReloadDatabase()
 
     LogFile::ErrorMessage ("Reload Database\n" );
    if ( InitDatabase() == false) {
+     LogFile::ErrorMessage ("Reload Database - failed\n" );
      return false; }
  }
 
@@ -80,9 +81,9 @@ ScannerAnswer="";
 
 const char *virname;
 
-   if ( (fd = open(FileName.c_str(), O_RDONLY)) < 0)
+   if ( (fd = open(FileName, O_RDONLY)) < 0)
    {
-      LogFile::ErrorMessage ("Could not open file to scan: %s\n", FileName.c_str() );
+      LogFile::ErrorMessage ("Could not open file to scan: %s\n", FileName );
       pthread_mutex_lock( &scan_mutex );
       ScannerAnswer="Error -1";
       pthread_mutex_unlock( &scan_mutex );
@@ -93,7 +94,7 @@ const char *virname;
    
     if((ret = cl_scandesc(fd, &virname, &size, root, &limits, CL_SCAN_STDOPT)) == CL_VIRUS)
      {
-      LogFile::ErrorMessage ("Virus %s in file %s detect!\n", virname, FileName.c_str() );
+      LogFile::ErrorMessage ("Virus %s in file %s detect!\n", virname, FileName );
       pthread_mutex_lock( &scan_mutex );
       ScannerAnswer=virname;
       pthread_mutex_unlock( &scan_mutex );
@@ -101,7 +102,7 @@ const char *virname;
       return -2;
     } else {
 	   if(ret != CL_CLEAN){
-        LogFile::ErrorMessage ("Error Virus scanner: %s %s\n", FileName.c_str(), cl_perror(ret) );
+        LogFile::ErrorMessage ("Error Virus scanner: %s %s\n", FileName, cl_perror(ret) );
         pthread_mutex_lock( &scan_mutex );
         ScannerAnswer= "Error -2";
         ErrorAnswer = cl_perror(ret);
