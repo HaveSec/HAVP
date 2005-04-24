@@ -79,7 +79,7 @@ int ClamLibScanner::Scanning( )
 {
 int ret, fd;
 unsigned long int size = 0;
-
+char Ready[2];
 ScannerAnswer="";
 
 const char *virname;
@@ -92,6 +92,8 @@ const char *virname;
       exit (2);
    }
 
+   //Wait till file is set up for scanning
+   read(fd, Ready, 1);
    
     if((ret = cl_scandesc(fd, &virname, &size, root, &limits, CL_SCAN_STDOPT)) == CL_VIRUS)
      {

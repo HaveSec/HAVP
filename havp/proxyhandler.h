@@ -35,8 +35,8 @@ private:
 
 bool HeaderSend;
 
-string Host;
-int Port;
+//string Host;
+//int Port;
 
 ConnectionToBrowser ToBrowser;
 ConnectionToServer ToServer;

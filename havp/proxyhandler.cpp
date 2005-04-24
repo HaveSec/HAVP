@@ -30,7 +30,7 @@ int CommunicationAnswer;
    return false;
    }
 
- LogFile::AccessMessage("%s %d OK\n", ToBrowser.Request.c_str(), Port);
+ LogFile::AccessMessage("%s %d OK\n", ToBrowser.GetCompleteRequest(), ToBrowser.GetPort());
    
  ToBrowser.Close();
  ToServer.Close();
@@ -49,8 +49,6 @@ bool unlock = false;
 string Header;
 string Body;
 string TempString;
-
-Host="";
 
 unsigned long ContentLengthReference = 0;
 unsigned long ContentLength = 0;
@@ -75,28 +73,30 @@ string TransferToClient = "";
     return -20;
    }
 
-   if( ToBrowser.TokenizeHeader( &Header, "\n") == false)
+   if( ToBrowser.AnalyseHeader( &Header, "\n") == false)
    {
-     LogFile::ErrorMessage("Could not torkenize header\n%s\n", Header.c_str());
+     LogFile::ErrorMessage("Could not Analyse header\n%s\n", Header.c_str());
     return -30;
    }
 
-
-   if( ToBrowser.GetHostAndPort( &Host, &Port ) == false)
+   #if defined (PARENTPROXY) && defined (PARENTPORT)
+   if( ToServer.SetDomainAndPort( PARENTPROXY, PARENTPORT ) == false )
    {
-     LogFile::ErrorMessage("Could not get host of header\n%s\n", Header.c_str());
-     return -40;
-   }
-
-   if( ToServer.SetDomainAndPort( (char*)Host.c_str(), Port ) == false )
-   {
-     LogFile::ErrorMessage("Could not resolve hostname: %s\n", Host.c_str());
+     LogFile::ErrorMessage("Could not resolve parent proxy: %s\n", PARENTPROXY);
     return -50;
    }
+   #else 
+   if( ToServer.SetDomainAndPort( ToBrowser.GetHost(), ToBrowser.GetPort() ) == false )
+   {
+     LogFile::ErrorMessage("Could not resolve hostname: %s\n", ToBrowser.GetHost() );
+    return -50;
+   }
+   #endif
 
+   
    if( ToServer.ConnectToServer ( ) == false)
    {
-     LogFile::ErrorMessage("Could not connect to server %s Port %d\n", Host.c_str(), Port);
+     LogFile::ErrorMessage("Could not connect to server %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
     return -60;
    }
 
@@ -112,7 +112,7 @@ string TransferToClient = "";
      Body="";
      if ( ToBrowser.RecvLength( &Body, ContentLengthReference) == false )
      {
-     LogFile::ErrorMessage("Could not read Browser Post: %s Port %d\n", ToBrowser.Request.c_str(), Port);
+     LogFile::ErrorMessage("Could not read Browser Post: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
      return -70;
      }
      //IE Bug - send addtional \r\n
@@ -128,11 +128,11 @@ string TransferToClient = "";
     }
 
    if ( ToServer.ReadHeader(&Header) == false){
-     LogFile::ErrorMessage("Could not read Server Header: %s Port %d\n", ToBrowser.Request.c_str(), Port);
+     LogFile::ErrorMessage("Could not read Server Header: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
      return -80;
     }
 
-   ToServer.TokenizeHeader( &Header, "\n");
+   ToServer.AnalyseHeader( &Header, "\n");
 
    ContentLengthReference = ToServer.GetContentLength( );
 
@@ -142,7 +142,7 @@ string TransferToClient = "";
       //Set tempfile to right size
       if ( VirusScannerT->SetFileSize( ContentLengthReference ) == false )
       {
-      LogFile::ErrorMessage("Could set file size: %s Port %d\n", ToBrowser.Request.c_str(), Port);
+      LogFile::ErrorMessage("Could set file size: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
       return -90;
       }
    }
@@ -154,7 +154,7 @@ string TransferToClient = "";
    {
 
    if( BodyLength == -1) {
-     LogFile::ErrorMessage("Could not read Server Body: %s Port %d\n", ToBrowser.Request.c_str(), Port);
+     LogFile::ErrorMessage("Could not read Server Body: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
      return -100;
      }
 
@@ -162,7 +162,7 @@ string TransferToClient = "";
      //Does Browser drop connection
      if(ToBrowser.IsConnectionDropped() == true )
      {
-     LogFile::ErrorMessage("Browser dropped Connection: %s Port %d\n", ToBrowser.Request.c_str(), Port);
+     LogFile::ErrorMessage("Browser dropped Connection: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
      return -110;
      }
      
@@ -170,7 +170,7 @@ string TransferToClient = "";
      ContentLength += BodyLength;
      if ( (unlock == true) && ( ContentLength > ContentLengthReference ) )
      {
-     LogFile::ErrorMessage("ContentLength and Body size does not fit: %s Port %d\n", ToBrowser.Request.c_str(), Port);
+     LogFile::ErrorMessage("ContentLength and Body size does not fit: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
      return -120;
      }
      
@@ -179,14 +179,14 @@ string TransferToClient = "";
 
      //Expand file to scan
      if ( VirusScannerT->ExpandFile( (char *)Body.c_str(), Body.length() , unlock ) == false ){
-       LogFile::ErrorMessage("Could not expand tempfile: %s Port %d\n", ToBrowser.Request.c_str(), Port);
+       LogFile::ErrorMessage("Could not expand tempfile: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
       return -130;
       }
 
    if ( TransferData.length() > KEEPBACKBUFFER ){
   
    //This check will not work at the moment
-   //Virus already found
+   //Virus already found?
 /*
    if (( VirusScannerT->ReadScannerAnswer() != "Clean" ) && ( VirusScannerT->ReadScannerAnswer() != "" ) )
     {
@@ -219,8 +219,15 @@ string TransferToClient = "";
 //Wait till scanning is complete
 TempScannerAnswer =  VirusScannerT->ScanningComplete();
 if ( TempScannerAnswer != 0) {
+  #ifdef CATCHONSCANNERERROR
   return TempScannerAnswer;
+  #else
+  if ( TempScannerAnswer != 2 )
+  {
+   return TempScannerAnswer; 
   }
+  #endif
+}
 
   
 if ( HeaderSend == false )
@@ -252,19 +259,18 @@ string Answer;
 
  if ( CommunicationAnswerT == -50 ){
     //Could not resolve DNS Name
-    ToBrowser.Send( &ErrorHeader );
     ToBrowser.Send( &DNSError );
-    LogFile::AccessMessage("%s %d DNS Failed\n", Host.c_str(), Port);
+    LogFile::AccessMessage("%s %d DNS Failed\n", ToBrowser.GetHost(), ToBrowser.GetPort());
 
  } else if ( CommunicationAnswerT == 2 ) {
 
     Answer = VirusScannerT->ReadScannerAnswer();
-    LogFile::AccessMessage("%s %d Scanner Error: %s\n", ToBrowser.Request.c_str(), Port, Answer.c_str());
+    LogFile::AccessMessage("%s %d Scanner Error: %s\n", ToBrowser.GetHost(), ToBrowser.GetPort(), Answer.c_str());
     ScannerError.insert( ERRORINSERTPOSITION, Answer);
     ToBrowser.Send( &ScannerError );
      
  } else if ( CommunicationAnswerT == 1 ) {
-    LogFile::AccessMessage("%s %d Virus: %s\n", ToBrowser.Request.c_str(), Port, Answer.c_str());
+    LogFile::AccessMessage("%s %d Virus: %s\n", ToBrowser.GetHost(), ToBrowser.GetPort(), Answer.c_str());
     VirusError.insert( VIRUSINSERTPOSITION, Answer);
     ToBrowser.Send( &VirusError );
  }

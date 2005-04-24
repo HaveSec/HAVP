@@ -28,10 +28,10 @@
 
  int MakeDeamon()
 {
- pid_t deamon;
- if (( deamon = fork() ) < 0)
+ pid_t daemon;
+ if (( daemon = fork() ) < 0)
  { return (-1); //Parent error
- } else if ( deamon != 0) {
+ } else if ( daemon != 0) {
   exit (0); //Parent exit
  }
 

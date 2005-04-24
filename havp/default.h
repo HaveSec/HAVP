@@ -22,13 +22,20 @@
 
 //Change to User and Group
 #define USER "nobody"
-#define GROUP "nobody"
+#define GROUP "nogroup"
 
 //Fork max server
-#define SERVERNUMBER 50
+#define SERVERNUMBER 35
 
-//Make deamon
-#define DEAMON
+//Make daemon
+#define DAEMON
+
+//Transparent Proxy
+//#define TRANSPARENT
+
+//Parent Proxy (Name)
+//#define PARENTPROXY "localhost"
+//#define PARENTPORT 3128
 
 //Don't let pass when scanner failed
 #define CATCHONSCANNERERROR
@@ -43,7 +50,7 @@
 #define TIMEFORMAT "%d/%m/%Y %H:%M:%S"
 
 //Port of proxy server
-#define PORT 8080
+#define PORT 8000
 
 //Address to bind to for listening: NULL for any, "127.0.0.1" for local, or specific address
 #define BIND_ADDRESS ( (char *) NULL )

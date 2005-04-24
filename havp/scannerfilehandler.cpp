@@ -39,8 +39,7 @@ FileLength = 0;
     return false;
    } 
 
-
-  write(fd_scan, "1", 1);
+   write(fd_scan, " ", 1);
 
    // set-group-ID and group-execute
    if (fstat(fd_scan, &fstatpuff) < 0)

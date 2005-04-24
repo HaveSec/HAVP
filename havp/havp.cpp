@@ -64,6 +64,14 @@ LogFile::ErrorMessage ("Change to User %s\n", USER);
 LogFile::ErrorMessage ("Change to Group %s\n", GROUP);
 #endif
 
+#if defined (PARENTPROXY) && defined (PARENTPORT)
+  LogFile::ErrorMessage("Use parent proxy: %s %d\n", PARENTPROXY, PARENTPORT );
+#endif
+
+#ifdef TRANSPARENT
+  LogFile::ErrorMessage("Use transparent proxy mode\n");
+#endif
+
 if( HardLockTest ( )!= 1) {
   exit (-1);
   }
@@ -82,7 +90,7 @@ if ( VirusScanner->InitDatabase( ) == false ) {
   exit (-1);
   }
 
-#ifdef DEAMON
+#ifdef DAEMON
 MakeDeamon();
 #endif
   

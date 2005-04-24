@@ -16,53 +16,35 @@
  ***************************************************************************/
 
 #include "connectiontobrowser.h"
+#include "logfile.h"
 
 //Prepare Header for Server
 string ConnectionToBrowser::PrepareHeaderForServer()
 {
 
-string header ="";
-unsigned int PortLocation;
+string header;
+
+#if defined (PARENTPROXY) && defined (PARENTPORT)
+string PortString = "";
+if ( Port != 80 )
+{
+PortString = ":" + Port;
+}
+
+ header = RequestType + "http://" + Host + PortString + Request + " HTTP/1.0\r\n";
+#else
+ header = RequestType + Request + " HTTP/1.0\r\n";
+#endif
 
   vector<string>::iterator it;
 
   for (it = tokens.begin(); it != tokens.end(); ++it)
   {
-    //Change GET line
+
+    //Skip GET POST HEAD line
     if( ( it->find( "GET", 0) == 0) || ( it->find( "POST", 0 ) == 0 ) || ( it->find( "HEAD", 0 ) == 0 ) )
     {
-
-      string temp = *it;
-      int location = temp.rfind(" HTTP",string::npos);
-      int length = temp.length();
-      Request = temp.replace( location, length, "" );
-      
-      temp = *it;
-      transform(temp.begin(), temp.end(), temp.begin(), (int(*)(int))std::tolower );
-      HostwithPort = "http://" + HostwithPort;
-
-      //Mozilla put :80 (if spezified) in hostname but not in GET/POST/HEAD request
-       if( ( PortLocation = HostwithPort.rfind( ":80", string::npos )) != string::npos )
-        {
-         HostwithPort.replace( PortLocation, 3, "" );
-        }
-                                 
-      location = temp.find(HostwithPort,0);
-      length = HostwithPort.length();
-      temp = it->replace( location, length, "" );
-
-      //Opera put :80 (if spezified) in GET/POST/HEAD request but not in hostname
-       if( ( PortLocation = temp.find( " :80/", 0 )) != string::npos )
-        {
-         temp.replace( PortLocation+1, 3, "" );
-        }      
-      
-      //Use HTTP 1.0
-      location = temp.rfind("HTTP",string::npos);
-      length = temp.length();
-      temp = temp.replace( location, length, "HTTP/1.0" );
-      header += temp + "\r\n";
-      continue;
+    continue;
     } else if( it->find( "Proxy", 0 ) == 0 )
     {
      continue;
@@ -90,52 +72,154 @@ unsigned int PortLocation;
    
    header += "\r\n";
 
-
 return header;
 
 }
 
 
-//Get host and port
-bool ConnectionToBrowser::GetHostAndPort( string *HostT, int *PortT )
-{
-unsigned int PositionPort;
-string PortConvert;
+bool ConnectionToBrowser::AnalyseHeaderLine( string *RequestT ) {
 
-  *HostT = Host = HostwithPort = "";
-
-  vector<string>::iterator it;
-
-  for (it = tokens.begin(); it != tokens.end(); ++it)
-  {
-
-    if( it->find( "Host:", 0 ) == 0 )
+#ifdef TRANSPARENT
+  if( RequestT->find( "Host:", 0 ) == 0 )
     {
-      //Hostname to lowercase
-      HostwithPort = it->substr(6, it->length()-8);
-      transform(HostwithPort.begin(), HostwithPort.end(), HostwithPort.begin(), (int(*)(int))std::tolower );
-
-       if( ( PositionPort = HostwithPort.rfind( ":", string::npos )) != string::npos )
-        {
-          *HostT = HostwithPort.substr(0, PositionPort );
-           PortConvert = HostwithPort.substr( PositionPort+1, HostwithPort.length()-PositionPort );
-           *PortT = atoi( PortConvert.c_str() );
-           Host = *HostT;
-          return true;
-        }
-      *PortT = 80;
-      *HostT = Host = HostwithPort;
-      return true;
+     return GetHostAndPortOfHostLine( RequestT ); 
     }
-  }
-  *HostT="";
-  *PortT = 0;
-  return false;
+#endif
+         if( RequestT->find( "GET", 0) == 0)
+         {
+           RequestType = "GET ";
+           return GetHostAndPortOfRequest( RequestT );
+         } else if ( RequestT->find( "POST", 0 ) == 0 )
+         {
+           RequestType="POST ";
+           return GetHostAndPortOfRequest( RequestT );
+         } else if ( RequestT->find( "HEAD ", 0 ) == 0 )
+         {
+           RequestType="HEAD ";
+           return GetHostAndPortOfRequest( RequestT );
+         }
+
+return true;
 }
 
 
+//Get host and port
+bool ConnectionToBrowser::GetHostAndPortOfHostLine( string *HostLineT )
+{
+
+string::size_type PositionPort;
+string PortString;
+string HostwithPort;
+
+
+      HostwithPort = HostLineT->substr(6, HostLineT->length()-6);
+
+       if( ( PositionPort = HostwithPort.rfind( ":", string::npos )) != string::npos )
+        {
+           Host = HostwithPort.substr(0, PositionPort );
+           PortString = HostwithPort.substr( PositionPort+1, HostwithPort.length()-PositionPort );
+           if (sscanf( PortString.c_str(), "%d", &Port) != 1){
+           return false;
+           }
+          return true;
+        }
+       Port = 80;
+       Host = HostwithPort;
+
+  return true;
+}
+
+bool ConnectionToBrowser::GetHostAndPortOfRequest(string *RequestT )
+{
+
+string::size_type Begin;
+string::size_type lastposition;
+
+string PortString;
+
+#ifndef TRANSPARENT
+
+string::size_type End;
+int Length;
+
+   if  ((Begin = RequestT->find("http://", 0)) == string::npos )
+    {
+     return false;
+    }
+
+   End = RequestT->find("/", Begin+7);
+
+   if ( (End == string::npos ) || ( (Length = End-Begin-7) < 0 ) )
+    {
+      return false;
+    }
+
+   Host = RequestT->substr(Begin+7, Length);
+
+   Request = RequestT->substr(End, RequestT->length()-Begin);
+   
+#else
+
+   if  ((Begin = RequestT->find("/", 0)) == string::npos )
+    {
+     return false;
+    }
+  Request = RequestT->substr(Begin, RequestT->length()-Begin);
+         
+#endif
+
+
+   //Get rid of HTTP (1.0)
+   if ((Begin = Request.rfind(" HTTP",string::npos)) == string::npos )
+   {
+     return false;
+   }
+
+   Request.replace( Begin, Request.length()-Begin, "" );
+
+   //Delete space or tab at end
+   if ( (lastposition = Request.find_last_not_of("\t ")) != string::npos )
+   {
+     Request = Request.substr(0,lastposition+1);
+   }
+
+   //notice if : is last char (www.server-side.de:)
+   if ((Begin = Host.rfind(":",Host.length()-1)) == string::npos )
+   {
+     Port = 80;
+     PortString = "";
+   } else {
+     PortString = Host.substr(Begin+1, Host.length()-Begin-1 );
+     if (sscanf( PortString.c_str(), "%d", &Port) != 1){
+          return false;
+      }
+   }
+
+return true;
+}
+
+
+const char *ConnectionToBrowser::GetHost()
+{
+  return Host.c_str();
+}
+
+const char *ConnectionToBrowser::GetCompleteRequest()
+{
+  string CompleteRequest = "http://" + Host + Request;
+  return CompleteRequest.c_str();
+}
+
+int ConnectionToBrowser::GetPort()
+{
+  return Port;
+}
+
 //Constructor
 ConnectionToBrowser::ConnectionToBrowser(){
+
+ RequestType="";
+  
 }
 
 //Destructor

@@ -23,6 +23,10 @@
 
 class ConnectionToServer : public HTTPHandler  {
 
+private:
+
+ bool AnalyseHeaderLine( string *RequestT );
+
 public: 
 
 string PrepareHeaderForBrowser();

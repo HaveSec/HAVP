@@ -72,17 +72,17 @@ return true;
 
 
 //Split header to tokens
-bool HTTPHandler::TokenizeHeader(string *linesT, const char *delimitersT )
+bool HTTPHandler::AnalyseHeader(string *linesT, const char *delimitersT )
  {
 
  string tempToken;
- 
+   
  //delete tokens
  tokens.clear();
 
  //Clear Content Length
  ContentLength=0;
-
+ 
   string::size_type lastposition = 0;
   string::size_type length = linesT->length();
 
@@ -117,9 +117,11 @@ bool HTTPHandler::TokenizeHeader(string *linesT, const char *delimitersT )
           if (sscanf( Length.c_str(), "%lu",  &ContentLength) != 1){
           ContentLength=0;
           }
+         }
 
-         }       
-  
+
+        AnalyseHeaderLine( &tempToken );
+
         tokens.push_back(  tempToken+"\r\n" );
         }
         

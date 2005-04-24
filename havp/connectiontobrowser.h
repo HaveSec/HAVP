@@ -26,6 +26,9 @@
 #include <algorithm>
 #include <string>
 
+#include <stdarg.h>
+#include <stdio.h>
+
 using namespace std; 
 
 #include "httphandler.h"
@@ -35,16 +38,31 @@ class ConnectionToBrowser : public HTTPHandler  {
 
 private:
 
-string HostwithPort;
+string Request;
+
 string Host;
+
+int Port;
+
+
+string RequestType;
+
+bool AnalyseHeaderLine( string *RequestT );
+
+bool GetHostAndPortOfRequest(string *RequestT);
+
+bool GetHostAndPortOfHostLine( string *HostLineT );
 
 public:
 
-string Request;
-
 string PrepareHeaderForServer();
 
-bool GetHostAndPort( string *HostT, int *PortT );
+const char *GetHost();
+
+const char *GetCompleteRequest();
+
+int GetPort();
+
       
 	ConnectionToBrowser();
 	~ConnectionToBrowser();

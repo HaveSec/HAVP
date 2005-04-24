@@ -39,6 +39,9 @@ string header ="";
     } else if( it->find( "Connection", 0) == 0 )
      {
      continue;
+     } else if( it->find( "Proxy-Connection", 0) == 0 )
+     {
+     continue;
      }
 
      header += *it;
@@ -50,6 +53,17 @@ string header ="";
 return header;
 
 }
+
+
+
+
+
+bool ConnectionToServer::AnalyseHeaderLine( string *RequestT ) {
+
+return true;
+}
+
+
 
 //Consturctor
 ConnectionToServer::ConnectionToServer(){

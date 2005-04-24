@@ -24,6 +24,9 @@
 #include <vector>
 #include <string>
 
+#include <stdio.h>
+#include <stdarg.h>
+
 //#include <stdlib.h>
 
 using namespace std;
@@ -38,11 +41,13 @@ protected:
 
 vector <string> tokens;
 
+virtual bool AnalyseHeaderLine( string *RequestT ) = 0;
+
 public: 
 
 bool ReadHeader( string *headerT );
 
-bool TokenizeHeader(string *linesT, const char *delimitersT );
+bool AnalyseHeader(string *linesT, const char *delimitersT );
 
 unsigned long GetContentLength( );
 
@@ -51,7 +56,7 @@ ssize_t ReadBodyPart( string* bodyT );
 bool SendHeader( string* headerT );
 
   HTTPHandler();
-	~HTTPHandler();
+virtual ~HTTPHandler();
 };
 
 #endif
