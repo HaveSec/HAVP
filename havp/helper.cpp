@@ -73,13 +73,13 @@ ScannerFileHandler testlock;
   {
       exit (-1);
   }
-   return 1;
+  return 1;
  }
  //Child
    if ( (fd = open(testlock.GetFileName() , O_RDONLY)) < 0)
    {
       LogFile::ErrorMessage ("Could not open hardlock check file: %s\n", testlock.GetFileName() );
-      exit (-1);
+      exit (1);
    }
 
    //set nonblocking

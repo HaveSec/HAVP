@@ -62,6 +62,8 @@ bool SocketHandler::AcceptClient ( SocketHandler *accept_socketT )
   int addr_length = sizeof ( s_addr );
   accept_socketT->sock_fd = ::accept ( sock_fd, ( sockaddr * ) &s_addr, ( socklen_t * ) &addr_length );
 
+  close ( sock_fd );
+
   if ( accept_socketT->sock_fd == -1 )
     return false;
   else

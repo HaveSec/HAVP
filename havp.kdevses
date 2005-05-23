@@ -3,14 +3,30 @@
 <KDevPrjSession>
 <LastCompileConfig>(Default)</LastCompileConfig>
  <Mainframe MaximizeMode="1" />
- <DocsAndViews NumberOfDocuments="5" >
+ <DocsAndViews NumberOfDocuments="13" >
 <Doc0 CursorPosLine="212" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="58" FileName="/usr/include/time.h" >
 <View0 Top="24" Width="400" Attach="1" Height="300" Left="3" Focus="0" Type="KWriteView" MinMaxMode="0" />  </Doc0>
   <Doc1 CursorPosLine="37" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="27" FileName="/usr/include/g++/backward/backward_warning.h" >
-<View0 Top="46" Width="823" Attach="1" Height="683" Left="25" Focus="0" Type="KWriteView" MinMaxMode="0" />  </Doc1>
-  <Doc2 CursorPosLine="36" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="0" FileName="/home/hilgers/programmierung/havp/havp-0.57/havp/logfile.h" >
-<View0 Top="68" Width="823" Attach="1" Height="683" Left="47" Focus="0" Type="KWriteView" MinMaxMode="0" />  </Doc2>
-  <Doc3 CursorPosLine="41" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="43" FileName="/home/hilgers/programmierung/havp/havp-0.57/havp/connectiontoserver.cpp" >
+<View0 Top="46" Width="1014" Attach="1" Height="641" Left="25" Focus="0" Type="KWriteView" MinMaxMode="0" />  </Doc1>
+  <Doc2 CursorPosLine="46" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="22" FileName="/home/hilgers/programmierung/havp/havp-0.58/havp/genericscanner.h" >
+<View0 Top="68" Width="590" Attach="1" Height="508" Left="47" Focus="0" Type="KWriteView" MinMaxMode="0" />  </Doc2>
+  <Doc3 CursorPosLine="21" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="0" FileName="/home/hilgers/programmierung/havp/havp-0.58/havp/genericscanner.cpp" >
 <View0 Top="90" Width="823" Attach="1" Height="683" Left="69" Focus="0" Type="KWriteView" MinMaxMode="0" />  </Doc3>
-  <Doc4 CursorPosLine="21" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="0" FileName="/home/hilgers/programmierung/havp/havp-0.57/havp/connectiontobrowser.cpp" >
-<View0 Top="88" Width="829" Attach="1" Height="710" Left="88" Focus="1" Type="KWriteView" MinMaxMode="2" />  </Doc4> </DocsAndViews></KDevPrjSession>
+  <Doc4 CursorPosLine="79" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="0" FileName="/home/hilgers/programmierung/havp/havp-0.58/havp/havp.cpp" >
+<View0 Top="112" Width="823" Attach="1" Height="683" Left="91" Focus="0" Type="KWriteView" MinMaxMode="0" />  </Doc4>
+  <Doc5 CursorPosLine="192" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="0" FileName="/home/hilgers/programmierung/havp/havp-0.58/havp/proxyhandler.cpp" >
+<View0 Top="134" Width="823" Attach="1" Height="683" Left="113" Focus="0" Type="KWriteView" MinMaxMode="0" />  </Doc5>
+  <Doc6 CursorPosLine="55" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="30" FileName="/home/hilgers/programmierung/havp/havp-0.58/havp/sockethandler.cpp" >
+<View0 Top="156" Width="823" Attach="1" Height="683" Left="135" Focus="0" Type="KWriteView" MinMaxMode="0" />  </Doc6>
+  <Doc7 CursorPosLine="63" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="0" FileName="/home/hilgers/programmierung/havp/havp-0.58/havp/helper.cpp" >
+<View0 Top="178" Width="1014" Attach="1" Height="641" Left="157" Focus="0" Type="KWriteView" MinMaxMode="0" />  </Doc7>
+  <Doc8 CursorPosLine="112" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="25" FileName="/home/hilgers/programmierung/havp/havp-0.58/havp/scannerfilehandler.cpp" >
+<View0 Top="200" Width="823" Attach="1" Height="683" Left="179" Focus="0" Type="KWriteView" MinMaxMode="0" />  </Doc8>
+  <Doc9 CursorPosLine="49" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="0" FileName="/home/hilgers/programmierung/havp/havp-0.58/havp/proxyhandler.h" >
+<View0 Top="222" Width="823" Attach="1" Height="683" Left="201" Focus="0" Type="KWriteView" MinMaxMode="0" />  </Doc9>
+  <Doc10 CursorPosLine="53" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="0" FileName="/home/hilgers/programmierung/havp/havp-0.58/havp/httphandler.cpp" >
+<View0 Top="244" Width="823" Attach="1" Height="683" Left="223" Focus="0" Type="KWriteView" MinMaxMode="0" />  </Doc10>
+  <Doc11 CursorPosLine="76" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="20" FileName="/home/hilgers/programmierung/havp/havp-0.58/havp/default.h" >
+<View0 Top="242" Width="829" Attach="1" Height="710" Left="242" Focus="1" Type="KWriteView" MinMaxMode="2" />  </Doc11>
+  <Doc12 CursorPosLine="89" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="35" FileName="/home/hilgers/programmierung/havp/havp-0.58/havp/clamlibscanner.cpp" >
+<View0 Top="288" Width="1014" Attach="1" Height="641" Left="267" Focus="0" Type="KWriteView" MinMaxMode="0" />  </Doc12> </DocsAndViews></KDevPrjSession>

@@ -18,6 +18,8 @@
 #ifndef GENERICSCANNER_H
 #define GENERICSCANNER_H
 
+#include "sockethandler.h"
+
 #include <sys/types.h>
 
 #include <iostream>
@@ -42,8 +44,7 @@ void WriteScannerAnswer ();
 
 string ReadScannerAnswer ();
 
-bool PrepareScanning ( void *GenericScannerT );
-
+bool PrepareScanning ( SocketHandler *ProxyServerT );
 
 virtual bool InitDatabase() = 0;
 

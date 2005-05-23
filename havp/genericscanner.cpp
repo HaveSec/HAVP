@@ -19,7 +19,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-bool GenericScanner::PrepareScanning( void *GenericScannerT )
+bool GenericScanner::PrepareScanning( SocketHandler *ProxyServerT )
 {
 
 
@@ -34,8 +34,11 @@ if ( InitSelfEngine() == false){
   return true;
  }
  //Child
-  
-((GenericScanner*)GenericScannerT)->Scanning();
+
+ //Close unwanted sockets
+ ProxyServerT->Close();
+ 
+ Scanning();
 
  exit (-3); //should never get here!!
  return false;

@@ -104,7 +104,7 @@ for( int i = 0; i < SERVERNUMBER; i++ )
  if (pid == 0)
  {
    //Child
-   VirusScanner->PrepareScanning ( VirusScanner );
+   VirusScanner->PrepareScanning ( &ProxyServer );
    Proxy.Proxy ( &ProxyServer, VirusScanner );
    exit (1);
  }
@@ -124,12 +124,12 @@ pid=fork();
  if (pid == 0)
  {
    //Child
-   VirusScanner->PrepareScanning ( VirusScanner );
+   VirusScanner->PrepareScanning ( &ProxyServer );
    Proxy.Proxy ( &ProxyServer, VirusScanner );
    exit (1);
  }
 #else 
-VirusScanner->PrepareScanning ( VirusScanner );
+VirusScanner->PrepareScanning ( &ProxyServer );
 Proxy.Proxy ( &ProxyServer, VirusScanner );
 #endif
 }

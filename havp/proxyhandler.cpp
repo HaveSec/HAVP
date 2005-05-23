@@ -17,13 +17,13 @@
 
 #include "proxyhandler.h"
 
-bool ProxyHandler::Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusScannerT)
+bool ProxyHandler::Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusScannerT )
 {
 int CommunicationAnswer;
 
- if ( (CommunicationAnswer = Communication ( ProxyServerT,  VirusScannerT )) != 0){
+ if ( (CommunicationAnswer = Communication ( ProxyServerT, VirusScannerT )) != 0){
  
-   ProxyMessage( CommunicationAnswer , VirusScannerT );
+   ProxyMessage( CommunicationAnswer );
 
    ToBrowser.Close();
    ToServer.Close();
@@ -57,8 +57,13 @@ ssize_t BodyLength = 0;
 
 HeaderSend = false;
 
-string TransferData = "";
+//string TransferData = "";
 string TransferToClient = "";
+
+deque <std::string> BodyQueue;
+deque <std::string>::iterator TransferData;
+string BodyTemp;
+int TransferDataLength=0;
 
 
    if( ProxyServerT->AcceptClient( &ToBrowser ) == false)
@@ -149,9 +154,13 @@ string TransferToClient = "";
          
    Header = ToServer.PrepareHeaderForBrowser();
    
-   //Transfer Body
-   while ( (BodyLength = ToServer.ReadBodyPart(&Body)) != 0)
+
+
+   //Server Body Transfer
+   while ( (BodyLength = ToServer.ReadBodyPart(&BodyTemp)) != 0)
    {
+
+   TransferDataLength += BodyLength;
 
    if( BodyLength == -1) {
      LogFile::ErrorMessage("Could not read Server Body: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
@@ -174,16 +183,18 @@ string TransferToClient = "";
      return -120;
      }
      
-     //String add
-     TransferData += Body;
+     //Add string to queue
+     BodyQueue.push_back( BodyTemp );
 
      //Expand file to scan
-     if ( VirusScannerT->ExpandFile( (char *)Body.c_str(), Body.length() , unlock ) == false ){
+     if ( VirusScannerT->ExpandFile( (char *)BodyTemp.c_str(), BodyTemp.length() , unlock ) == false ){
        LogFile::ErrorMessage("Could not expand tempfile: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
       return -130;
       }
 
-   if ( TransferData.length() > KEEPBACKBUFFER ){
+    TransferData = BodyQueue.begin();
+
+    if ( KEEPBACKBUFFER < (TransferDataLength - TransferData->length()) ){
   
    //This check will not work at the moment
    //Virus already found?
@@ -208,10 +219,10 @@ string TransferToClient = "";
       HeaderSend  = true;
     }
 
-    TransferToClient = TransferData.substr(  0 , TransferData.length()- KEEPBACKBUFFER );
-    ToBrowser.Send( &TransferToClient );
-    TransferData.erase( 0, TransferData.length()- KEEPBACKBUFFER );
-
+    BodyTemp = *TransferData;
+    TransferDataLength -= BodyTemp.length();
+    ToBrowser.Send( &BodyTemp );
+    BodyQueue.erase( TransferData );
    }
 
    }
@@ -235,7 +246,12 @@ if ( HeaderSend == false )
       ToBrowser.SendHeader(&Header); //Send header only once
     }
 
-  ToBrowser.Send( &TransferData );
+
+for(TransferData = BodyQueue.begin(); TransferData != BodyQueue.end(); ++TransferData)
+ {
+  BodyTemp = *TransferData;
+  ToBrowser.Send( &BodyTemp );
+ }
 
 
 return 0;
@@ -243,7 +259,7 @@ return 0;
 }
 
 
-bool ProxyHandler::ProxyMessage( int CommunicationAnswerT , GenericScanner *VirusScannerT)
+bool ProxyHandler::ProxyMessage( int CommunicationAnswerT )
 {
 
 string VirusError=VIRUSFOUND;
@@ -263,16 +279,16 @@ string Answer;
     LogFile::AccessMessage("%s %d DNS Failed\n", ToBrowser.GetHost(), ToBrowser.GetPort());
 
  } else if ( CommunicationAnswerT == 2 ) {
-
-    Answer = VirusScannerT->ReadScannerAnswer();
     LogFile::AccessMessage("%s %d Scanner Error: %s\n", ToBrowser.GetHost(), ToBrowser.GetPort(), Answer.c_str());
     ScannerError.insert( ERRORINSERTPOSITION, Answer);
     ToBrowser.Send( &ScannerError );
      
  } else if ( CommunicationAnswerT == 1 ) {
-    LogFile::AccessMessage("%s %d Virus: %s\n", ToBrowser.GetHost(), ToBrowser.GetPort(), Answer.c_str());
+    LogFile::AccessMessage("%s Virus: %s\n", ToBrowser.GetCompleteRequest(), Answer.c_str());
     VirusError.insert( VIRUSINSERTPOSITION, Answer);
     ToBrowser.Send( &VirusError );
+ } else {
+      LogFile::AccessMessage("%s Error: %d\n", ToBrowser.GetCompleteRequest(), CommunicationAnswerT);
  }
 
  

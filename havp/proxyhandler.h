@@ -25,6 +25,7 @@
 
 #include <iostream>
 #include <string>
+#include <deque>
 
 using namespace std;
 
@@ -41,13 +42,13 @@ bool HeaderSend;
 ConnectionToBrowser ToBrowser;
 ConnectionToServer ToServer;
 
-bool ProxyMessage( int CommunicationAnswerT, GenericScanner *VirusScannerT );
+bool ProxyMessage( int CommunicationAnswerT );
 
-int Communication( SocketHandler *ProxyServerT, GenericScanner *VirusScannerT);
+int Communication( SocketHandler *ProxyServerT, GenericScanner *VirusScannerT );
  
 public:
 
- bool Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusScannerT);
+ bool Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusScannerT );
  
  
 	ProxyHandler();

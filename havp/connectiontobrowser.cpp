@@ -17,7 +17,7 @@
 
 #include "connectiontobrowser.h"
 #include "logfile.h"
-
+                                                         
 //Prepare Header for Server
 string ConnectionToBrowser::PrepareHeaderForServer()
 {
@@ -139,7 +139,9 @@ string PortString;
 
 #ifndef TRANSPARENT
 
+string HostwithPort;
 string::size_type End;
+string::size_type PositionPort;
 int Length;
 
    if  ((Begin = RequestT->find("http://", 0)) == string::npos )
@@ -154,7 +156,19 @@ int Length;
       return false;
     }
 
-   Host = RequestT->substr(Begin+7, Length);
+   HostwithPort = RequestT->substr(Begin+7, Length);
+
+       if( ( PositionPort = HostwithPort.rfind( ":", string::npos )) != string::npos )
+        {
+           Host = HostwithPort.substr(0, PositionPort );
+           PortString = HostwithPort.substr( PositionPort+1, HostwithPort.length()-PositionPort );
+           if (sscanf( PortString.c_str(), "%d", &Port) != 1){
+           return false;
+           }
+        } else {
+       Port = 80;
+       Host = HostwithPort;
+        }
 
    Request = RequestT->substr(End, RequestT->length()-Begin);
    
@@ -181,18 +195,6 @@ int Length;
    if ( (lastposition = Request.find_last_not_of("\t ")) != string::npos )
    {
      Request = Request.substr(0,lastposition+1);
-   }
-
-   //notice if : is last char (www.server-side.de:)
-   if ((Begin = Host.rfind(":",Host.length()-1)) == string::npos )
-   {
-     Port = 80;
-     PortString = "";
-   } else {
-     PortString = Host.substr(Begin+1, Host.length()-Begin-1 );
-     if (sscanf( PortString.c_str(), "%d", &Port) != 1){
-          return false;
-      }
    }
 
 return true;

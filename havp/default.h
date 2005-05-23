@@ -50,7 +50,7 @@
 #define TIMEFORMAT "%d/%m/%Y %H:%M:%S"
 
 //Port of proxy server
-#define PORT 8000
+#define PORT 8080
 
 //Address to bind to for listening: NULL for any, "127.0.0.1" for local, or specific address
 #define BIND_ADDRESS ( (char *) NULL )
@@ -71,10 +71,10 @@
 #define MAXCONNECTIONS  1024
 
 //Bytes which will be hold back
-#define KEEPBACKBUFFER 50005
+#define KEEPBACKBUFFER 25000
 
 //Maximum bytes received in one request
-#define MAXRECV   50000
+#define MAXRECV   10000
 
 //Maximum logfile line length
 #define STRINGLENGTH 1000
