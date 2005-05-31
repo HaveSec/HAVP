@@ -55,6 +55,8 @@ unsigned long ContentLength = 0;
 
 ssize_t BodyLength = 0;
 
+ssize_t repeat;
+
 HeaderSend = false;
 
 //string TransferData = "";
@@ -111,25 +113,45 @@ int TransferDataLength=0;
 
    ContentLengthReference = ToBrowser.GetContentLength( );
 
-
-  if (  ContentLengthReference != 0 ){
+   //Check for Client Body e.g. POST
+  if (  ContentLengthReference > 0 ){
      //We expect POST data
-     Body="";
-     if ( ToBrowser.RecvLength( &Body, ContentLengthReference) == false )
-     {
-     LogFile::ErrorMessage("Could not read Browser Post: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
-     return -70;
-     }
-     //IE Bug - send addtional \r\n
+     
+  repeat =  int (ContentLengthReference / MAXRECV);
+
+  for(int i=0; i <= repeat; i++){
+    Body="";
+    if ( i == repeat ) {
+      int rest = ContentLengthReference - ( MAXRECV * repeat);
+      if ( ToBrowser.RecvLength( &Body, rest ) == false ) {
+       LogFile::ErrorMessage("Could not read Browser Post: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+       return -70;
+      }
+
+    } else {
+      if (  ToBrowser.RecvLength( &Body, MAXRECV ) == false ){
+       LogFile::ErrorMessage("Could not read Browser Post: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+       return -70;
+      }
+    }
+
+     ToServer.Send( &Body );
+
+   }
+
+     //IE Bug 
      if ( ToBrowser.CheckForData() == true )
      {
      ToBrowser.Recv( &TempString, false);
      if ( TempString == "\r\n" )
        {
         ToBrowser.RecvLength( &TempString, 2);
-       }
+       } else {
+       LogFile::ErrorMessage("Browser Post was too long: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+       return -75;
+        }
      }
-     ToServer.Send( &Body );
+    
     }
 
    if ( ToServer.ReadHeader(&Header) == false){

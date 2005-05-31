@@ -139,30 +139,30 @@ bool SocketHandler::RecvLength ( string *sock_inT , ssize_t sock_lengthT )
 
   char buffer [ MAXRECV + 1 ];
   ssize_t buffer_count;
-  ssize_t buffer_length = 0;
-  ssize_t repeat;
+  int rest = MAXRECV;
 
-  repeat =  int (sock_lengthT / MAXRECV);
 
-  for(int i=0; i <= repeat; i++){
+    if (  sock_lengthT <  rest ){
+      rest =  sock_lengthT;
+    }
 
-    if ( i == repeat ) {
-      int rest = sock_lengthT - ( MAXRECV * repeat);
+  while ( sock_lengthT > 0 ) {
+
       buffer_count = ::recv ( sock_fd, buffer, rest, 0 );
-    } else {
-      buffer_count = ::recv ( sock_fd, buffer, MAXRECV, 0 );
+
+    if ( buffer_count <= -1 )
+     {
+      return false;
+     }
+
+    sock_inT->append(buffer, buffer_count);
+    sock_lengthT -= buffer_count;
+
+    if (  sock_lengthT <  rest ){
+      rest =  sock_lengthT;
     }
 
-  if ( buffer_count <= -1 )
-    {
-      return false;
-    }
-  sock_inT->append(buffer, buffer_count);
-  buffer_length = buffer_length + buffer_count;
   }
-
-  if ( buffer_length != sock_lengthT )
-      return false;
 
 	return true;
 
