@@ -21,11 +21,11 @@
 
 
 //Change to User and Group
-#define USER "nobody"
-#define GROUP "nogroup"
+#define USER "@HAVPUSER_DEF@"
+#define GROUP "@HAVPGROUP_DEF@"
 
 //Fork max server
-#define SERVERNUMBER 35
+#define SERVERNUMBER @HAVPPOOL_DEF@
 
 //Make daemon
 #define DAEMON
@@ -50,14 +50,14 @@
 #define TIMEFORMAT "%d/%m/%Y %H:%M:%S"
 
 //Port of proxy server
-#define PORT 8080
+#define PORT @HAVPPORT_DEF@
 
 //Address to bind to for listening: NULL for any, "127.0.0.1" for local, or specific address
-#define BIND_ADDRESS ( (char *) NULL )
+#define BIND_ADDRESS @HAVPBIND_DEF@
 
 //Temporary scan file - File name characters followed by six Xs 
 //Hard lock must be enabled
-#define SCANTEMPFILE "/tmp/virus/havp-XXXXXX"
+#define SCANTEMPFILE "/var/tmp/havp/havp-XXXXXX"
 //Maximum length of SCANTEMPFILE
 #define MAXSCANTEMPFILELENGTH 200 
 
@@ -83,6 +83,9 @@
 #define MAXFILELOCKSIZE 1000000000
 
 //CLAMLIB Config -----------------------------------
+
+//scanner options
+#define SCANOPTS CL_SCAN_STDOPT | CL_SCAN_ARCHIVE | CL_SCAN_OLE2 | CL_SCAN_PE
 
 //max files scanned in archiv
 #define MAXSCANFILES 1000

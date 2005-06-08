@@ -1,0 +1,32 @@
+Summary: Havp  antivirus web proxy 
+Name: havp
+Version: @VERSION@
+Release: 1
+Copyright: GPL
+Group: Server/Daemon
+Source: havp-@VERSION@.tar.gz
+BuildRoot: /var/tmp/%{name}-buildroot
+BuildRequires: clamav >= 0.84
+Requires: clamav >= 0.84
+
+%define havp_user @HAVPUSER_DEF@
+%define havp_group @HAVPGROUP_DEF@
+
+%description
+Anti virus WEB proxy
+%prep
+%setup -q
+
+%configure --enable-havp-user=%havp_user --enable-havp-group=%havp_group
+
+%build
+mkdir -p $RPM_BUILD_ROOT/var/log/havp
+mkdir -p $RPM_BUILD_ROOT/var/tmp/havp
+make 
+
+%makeinstall
+
+%files
+%defattr(-,root,root)
+%attr(755, root, root) %{_bindir}/havp
+%attr(770, %{havp_user}, %{havp_group}) /var/log/havp

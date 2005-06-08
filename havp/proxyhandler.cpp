@@ -27,6 +27,7 @@ int CommunicationAnswer;
 
    ToBrowser.Close();
    ToServer.Close();
+   VirusScannerT->ScanningComplete();
    return false;
    }
 

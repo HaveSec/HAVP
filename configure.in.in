@@ -38,7 +38,7 @@ dnl Perform program name transformation
 AC_ARG_PROGRAM
 
 dnl Automake doc recommends to do this only here. (Janos)
-AM_INIT_AUTOMAKE(havp,0.59)
+AM_INIT_AUTOMAKE(havp,0.60)
 
 dnl almost the same like KDE_SET_PEFIX but the path is /usr/local
 dnl
@@ -93,4 +93,25 @@ AC_SUBST(all_includes)
 AC_SUBST(all_libraries)
 
 AC_SUBST(AUTODIRS)
+
+
+# With help from Boris Manojlovic <boris.manojlovicSPAM@gmail.com>
+
+AC_ARG_WITH(havp-user, [  --with-havp-user=(nobody)      Username under havp will run], HAVPUSER_DEF="$withval", HAVPUSER_DEF="nobody")
+AC_ARG_WITH(havp-group, [  --with-havp-group=(nogroup)      Username under havp will run], HAVPGROUP_DEF="$withval", HAVPGROUP_DEF="nogroup")
+
+
+AC_ARG_WITH(havp-server-pool, [  --with-havp-server-pool=(number)      Number of HAVP servers handle connections], HAVPPOOL_DEF="$withval", HAVPPOOL_DEF="100")
+AC_ARG_WITH(havp-port, [  --with-havp-port=(port)      TCP server port], HAVPPORT_DEF="$withval", HAVPPORT_DEF="8080")
+AC_ARG_WITH(havp-bind, [  --with-havp-bind=(IP)      Bind to IP], HAVPBIND_DEF="$withval", HAVPBIND_DEF="( (char *) NULL )")
+
+
+AC_SUBST(HAVPUSER_DEF)
+AC_SUBST(HAVPGROUP_DEF)
+AC_SUBST(HAVPPOOL_DEF)
+AC_SUBST(HAVPPORT_DEF)
+AC_SUBST(HAVPBIND_DEF)
+
+AC_OUTPUT(havp/default.h)
+
 

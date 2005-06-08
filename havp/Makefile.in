@@ -97,6 +97,11 @@ GCJFLAGS = @GCJFLAGS@
 GLINC = @GLINC@
 GLLIB = @GLLIB@
 GMSGFMT = @GMSGFMT@
+HAVPBIND_DEF = @HAVPBIND_DEF@
+HAVPGROUP_DEF = @HAVPGROUP_DEF@
+HAVPPOOL_DEF = @HAVPPOOL_DEF@
+HAVPPORT_DEF = @HAVPPORT_DEF@
+HAVPUSER_DEF = @HAVPUSER_DEF@
 IDL = @IDL@
 IDL_DEPENDENCIES = @IDL_DEPENDENCIES@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
@@ -265,7 +270,7 @@ havp_LDFLAGS = $(all_libraries)
 subdir = havp
 mkinstalldirs = $(SHELL) $(top_srcdir)/admin/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config.h
-CONFIG_CLEAN_FILES =
+CONFIG_CLEAN_FILES = default.h
 bin_PROGRAMS = havp$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 
@@ -344,7 +349,7 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive install-info-recursive \
 	uninstall-info-recursive all-recursive install-data-recursive \
 	install-exec-recursive installdirs-recursive install-recursive \
 	uninstall-recursive check-recursive installcheck-recursive
-DIST_COMMON = Makefile.am Makefile.in
+DIST_COMMON = Makefile.am Makefile.in default.h.in
 DIST_SUBDIRS = $(SUBDIRS)
 SOURCES = $(havp_SOURCES)
 
@@ -363,6 +368,8 @@ $(srcdir)/Makefile.in:  Makefile.am  $(top_srcdir)/configure.in $(ACLOCAL_M4)
 	cd $(top_srcdir) && perl admin/am_edit havp/Makefile.in
 Makefile:  $(srcdir)/Makefile.in  $(top_builddir)/config.status
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe)
+default.h: $(top_builddir)/config.status default.h.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)

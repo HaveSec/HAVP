@@ -26,6 +26,50 @@
 #include <pwd.h>
 #include <grp.h>
 
+
+extern GenericScanner *VirusScanner;
+
+static void DeleteTempfiles (int SignalNo)
+{
+VirusScanner->DeleteFile();
+exit (1);
+
+}
+
+void
+InstallSignal ()
+{
+
+  struct sigaction Signal;
+
+  memset (&Signal, 0, sizeof (Signal));
+
+  Signal.sa_handler = DeleteTempfiles;      //function
+
+  if (sigaction (SIGINT, &Signal, NULL) != 0){
+      LogFile::ErrorMessage ("Could not install signal handler\n" );
+      exit (-1);
+  }
+  if (sigaction (SIGHUP, &Signal, NULL) != 0){
+      LogFile::ErrorMessage ("Could not install signal handler\n" );
+      exit (-1);
+  }
+  if (sigaction (SIGINT, &Signal, NULL) != 0){
+      LogFile::ErrorMessage ("Could not install signal handler\n" );
+      exit (-1);
+  }
+  if (sigaction (SIGINT, &Signal, NULL) != 0){
+      LogFile::ErrorMessage ("Could not install signal handler\n" );
+      exit (-1);
+  }
+  if (sigaction (SIGTERM, &Signal, NULL) != 0){
+      LogFile::ErrorMessage ("Could not install signal handler\n" );
+      exit (-1);
+  }
+
+}
+
+
  int MakeDeamon()
 {
  pid_t daemon;

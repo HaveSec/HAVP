@@ -24,4 +24,6 @@ int HardLockTest ( );
 
 bool ChangeUserAndGroup();
 
+void InstallSignal ();
+
 #endif

@@ -95,7 +95,7 @@ const char *virname;
    //Wait till file is set up for scanning
    read(fd, Ready, 1);
   
-    if((ret = cl_scandesc(fd, &virname, &size, root, &limits, CL_SCAN_STDOPT)) == CL_VIRUS)
+    if((ret = cl_scandesc(fd, &virname, &size, root, &limits, SCANOPTS)) == CL_VIRUS)
      {
       LogFile::ErrorMessage ("Virus %s in file %s detect!\n", virname, FileName );
       ScannerAnswer=virname;

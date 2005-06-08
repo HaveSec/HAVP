@@ -56,19 +56,6 @@ bool SocketHandler::CreateServer( int portT, const char *bind_addrT )
   return CreateServer( portT, bind_addrT == NULL ? INADDR_ANY : inet_addr( bind_addrT ) );
 }
 
-//Accept Client
-bool SocketHandler::AcceptClient ( SocketHandler *accept_socketT )
-{
-  int addr_length = sizeof ( s_addr );
-  accept_socketT->sock_fd = ::accept ( sock_fd, ( sockaddr * ) &s_addr, ( socklen_t * ) &addr_length );
-
-  close ( sock_fd );
-
-  if ( accept_socketT->sock_fd == -1 )
-    return false;
-  else
-    return true;
-}
 
 
 //Connect to Server
@@ -85,6 +72,21 @@ bool SocketHandler::ConnectToServer (  )
      return false;
 
 	return true;
+}
+
+
+//Accept Client
+bool SocketHandler::AcceptClient ( SocketHandler *accept_socketT )
+{
+  int addr_length = sizeof ( s_addr );
+  accept_socketT->sock_fd = ::accept ( sock_fd, ( sockaddr * ) &s_addr, ( socklen_t * ) &addr_length );
+
+  close ( sock_fd );
+
+  if ( accept_socketT->sock_fd == -1 )
+    return false;
+  else
+    return true;
 }
 
 //Send String
@@ -173,13 +175,18 @@ bool SocketHandler::RecvLength ( string *sock_inT , ssize_t sock_lengthT )
 bool SocketHandler::SetDomainAndPort(const char *domainT, int portT)
 {
 	struct hostent* result;
+  struct in_addr ip_adr;
 
   s_addr.sin_port = htons( portT );
   
  if ((domainT == NULL) || (*domainT == '\0'))
     return false;
 
+  if( inet_aton(domainT, &ip_adr) != 0){
+   result = gethostbyaddr((char*)&ip_adr,sizeof(ip_adr),AF_INET);
+   }else{
 	result = gethostbyname(domainT);
+  }
 	if (result) {
 		memcpy(&s_addr.sin_addr, result->h_addr_list[0], result->h_length);
 		return true;

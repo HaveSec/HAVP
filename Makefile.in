@@ -99,6 +99,11 @@ GCJFLAGS = @GCJFLAGS@
 GLINC = @GLINC@
 GLLIB = @GLLIB@
 GMSGFMT = @GMSGFMT@
+HAVPBIND_DEF = @HAVPBIND_DEF@
+HAVPGROUP_DEF = @HAVPGROUP_DEF@
+HAVPPOOL_DEF = @HAVPPOOL_DEF@
+HAVPPORT_DEF = @HAVPPORT_DEF@
+HAVPUSER_DEF = @HAVPUSER_DEF@
 IDL = @IDL@
 IDL_DEPENDENCIES = @IDL_DEPENDENCIES@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
@@ -426,7 +431,7 @@ distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH
 #>- DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 #>+ 4
-KDE_DIST=stamp-h.in readme subdirs configure.files todo authors install copying Makefile.dist havp.kdevses configure.in.in 
+KDE_DIST=stamp-h.in readme subdirs configure.files todo authors install copying havp.spec.in Makefile.dist havp.kdevses configure.in.in stamp-h2 
 
 DISTFILES= $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST) $(KDE_DIST)
 
@@ -445,7 +450,7 @@ distcleancheck_listfiles = find . -type f -print
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkinstalldirs) $(distdir)/admin
+	$(mkinstalldirs) $(distdir)/admin $(distdir)/havp
 	@list='$(DISTFILES)'; for file in $$list; do \
 	  if test -f $$file || test -d $$file; then d=.; else d=$(srcdir); fi; \
 	  dir=`echo "$$file" | sed -e 's,/[^/]*$$,,'`; \

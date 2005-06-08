@@ -60,6 +60,8 @@ virtual bool SetFileSize( unsigned long ContentLengthT ) = 0;
 
 virtual bool ExpandFile( char *dataT, int lengthT , bool unlockT) = 0 ;
 
+virtual bool DeleteFile() = 0;
+
 virtual ~GenericScanner ();
 
 GenericScanner ();

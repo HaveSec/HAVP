@@ -31,14 +31,16 @@
 //#include <sys/types.h>
 //#include <unistd.h>
 
+GenericScanner *VirusScanner;
                          
 int main(int argc, char *argv[])
 {
 
+InstallSignal();
 
 SocketHandler ProxyServer;
 ProxyHandler Proxy;
-GenericScanner *VirusScanner = new (ClamLibScanner);
+VirusScanner = new (ClamLibScanner);
 
 
 if ( ChangeUserAndGroup( ) == false)

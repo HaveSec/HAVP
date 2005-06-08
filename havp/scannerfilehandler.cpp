@@ -87,7 +87,7 @@ bool ScannerFileHandler::DeleteFile() {
   close(fd_scan);
 
  if ( unlink(FileName) < 0 ){
-    LogFile::ErrorMessage ("Could not unlink: %s\n", FileName );
+//    LogFile::ErrorMessage ("Could not unlink: %s\n", FileName );
    return false;
    }
 
