@@ -55,6 +55,10 @@
 //Address to bind to for listening: NULL for any, "127.0.0.1" for local, or specific address
 #define BIND_ADDRESS @HAVPBIND_DEF@
 
+//Source IP address to be used for sending away packages. define for using it.
+//undefine if you want the OS to choose the source address.
+//#define SOURCE_ADDRESS ( "127.0.0.1" )
+
 //Temporary scan file - File name characters followed by six Xs 
 //Hard lock must be enabled
 #define SCANTEMPFILE "/var/tmp/havp/havp-XXXXXX"
@@ -81,6 +85,10 @@
 
 //Maximum hardlock size - do not change
 #define MAXFILELOCKSIZE 1000000000
+
+//Valid Methods
+#define METHODS "GET","POST","HEAD","PUT","SEARCH","PROPFIND","PROPPATCH","MKCOL","MOVE","BMOVE","DELETE","BDELETE","SUBSCRIBE","POLL"
+
 
 //CLAMLIB Config -----------------------------------
 

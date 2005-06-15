@@ -22,48 +22,50 @@
 bool GenericScanner::PrepareScanning( SocketHandler *ProxyServerT )
 {
 
+    if ( InitSelfEngine() == false)
+    {
+        return false;
+    }
 
-if ( InitSelfEngine() == false){
-  return false; }
+    if (( ScannerPid = fork() ) < 0)
+    {
+        return false;            //Parent error
+    }
+    else if ( ScannerPid != 0)
+    {
+    //Parent
+        return true;
+    }
+    //Child
 
- if (( ScannerPid = fork() ) < 0)
- {
-   return false; //Parent error
- } else if ( ScannerPid != 0) {
-  //Parent
-  return true;
- }
- //Child
+    //Close unwanted sockets
+    ProxyServerT->Close();
 
- //Close unwanted sockets
- ProxyServerT->Close();
- 
- Scanning();
+    Scanning();
 
- exit (-3); //should never get here!!
- return false;
+    exit (-3);                    //should never get here!!
+    return false;
 }
 
 
+string GenericScanner::ReadScannerAnswer ()
+{
 
-string GenericScanner::ReadScannerAnswer (){
+    string Answer = ScannerAnswer;
 
-  string Answer = ScannerAnswer;
-      
-return Answer;
+    return Answer;
 }
 
 
 //Constructor
 GenericScanner::GenericScanner( )
 {
- ScannerAnswer = "";
+    ScannerAnswer = "";
 }
+
 
 //Destructor
 GenericScanner::~GenericScanner( )
 {
 
 }
-
-

@@ -26,64 +26,72 @@
 #include <pwd.h>
 #include <grp.h>
 
-
 extern GenericScanner *VirusScanner;
 
 static void DeleteTempfiles (int SignalNo)
 {
-VirusScanner->DeleteFile();
-exit (1);
+    VirusScanner->DeleteFile();
+    exit (1);
 
 }
+
 
 void
 InstallSignal ()
 {
 
-  struct sigaction Signal;
+    struct sigaction Signal;
 
-  memset (&Signal, 0, sizeof (Signal));
+    memset (&Signal, 0, sizeof (Signal));
 
-  Signal.sa_handler = DeleteTempfiles;      //function
+    Signal.sa_handler = DeleteTempfiles;          //function
 
-  if (sigaction (SIGINT, &Signal, NULL) != 0){
-      LogFile::ErrorMessage ("Could not install signal handler\n" );
-      exit (-1);
-  }
-  if (sigaction (SIGHUP, &Signal, NULL) != 0){
-      LogFile::ErrorMessage ("Could not install signal handler\n" );
-      exit (-1);
-  }
-  if (sigaction (SIGINT, &Signal, NULL) != 0){
-      LogFile::ErrorMessage ("Could not install signal handler\n" );
-      exit (-1);
-  }
-  if (sigaction (SIGINT, &Signal, NULL) != 0){
-      LogFile::ErrorMessage ("Could not install signal handler\n" );
-      exit (-1);
-  }
-  if (sigaction (SIGTERM, &Signal, NULL) != 0){
-      LogFile::ErrorMessage ("Could not install signal handler\n" );
-      exit (-1);
-  }
+    if (sigaction (SIGINT, &Signal, NULL) != 0)
+    {
+        LogFile::ErrorMessage ("Could not install signal handler\n" );
+        exit (-1);
+    }
+    if (sigaction (SIGHUP, &Signal, NULL) != 0)
+    {
+        LogFile::ErrorMessage ("Could not install signal handler\n" );
+        exit (-1);
+    }
+    if (sigaction (SIGINT, &Signal, NULL) != 0)
+    {
+        LogFile::ErrorMessage ("Could not install signal handler\n" );
+        exit (-1);
+    }
+    if (sigaction (SIGINT, &Signal, NULL) != 0)
+    {
+        LogFile::ErrorMessage ("Could not install signal handler\n" );
+        exit (-1);
+    }
+    if (sigaction (SIGTERM, &Signal, NULL) != 0)
+    {
+        LogFile::ErrorMessage ("Could not install signal handler\n" );
+        exit (-1);
+    }
 
 }
 
 
- int MakeDeamon()
+int MakeDeamon()
 {
- pid_t daemon;
- if (( daemon = fork() ) < 0)
- { return (-1); //Parent error
- } else if ( daemon != 0) {
-  exit (0); //Parent exit
- }
+    pid_t daemon;
+    if (( daemon = fork() ) < 0)
+    {                                             //Parent error
+        return (-1);
+    }
+    else if ( daemon != 0)
+    {
+        exit (0);                                 //Parent exit
+    }
 
- //Child
- setsid();
- chdir("/tmp/");
- umask(0);
- return 0;
+    //Child
+    setsid();
+    chdir("/tmp/");
+    umask(0);
+    return 0;
 
 }
 
@@ -91,97 +99,95 @@ InstallSignal ()
 int HardLockTest ( )
 {
 
-pid_t pid;
-int fd;
-int status;
-char tmpread[10];
-int testread;
-ScannerFileHandler testlock;
+    pid_t pid;
+    int fd;
+    int status;
+    char tmpread[10];
+    int testread;
+    ScannerFileHandler testlock;
 
+    if ( testlock.OpenAndLockFile() == false )
+    {
+        LogFile::ErrorMessage ("Could not open hardlock check file: %s\n", testlock.GetFileName() );
+        exit (-1);
+    }
 
-   if ( testlock.OpenAndLockFile() == false )
-   {
-      LogFile::ErrorMessage ("Could not open hardlock check file: %s\n", testlock.GetFileName() );
-      exit (-1);
-   }
-   
- if (( pid = fork() ) < 0)
- { return (-1); //Parent error
- } else if ( pid != 0) {
-  //Parent
-  pid = wait( &status);
+    if (( pid = fork() ) < 0)
+    {                                             //Parent error
+        return (-1);
+    }
+    else if ( pid != 0)
+    {
+        //Parent
+        pid = wait( &status);
 
-  testlock.DeleteFile();
-         
-  if ( WEXITSTATUS(status) == 0)
-  {
-      exit (-1);
-  }
-  return 1;
- }
- //Child
-   if ( (fd = open(testlock.GetFileName() , O_RDONLY)) < 0)
-   {
-      LogFile::ErrorMessage ("Could not open hardlock check file: %s\n", testlock.GetFileName() );
-      exit (1);
-   }
+        testlock.DeleteFile();
 
-   //set nonblocking
-   fcntl(fd,F_SETFL,O_NONBLOCK);
+        if ( WEXITSTATUS(status) == 0)
+        {
+            exit (-1);
+        }
+        return 1;
+    }
+    //Child
+    if ( (fd = open(testlock.GetFileName() , O_RDONLY)) < 0)
+    {
+        LogFile::ErrorMessage ("Could not open hardlock check file: %s\n", testlock.GetFileName() );
+        exit (1);
+    }
 
-   testread = read (fd, tmpread, 1);
-   close (fd);
-  if ( testread > 0)
-  {
-      cout << "File could not be hardlock " << testlock.GetFileName() << endl;
-      cout << "Mount filesystem with -o mand" << endl;
-      LogFile::ErrorMessage ("File could not be hardlock - mount filesystem with -o mand %s\n", testlock.GetFileName() );
-      exit (0);
-  }
-   exit (1);
+    //set nonblocking
+    fcntl(fd,F_SETFL,O_NONBLOCK);
+
+    testread = read (fd, tmpread, 1);
+    close (fd);
+    if ( testread > 0)
+    {
+        cout << "File could not be hardlock " << testlock.GetFileName() << endl;
+        cout << "Mount filesystem with -o mand" << endl;
+        LogFile::ErrorMessage ("File could not be hardlock - mount filesystem with -o mand %s\n", testlock.GetFileName() );
+        exit (0);
+    }
+    exit (1);
 }
-
 
 
 bool ChangeUserAndGroup()
 {
 
-#ifdef GROUP
+    #ifdef GROUP
 
-struct group *group;
+    struct group *group;
 
-if ((group = getgrnam ( GROUP )) == NULL)
-{
-cout << GROUP << " unknown Group" << endl;
-return false;
+    if ((group = getgrnam ( GROUP )) == NULL)
+    {
+        cout << GROUP << " unknown Group" << endl;
+        return false;
+    }
+
+    if ( setgid( group->gr_gid ) < 0 )
+    {
+        cout << "Could not change Group-ID" << endl;
+        return false;
+    }
+    #endif
+
+    #ifdef USER
+
+    struct passwd *user;
+
+    if ((user = getpwnam ( USER )) == NULL)
+    {
+        cout << USER << " unknown User" << endl;
+        return false;
+    }
+
+    if ( setuid( user->pw_uid ) < 0 )
+    {
+        cout << "Could not change User-ID" << endl;
+        return false;
+    }
+    #endif
+
+    return true;
 }
-
-if ( setgid( group->gr_gid ) < 0 )
-{
-cout << "Could not change Group-ID" << endl;
-return false;
-}
-
-#endif
-
-#ifdef USER
-
-struct passwd *user;
-
-if ((user = getpwnam ( USER )) == NULL)
-{
-cout << USER << " unknown User" << endl;
-return false;  
-}
-
-if ( setuid( user->pw_uid ) < 0 )
-{
-cout << "Could not change User-ID" << endl;
-return false;
-}
-
-#endif
-
-return true;
-}
-

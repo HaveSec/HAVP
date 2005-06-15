@@ -19,40 +19,42 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-
 //Init Clamav scanner engine
 bool ClamLibScanner::InitDatabase()
 {
-int ret=0;
-unsigned int no=0;
+    int ret=0;
+    unsigned int no=0;
 
-root = NULL;
+    root = NULL;
 
-    if((ret = cl_loaddbdir(cl_retdbdir(), &root, &no))) {
-       LogFile::ErrorMessage ("Clamav Error: %s\n", cl_perror(ret) );
-	     return false;
+    if((ret = cl_loaddbdir(cl_retdbdir(), &root, &no)))
+    {
+        LogFile::ErrorMessage ("Clamav Error: %s\n", cl_perror(ret) );
+        return false;
     }
 
     LogFile::ErrorMessage ("Loaded %d signatures\n", no );
 
     //Build engine
-    if((ret = cl_build(root))) {
-       LogFile::ErrorMessage ("Database initialization error: %s\n", cl_strerror(ret) );
-       cl_free(root);
-       return false;
+    if((ret = cl_build(root)))
+    {
+        LogFile::ErrorMessage ("Database initialization error: %s\n", cl_strerror(ret) );
+        cl_free(root);
+        return false;
     }
 
     /* set up archive limits */
     memset(&limits, 0, sizeof(struct cl_limits));
-    limits.maxfiles = MAXSCANFILES; /* max files */
-    limits.maxfilesize = MAXARCHIVFILESIZE * 1048576; /* maximal archived file size == 10 Mb */
-    limits.maxreclevel = MAXRECLEVEL; /* maximal recursion level */
-    limits.maxratio = MAXRATIO; /* maximal compression ratio */
-    limits.archivememlim = ARCHIVEMEMLIM; /* disable memory limit for bzip2 scanner */
-    
+    limits.maxfiles = MAXSCANFILES;               /* max files */
+                                                  /* maximal archived file size == 10 Mb */
+    limits.maxfilesize = MAXARCHIVFILESIZE * 1048576;
+    limits.maxreclevel = MAXRECLEVEL;             /* maximal recursion level */
+    limits.maxratio = MAXRATIO;                   /* maximal compression ratio */
+    limits.archivememlim = ARCHIVEMEMLIM;         /* disable memory limit for bzip2 scanner */
+
     cl_statinidir(cl_retdbdir(), &dbstat);
 
-return true;
+    return true;
 }
 
 
@@ -60,98 +62,111 @@ return true;
 bool ClamLibScanner::ReloadDatabase()
 {
 
- //reload_database ?
- if(cl_statchkdir(&dbstat) == 1)
- {
-      cl_statfree(&dbstat);
+    //reload_database ?
+    if(cl_statchkdir(&dbstat) == 1)
+    {
+        cl_statfree(&dbstat);
 
-    LogFile::ErrorMessage ("Reload Database\n" );
-   if ( InitDatabase() == false) {
-     LogFile::ErrorMessage ("Reload Database - failed\n" );
-     return false; }
- }
+        LogFile::ErrorMessage ("Reload Database\n" );
+        if ( InitDatabase() == false)
+        {
+            LogFile::ErrorMessage ("Reload Database - failed\n" );
+            return false;
+        }
+    }
 
-return true;
+    return true;
 }
+
 
 //Start scan
 int ClamLibScanner::Scanning( )
 {
-int ret, fd;
-unsigned long int size = 0;
-char Ready[2];
-ScannerAnswer="";
+    int ret, fd;
+    unsigned long int size = 0;
+    char Ready[2];
+    ScannerAnswer="";
 
-const char *virname;
+    const char *virname;
 
-   if ( (fd = open(FileName, O_RDONLY)) < 0)
-   {
-      LogFile::ErrorMessage ("Could not open file to scan: %s\n", FileName );
-      ScannerAnswer="Could not open file to scan";
-      close(fd);
-      exit (2);
-   }
-
-   //Wait till file is set up for scanning
-   read(fd, Ready, 1);
-  
-    if((ret = cl_scandesc(fd, &virname, &size, root, &limits, SCANOPTS)) == CL_VIRUS)
-     {
-      LogFile::ErrorMessage ("Virus %s in file %s detect!\n", virname, FileName );
-      ScannerAnswer=virname;
-      close(fd);
-      exit (1);
-    } else {
-	   if(ret != CL_CLEAN){
-        LogFile::ErrorMessage ("Error Virus scanner: %s %s\n", FileName, cl_perror(ret) );
-        ScannerAnswer= cl_perror(ret);
+    if ( (fd = open(FileName, O_RDONLY)) < 0)
+    {
+        LogFile::ErrorMessage ("Could not open file to scan: %s\n", FileName );
+        ScannerAnswer="Could not open file to scan";
         close(fd);
         exit (2);
+    }
+
+    //Wait till file is set up for scanning
+    read(fd, Ready, 1);
+
+    if((ret = cl_scandesc(fd, &virname, &size, root, &limits, SCANOPTS)) == CL_VIRUS)
+    {
+        LogFile::ErrorMessage ("Virus %s in file %s detect!\n", virname, FileName );
+        ScannerAnswer=virname;
+        close(fd);
+        exit (1);
+    }
+    else
+    {
+        if(ret != CL_CLEAN)
+        {
+            LogFile::ErrorMessage ("Error Virus scanner: %s %s\n", FileName, cl_perror(ret) );
+            ScannerAnswer= cl_perror(ret);
+            close(fd);
+            exit (2);
         }
     }
 
- close(fd);
- ScannerAnswer="Clean";
+    close(fd);
+    ScannerAnswer="Clean";
 
-exit (0);
+    exit (0);
 }
 
 
 //Init scanning engine - do filelock and so on
-bool ClamLibScanner::InitSelfEngine() {
+bool ClamLibScanner::InitSelfEngine()
+{
 
-if( OpenAndLockFile() == false) {
-  return false;}
+    if( OpenAndLockFile() == false)
+    {
+        return false;
+    }
 
-return true;
+    return true;
 }
 
 
-int ClamLibScanner::ScanningComplete() {
+int ClamLibScanner::ScanningComplete()
+{
 
-int status=0;
+    int status=0;
 
-UnlockFile();
+    UnlockFile();
 
-//Wait till scanning is complete
-waitpid( ScannerPid, &status, 0);
+    //Wait till scanning is complete
+    waitpid( ScannerPid, &status, 0);
 
-//Delete scanned file
-DeleteFile();
+    //Delete scanned file
+    DeleteFile();
 
-
-//Virus found ? 0=No ; -1=Yes; -2=Scanfail
-return WEXITSTATUS(status);
+    //Virus found ? 0=No ; -1=Yes; -2=Scanfail
+    return WEXITSTATUS(status);
 
 }
+
 
 //Constructor
-ClamLibScanner::ClamLibScanner(){
+ClamLibScanner::ClamLibScanner()
+{
 
-memset(&dbstat, 0, sizeof(struct cl_stat));
-  
+    memset(&dbstat, 0, sizeof(struct cl_stat));
+
 }
 
+
 //Destructor
-ClamLibScanner::~ClamLibScanner(){
+ClamLibScanner::~ClamLibScanner()
+{
 }

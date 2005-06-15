@@ -32,108 +32,107 @@
 //#include <unistd.h>
 
 GenericScanner *VirusScanner;
-                         
+
 int main(int argc, char *argv[])
 {
 
-InstallSignal();
+    InstallSignal();
 
-SocketHandler ProxyServer;
-ProxyHandler Proxy;
-VirusScanner = new (ClamLibScanner);
+    SocketHandler ProxyServer;
+    ProxyHandler Proxy;
+    VirusScanner = new (ClamLibScanner);
 
+    if ( ChangeUserAndGroup( ) == false)
+        exit (-1);
 
-if ( ChangeUserAndGroup( ) == false)
-  exit (-1);
+    if (LogFile::InitLogFiles( ACCESSLOG, ERRORLOG ) == false)
+    {
+        cout << "Could not create logfiles" << endl;
+        exit (-1);
+    }
 
+    #ifdef  DISPLAYINITIALMESSAGES
+    cout << "Starting Havp Version:" << VERSION << endl;
+    #endif
 
+    LogFile::ErrorMessage("Starting Havp Version: %s\n", VERSION);
+    #ifdef USER
+    LogFile::ErrorMessage ("Change to User %s\n", USER);
+    #endif
+    #ifdef GROUP
+    LogFile::ErrorMessage ("Change to Group %s\n", GROUP);
+    #endif
 
-if (LogFile::InitLogFiles( ACCESSLOG, ERRORLOG ) == false){
-  cout << "Could not create logfiles" << endl;
-  exit (-1);
-  }
-  
-#ifdef  DISPLAYINITIALMESSAGES  
-cout << "Starting Havp Version:" << VERSION << endl;
-#endif
+    #if defined (PARENTPROXY) && defined (PARENTPORT)
+    LogFile::ErrorMessage("Use parent proxy: %s %d\n", PARENTPROXY, PARENTPORT );
+    #endif
 
+    #ifdef TRANSPARENT
+    LogFile::ErrorMessage("Use transparent proxy mode\n");
+    #endif
 
-LogFile::ErrorMessage("Starting Havp Version: %s\n", VERSION);
-#ifdef USER
-LogFile::ErrorMessage ("Change to User %s\n", USER);
-#endif
-#ifdef GROUP
-LogFile::ErrorMessage ("Change to Group %s\n", GROUP);
-#endif
+    if( HardLockTest ( )!= 1)
+    {
+        exit (-1);
+    }
 
-#if defined (PARENTPROXY) && defined (PARENTPORT)
-  LogFile::ErrorMessage("Use parent proxy: %s %d\n", PARENTPROXY, PARENTPORT );
-#endif
+    if( ProxyServer.CreateServer( PORT, BIND_ADDRESS ) == false)
+    {
+        cout << "Could not create Server" << endl;
+        LogFile::ErrorMessage("Could not create Server\n");
+        exit (-1);
+    }
 
-#ifdef TRANSPARENT
-  LogFile::ErrorMessage("Use transparent proxy mode\n");
-#endif
+    if ( VirusScanner->InitDatabase( ) == false )
+    {
+        cout << "Could not init scanner database" << endl;
+        LogFile::ErrorMessage("Could init scanner database\n");
+        exit (-1);
+    }
 
-if( HardLockTest ( )!= 1) {
-  exit (-1);
-  }
+    #ifdef DAEMON
+    MakeDeamon();
+    #endif
 
+    #ifdef SERVERNUMBER
+    pid_t pid;
+    //Start Server
+    for( int i = 0; i < SERVERNUMBER; i++ )
+    {
+        pid=fork();
 
-if( ProxyServer.CreateServer( PORT, BIND_ADDRESS ) == false) {
-  cout << "Could not create Server" << endl;
-  LogFile::ErrorMessage("Could not create Server\n");
-  exit (-1);
-  }
+        if (pid == 0)
+        {
+            //Child
+            VirusScanner->PrepareScanning ( &ProxyServer );
+            Proxy.Proxy ( &ProxyServer, VirusScanner );
+            exit (1);
+        }
+    }
+    #endif
 
+    while(1)
+    {
 
-if ( VirusScanner->InitDatabase( ) == false ) {
-  cout << "Could not init scanner database" << endl;
-  LogFile::ErrorMessage("Could init scanner database\n");
-  exit (-1);
-  }
+        VirusScanner->ReloadDatabase();
 
-#ifdef DAEMON
-MakeDeamon();
-#endif
-  
-#ifdef SERVERNUMBER
-pid_t pid;
-//Start Server
-for( int i = 0; i < SERVERNUMBER; i++ )
-{
- pid=fork();
+        #ifdef SERVERNUMBER
+        int status;
+        pid = wait( &status);
 
- if (pid == 0)
- {
-   //Child
-   VirusScanner->PrepareScanning ( &ProxyServer );
-   Proxy.Proxy ( &ProxyServer, VirusScanner );
-   exit (1);
- }
-}
-#endif
+        pid=fork();
 
-while(1){
-
-VirusScanner->ReloadDatabase();
-
-#ifdef SERVERNUMBER
-int status;
-pid = wait( &status);
-
-pid=fork();
-
- if (pid == 0)
- {
-   //Child
-   VirusScanner->PrepareScanning ( &ProxyServer );
-   Proxy.Proxy ( &ProxyServer, VirusScanner );
-   exit (1);
- }
-#else 
-VirusScanner->PrepareScanning ( &ProxyServer );
-Proxy.Proxy ( &ProxyServer, VirusScanner );
-#endif
-}
-return 0;
+        if (pid == 0)
+        {
+            //Child
+            VirusScanner->PrepareScanning ( &ProxyServer );
+            Proxy.Proxy ( &ProxyServer, VirusScanner );
+            exit (1);
+        }
+        #else
+        VirusScanner->PrepareScanning ( &ProxyServer );
+        Proxy.Proxy ( &ProxyServer, VirusScanner );
+        #endif
+    }
+    return 0;
 }

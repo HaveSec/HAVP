@@ -24,33 +24,38 @@ int LogFile::Error_fd;
 bool LogFile::InitLogFiles ( const char *AccessLogFileT, const char *ErrorLogFileT )
 {
 
-   if ( (Error_fd = open(ErrorLogFileT, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0){
-    return false; }
+    if ( (Error_fd = open(ErrorLogFileT, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0)
+    {
+        return false;
+    }
 
-   if ( (Access_fd = open(AccessLogFileT, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0){
-    return false; }
+    if ( (Access_fd = open(AccessLogFileT, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0)
+    {
+        return false;
+    }
 
-return true;
+    return true;
 }
+
 
 //Log access messages
 void LogFile::AccessMessage( const char *formatT , ... )
 {
-  va_list args;
+    va_list args;
 
-	string TimeString;
+    string TimeString;
 
-	char str[STRINGLENGTH+1];
+    char str[STRINGLENGTH+1];
 
-	va_start(args, formatT);
+    va_start(args, formatT);
 
-	vsnprintf(str, STRINGLENGTH, formatT, args);
+    vsnprintf(str, STRINGLENGTH, formatT, args);
 
-  WriteDateAndTime(Access_fd);
-  
-  write(Access_fd, str, strlen(str));
-  
-	va_end(args);
+    WriteDateAndTime(Access_fd);
+
+    write(Access_fd, str, strlen(str));
+
+    va_end(args);
 
 }
 
@@ -58,35 +63,36 @@ void LogFile::AccessMessage( const char *formatT , ... )
 //Log error messages
 void LogFile::ErrorMessage( const char *formatT , ... )
 {
-  va_list args;
+    va_list args;
 
-	string TimeString;
+    string TimeString;
 
-	char str[STRINGLENGTH+1];
+    char str[STRINGLENGTH+1];
 
-	va_start(args, formatT);
+    va_start(args, formatT);
 
-	vsnprintf(str, STRINGLENGTH, formatT, args);
+    vsnprintf(str, STRINGLENGTH, formatT, args);
 
-  WriteDateAndTime(Error_fd);
-  
-  write(Error_fd, str, strlen(str));
-  
-	va_end(args);
+    WriteDateAndTime(Error_fd);
+
+    write(Error_fd, str, strlen(str));
+
+    va_end(args);
 
 }
 
+
 void LogFile::WriteDateAndTime(int fdT)
 {
-char DateString[51];
-struct tm TmDate;
-time_t LogTime;
+    char DateString[51];
+    struct tm TmDate;
+    time_t LogTime;
 
-  time( &LogTime );
-  
-  TmDate = *localtime ( &LogTime );
-  strftime (DateString, 50, TIMEFORMAT, &TmDate);
-  write( fdT,  DateString , strlen(DateString) );
-  write( fdT,  " " , 1 );
-  
+    time( &LogTime );
+
+    TmDate = *localtime ( &LogTime );
+    strftime (DateString, 50, TIMEFORMAT, &TmDate);
+    write( fdT,  DateString , strlen(DateString) );
+    write( fdT,  " " , 1 );
+
 }

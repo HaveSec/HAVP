@@ -17,58 +17,57 @@
 
 #include "connectiontoserver.h"
 
-
 //Prepare Header for Browser
 string ConnectionToServer::PrepareHeaderForBrowser()
 {
 
-string header ="";
+    string header ="";
 
-  vector<string>::iterator it;
+    vector<string>::iterator it;
 
-  //Edit torken
-  for (it = tokens.begin(); it != tokens.end(); ++it)
-  {
-
-    if( it->find( "Transfer-encoding", 0 ) == 0 )
+    //Edit torken
+    for (it = tokens.begin(); it != tokens.end(); ++it)
     {
-     continue;
-    } else if ( it->find( "Keep-Alive", 0 ) == 0 )
-    {
-     continue;
-    } else if( it->find( "Connection", 0) == 0 )
-     {
-     continue;
-     } else if( it->find( "Proxy-Connection", 0) == 0 )
-     {
-     continue;
-     }
 
-     header += *it;
+        if( it->find( "Transfer-encoding", 0 ) == 0 )
+        {
+            continue;
+        } else if ( it->find( "Keep-Alive", 0 ) == 0 )
+        {
+            continue;
+        } else if( it->find( "Connection", 0) == 0 )
+        {
+            continue;
+        } else if( it->find( "Proxy-Connection", 0) == 0 )
+        {
+            continue;
+        }
 
-   }//for
+        header += *it;
 
-   header += "Proxy-Connection: Close\r\n\r\n";
-//cout << header << endl;
-return header;
+    }                                             //for
+
+    header += "Proxy-Connection: Close\r\n\r\n";
+    //cout << header << endl;
+    return header;
 
 }
 
 
+bool ConnectionToServer::AnalyseHeaderLine( string *RequestT )
+{
 
-
-
-bool ConnectionToServer::AnalyseHeaderLine( string *RequestT ) {
-
-return true;
+    return true;
 }
-
 
 
 //Consturctor
-ConnectionToServer::ConnectionToServer(){
+ConnectionToServer::ConnectionToServer()
+{
 }
 
+
 //Destructor
-ConnectionToServer::~ConnectionToServer(){
+ConnectionToServer::~ConnectionToServer()
+{
 }

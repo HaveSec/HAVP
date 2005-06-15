@@ -1772,7 +1772,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=havp
- VERSION=0.60
+ VERSION=0.61
 
 
 cat >>confdefs.h <<_ACEOF
@@ -19858,7 +19858,7 @@ fi;
 
 
 
-ac_config_files="$ac_config_files havp/default.h"
+ac_config_files="$ac_config_files Makefile havp/Makefile havp/docs/Makefile havp/docs/en/Makefile havp/default.h"
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -20347,6 +20347,10 @@ for ac_config_target in $ac_config_targets
 do
   case "$ac_config_target" in
   # Handling of arguments.
+  "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+  "havp/Makefile" ) CONFIG_FILES="$CONFIG_FILES havp/Makefile" ;;
+  "havp/docs/Makefile" ) CONFIG_FILES="$CONFIG_FILES havp/docs/Makefile" ;;
+  "havp/docs/en/Makefile" ) CONFIG_FILES="$CONFIG_FILES havp/docs/en/Makefile" ;;
   "havp/default.h" ) CONFIG_FILES="$CONFIG_FILES havp/default.h" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
   "config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
@@ -21662,6 +21666,10 @@ for ac_config_target in $ac_config_targets
 do
   case "$ac_config_target" in
   # Handling of arguments.
+  "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+  "havp/Makefile" ) CONFIG_FILES="$CONFIG_FILES havp/Makefile" ;;
+  "havp/docs/Makefile" ) CONFIG_FILES="$CONFIG_FILES havp/docs/Makefile" ;;
+  "havp/docs/en/Makefile" ) CONFIG_FILES="$CONFIG_FILES havp/docs/en/Makefile" ;;
   "havp/default.h" ) CONFIG_FILES="$CONFIG_FILES havp/default.h" ;;
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
   "havp/Makefile" ) CONFIG_FILES="$CONFIG_FILES havp/Makefile" ;;

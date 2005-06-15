@@ -45,6 +45,8 @@ string Host;
 int Port;
 
 
+vector <string> Methods;
+
 string RequestType;
 
 bool AnalyseHeaderLine( string *RequestT );

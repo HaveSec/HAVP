@@ -38,7 +38,7 @@ dnl Perform program name transformation
 AC_ARG_PROGRAM
 
 dnl Automake doc recommends to do this only here. (Janos)
-AM_INIT_AUTOMAKE(havp,0.60)
+AM_INIT_AUTOMAKE(havp,0.61)
 
 dnl almost the same like KDE_SET_PEFIX but the path is /usr/local
 dnl
@@ -112,6 +112,6 @@ AC_SUBST(HAVPPOOL_DEF)
 AC_SUBST(HAVPPORT_DEF)
 AC_SUBST(HAVPBIND_DEF)
 
-AC_OUTPUT(havp/default.h)
+AC_OUTPUT(Makefile havp/Makefile havp/docs/Makefile havp/docs/en/Makefile havp/default.h)
 
 
