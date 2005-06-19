@@ -45,7 +45,7 @@ bool AcceptClient ( SocketHandler *accept_socketT );
 
 bool ConnectToServer ( );
 
-int Send ( string *sock_outT );
+bool Send ( string *sock_outT );
 
 ssize_t Recv ( string *sock_inT , bool sock_delT);
 

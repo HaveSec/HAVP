@@ -98,19 +98,32 @@ bool SocketHandler::AcceptClient ( SocketHandler *accept_socketT )
 
 
 //Send String
-int SocketHandler::Send ( string *sock_outT )
+bool SocketHandler::Send ( string *sock_outT )
 {
 
-    ssize_t buffer_count;
+    int buffer_count;
+    string send_temp;
+    fd_set write_allow;
+
+    FD_ZERO( &write_allow );
+    FD_SET( sock_fd, &write_allow );
+
+    select ( sock_fd+1, NULL, &write_allow, NULL, NULL);
 
     buffer_count = ::send ( sock_fd, sock_outT->c_str(), sock_outT->size(), MSG_NOSIGNAL );
 
-    if ( buffer_count == -1 )
+    if ( buffer_count == (int) sock_outT->size() )
     {
-        return -1;
+       return true;
+    } else if ( buffer_count == -1 ) {
+      return false;
     }
 
-    return buffer_count;
+     send_temp = sock_outT->substr( buffer_count, sock_outT->size() - buffer_count);
+
+     return Send( sock_outT );
+     return Send( &send_temp );
+
 }
 
 
