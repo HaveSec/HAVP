@@ -16,29 +16,63 @@
  ***************************************************************************/
 
 #include "proxyhandler.h"
+#include <sys/ipc.h>
+#include <sys/msg.h>
+
 
 bool ProxyHandler::Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusScannerT )
 {
     int CommunicationAnswer;
+    //PSEstart
+    int msqid;
+    struct msqid_ds *buf;
+    //PSEend
 
     if ( (CommunicationAnswer = Communication ( ProxyServerT, VirusScannerT )) != 0)
     {
 
-        ProxyMessage( CommunicationAnswer );
+        //ScannningComplete was not called
+        if ( CommunicationAnswer < 200 ){
+        VirusScannerT->ScanningComplete();
+        }
+
+   	ProxyMessage( CommunicationAnswer , VirusScannerT);
+        //PSE ProxyMessage( CommunicationAnswer );
 
         ToBrowser.Close();
         ToServer.Close();
-        VirusScannerT->ScanningComplete();
+
+#ifdef QUEUE
+	//PSE: We have done our job => delete message-queue
+	msqid = VirusScannerT->msgqid;
+	if(msgctl(msqid,IPC_RMID,buf) < 0) {
+		LogFile::ErrorMessage("Cannot delete message queue! Error: %s\n",strerror(errno));
+   	}
+#endif
+
         return false;
     }
 
+
+#ifdef LOG_OKS
     LogFile::AccessMessage("%s %d OK\n", ToBrowser.GetCompleteRequest(), ToBrowser.GetPort());
+#endif
+
 
     ToBrowser.Close();
     ToServer.Close();
 
+#ifdef QUEUE
+    //PSE: We have done our job => delete message-queue
+    msqid = VirusScannerT->msgqid;
+    if(msgctl(msqid,IPC_RMID,buf) < 0) {
+	LogFile::ErrorMessage("Cannot delete message queue! Error: %s\n",strerror(errno));
+    }
+#endif
     return true;
 }
+
+
 
 
 int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *VirusScannerT)
@@ -60,6 +94,7 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
     ssize_t repeat;
 
     HeaderSend = false;
+    BrowserDropped = false;
 
     //string TransferData = "";
     string TransferToClient = "";
@@ -71,12 +106,14 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
 
     if( ProxyServerT->AcceptClient( &ToBrowser ) == false)
     {
+        BrowserDropped = true;
         LogFile::ErrorMessage("Could not accept browser\n");
         return -10;
     }
 
     if( ToBrowser.ReadHeader( &Header ) == false)
     {
+        BrowserDropped = true;
         LogFile::ErrorMessage("Could not read header from browser\n");
         return -20;
     }
@@ -109,7 +146,11 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
 
     Header = ToBrowser.PrepareHeaderForServer();
 
-    ToServer.SendHeader(&Header);
+    if (ToServer.SendHeader(&Header) == false)
+    {
+        LogFile::ErrorMessage("Could not send Header to server server %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+        return -67;
+    }
 
     ContentLengthReference = ToBrowser.GetContentLength( );
 
@@ -128,6 +169,7 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
                 int rest = ContentLengthReference - ( MAXRECV * repeat);
                 if ( ToBrowser.RecvLength( &Body, rest ) == false )
                 {
+                    BrowserDropped = true;
                     LogFile::ErrorMessage("Could not read Browser Post: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
                     return -70;
                 }
@@ -137,27 +179,40 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
             {
                 if (  ToBrowser.RecvLength( &Body, MAXRECV ) == false )
                 {
+                    BrowserDropped = true;
                     LogFile::ErrorMessage("Could not read Browser Post: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
                     return -70;
                 }
             }
 
-            ToServer.Send( &Body );
+            if (ToServer.Send( &Body ) == false)
+            {
+              LogFile::ErrorMessage("Could not send Body to server server %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+              return -75;
+            }
+
 
         }
 
         //IE Bug
         if ( ToBrowser.CheckForData() == true )
         {
-            ToBrowser.Recv( &TempString, false);
+            if ( ToBrowser.Recv( &TempString, false) == false)
+            {
+              BrowserDropped = true;
+              LogFile::ErrorMessage("Could not check for IE POST Bug %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+              return -76;
+            }
+
             if ( TempString == "\r\n" )
             {
                 ToBrowser.RecvLength( &TempString, 2);
             }
             else
             {
+                BrowserDropped = true;
                 LogFile::ErrorMessage("Browser Post was too long: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
-                return -75;
+                return -79;
             }
         }
 
@@ -165,11 +220,16 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
 
     if ( ToServer.ReadHeader(&Header) == false)
     {
-        LogFile::ErrorMessage("Could not read Server Header: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+        LogFile::ErrorMessage("Could not read Server Header: %s Port %d\n", ToBrowser.GetCompleteRequest(), ToBrowser.GetPort());
         return -80;
     }
 
-    ToServer.AnalyseHeader( &Header, "\n");
+    if( ToServer.AnalyseHeader( &Header, "\n") == false)
+    {
+        LogFile::ErrorMessage("Could not Analyse Server Header: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+        return -85;
+    }
+
 
     ContentLengthReference = ToServer.GetContentLength( );
 
@@ -201,6 +261,7 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
         //Does Browser drop connection
         if(ToBrowser.IsConnectionDropped() == true )
         {
+            BrowserDropped = true;
             LogFile::ErrorMessage("Browser dropped Connection: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
             return -110;
         }
@@ -247,13 +308,23 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
             //Send header only once
             if ( HeaderSend == false )
             {
-                ToBrowser.SendHeader(&Header);
                 HeaderSend  = true;
+                if( ToBrowser.SendHeader(&Header) == false)
+                {
+                  BrowserDropped = true;
+                  LogFile::ErrorMessage("Could not send Header to Browser: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+                  return -135;
+                }
             }
 
             BodyTemp = *TransferData;
             TransferDataLength -= BodyTemp.length();
-            ToBrowser.Send( &BodyTemp );
+            if (ToBrowser.Send( &BodyTemp ) == false)
+            {
+              BrowserDropped = true;
+              LogFile::ErrorMessage("Could not send Body to Browser: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+              return -138;
+            }
             BodyQueue.erase( TransferData );
         }
 
@@ -275,13 +346,26 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
 
     if ( HeaderSend == false )
     {
-        ToBrowser.SendHeader(&Header);            //Send header only once
+        HeaderSend = true;
+        if ( ToBrowser.SendHeader(&Header) == false)
+        {
+          BrowserDropped = true;
+          LogFile::ErrorMessage("Could not send Header to Browser: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+          return -201;
+        }
+ 
     }
 
     for(TransferData = BodyQueue.begin(); TransferData != BodyQueue.end(); ++TransferData)
     {
         BodyTemp = *TransferData;
-        ToBrowser.Send( &BodyTemp );
+        if( ToBrowser.Send( &BodyTemp ) == false)
+        {
+          BrowserDropped = true;
+          LogFile::ErrorMessage("Could not send Body to Browser: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+          return -202;
+        }
+
     }
 
     return 0;
@@ -289,7 +373,9 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
 }
 
 
-bool ProxyHandler::ProxyMessage( int CommunicationAnswerT )
+//PSE: new function call
+//bool ProxyHandler::ProxyMessage( int CommunicationAnswerT )
+bool ProxyHandler::ProxyMessage( int CommunicationAnswerT , GenericScanner *VirusScannerT)
 {
 
     string VirusError=VIRUSFOUND;
@@ -298,16 +384,22 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT )
     string DNSError = DNSERROR;
     string Answer;
 
-    if ( HeaderSend == false )
+    //PSEstart
+    //PSE: now get the answer from the second process
+     Answer = VirusScannerT->ReadScannerAnswer();
+    //PSEend
+
+    if (( HeaderSend == false ) && (BrowserDropped ==false ))
     {
+         LogFile::AccessMessage("%s Send Error Header: %d - PID: %d\n", ToBrowser.GetCompleteRequest(), CommunicationAnswerT, getpid());
         ToBrowser.Send( &ErrorHeader );
     }
 
     if ( CommunicationAnswerT == -50 )
     {
         //Could not resolve DNS Name
-        ToBrowser.Send( &DNSError );
         LogFile::AccessMessage("%s %d DNS Failed\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+        ToBrowser.Send( &DNSError );
 
     }
     else if ( CommunicationAnswerT == 2 )

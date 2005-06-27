@@ -94,8 +94,17 @@ int main(int argc, char *argv[])
     MakeDeamon();
     #endif
 
-    #ifdef SERVERNUMBER
+//PSEstart
+    //PSE: parent pid of all processes started from now on
+    //PSE: may be used later to kill the daemon
     pid_t pid;
+    pid=getpid();
+    setpgrp();  //PSE: for cases daemon is not started
+    LogFile::ErrorMessage ("Process ID: %d\n", pid);
+//PSEend
+
+    #ifdef SERVERNUMBER
+    //PSE: pid_t pid;
     //Start Server
     for( int i = 0; i < SERVERNUMBER; i++ )
     {

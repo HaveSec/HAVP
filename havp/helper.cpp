@@ -25,12 +25,44 @@
 #include <sys/wait.h>
 #include <pwd.h>
 #include <grp.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+
 
 extern GenericScanner *VirusScanner;
 
 static void DeleteTempfiles (int SignalNo)
 {
-    VirusScanner->DeleteFile();
+//PSEstart
+    // VirusScanner->DeleteFile();
+    // PSE  don't start new processes
+    pid_t pid;
+    pid_t pgid;
+    pid=getpid();
+    pgid=getpgid(0);
+    //PSE: all processes have same pgid!
+    if (pid == pgid)
+	{
+	//PSE: only parent, no scan-file to delete!!
+	killpg(pgid,SIGINT);
+	exit(0);
+	} else {
+	VirusScanner->DeleteFile();
+    }
+#ifdef QUEUE
+    //PSE: make message queue table empty!
+    int msqid;
+    msqid = VirusScanner->msgqid;
+    struct msqid_ds *buf;
+    if(msgctl(msqid,IPC_RMID,buf) < 0) {
+    //PSE: Two processes want to remove it.
+    //PSE: Therefore an error-message has to occur the second time!
+    //PSE: both codes are possible!
+	if(errno != 22 && errno != 43) {
+    LogFile::ErrorMessage ("Can not remove Message Queue: %d Error: %s \n", msqid , strerror(errno));
+	}
+    }
+#endif
     exit (1);
 
 }
@@ -56,16 +88,7 @@ InstallSignal ()
         LogFile::ErrorMessage ("Could not install signal handler\n" );
         exit (-1);
     }
-    if (sigaction (SIGINT, &Signal, NULL) != 0)
-    {
-        LogFile::ErrorMessage ("Could not install signal handler\n" );
-        exit (-1);
-    }
-    if (sigaction (SIGINT, &Signal, NULL) != 0)
-    {
-        LogFile::ErrorMessage ("Could not install signal handler\n" );
-        exit (-1);
-    }
+
     if (sigaction (SIGTERM, &Signal, NULL) != 0)
     {
         LogFile::ErrorMessage ("Could not install signal handler\n" );
@@ -108,7 +131,9 @@ int HardLockTest ( )
 
     if ( testlock.OpenAndLockFile() == false )
     {
-        LogFile::ErrorMessage ("Could not open hardlock check file: %s\n", testlock.GetFileName() );
+
+      LogFile::ErrorMessage ("Could not open hardlock check file: %s Error: %s\n", testlock.GetFileName() , strerror(errno) );
+
         exit (-1);
     }
 
@@ -127,6 +152,7 @@ int HardLockTest ( )
         {
             exit (-1);
         }
+
         return 1;
     }
     //Child

@@ -36,13 +36,15 @@ private:
 
 bool HeaderSend;
 
-//string Host;
-//int Port;
+bool BrowserDropped;
 
 ConnectionToBrowser ToBrowser;
 ConnectionToServer ToServer;
 
-bool ProxyMessage( int CommunicationAnswerT );
+//PSEstart
+//bool ProxyMessage( int CommunicationAnswerT );
+bool ProxyMessage( int CommunicationAnswerT, GenericScanner *VirusScannerT );
+//PSEend
 
 int Communication( SocketHandler *ProxyServerT, GenericScanner *VirusScannerT );
  

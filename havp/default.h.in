@@ -40,6 +40,12 @@
 //Don't let pass when scanner failed
 #define CATCHONSCANNERERROR
 
+//Write Log on clean files
+#define LOG_OKS
+
+//Display Virusname (experimental)
+//#define QUEUE
+
 //Access log directory
 #define ACCESSLOG "/var/log/havp/access.log"
 

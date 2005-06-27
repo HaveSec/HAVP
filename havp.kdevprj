@@ -23,7 +23,7 @@ cflags=
 cppflags=
 cxxflags=\s-O3 -Wall
 ldadd=-lclamav
-ldflags=\s                                                 \s
+ldflags=\s                                                   \s
 
 [General]
 AMChanged=false
@@ -41,7 +41,7 @@ project_type=normal_cpp
 sgml_file=/home/hilgers/source/havp/havp/docs/en/index.sgml
 short_info=
 sub_dir=havp/
-version=0.62
+version=0.63
 version_control=None
 workspace=1
 

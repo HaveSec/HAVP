@@ -1772,7 +1772,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=havp
- VERSION=0.62
+ VERSION=0.63
 
 
 cat >>confdefs.h <<_ACEOF

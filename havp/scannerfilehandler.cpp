@@ -35,7 +35,7 @@ bool ScannerFileHandler::OpenAndLockFile( )
 
     if ( (fd_scan = mkstemp( FileName )) < 0 )
     {
-        LogFile::ErrorMessage ("Invalid Scanner-Tempfile: %s\n", SCANTEMPFILE );
+        LogFile::ErrorMessage ("Invalid Scanner-Tempfile: %s Error: %s\n", FileName ,strerror(errno));
         return false;
     }
 
@@ -72,7 +72,8 @@ bool ScannerFileHandler::UnlockFile()
     //Partial unlock file
     if ( fcntl(fd_scan, F_SETLK, &lock) < 0)
     {
-        LogFile::ErrorMessage ("Could not partial unlock Scannerfile: %s\n", FileName );
+        LogFile::ErrorMessage ("Could not partial unlock Scannerfile: %s Error: %s fd=%d\n", FileName , strerror(errno), fd_scan);
+
         close (fd_scan);
         return false;
     }
@@ -88,8 +89,13 @@ bool ScannerFileHandler::DeleteFile()
 
     if ( unlink(FileName) < 0 )
     {
-//    LogFile::ErrorMessage ("Could not unlink: %s\n", FileName );
+
+//PSE: two processes want to delete this file => errno=2 is quite normal
+    if(errno != 2) {
+	LogFile::ErrorMessage ("Could not unlink: %s Error: %s \n", FileName ,strerror(errno));
         return false;
+    }
+
     }
 
     return true;

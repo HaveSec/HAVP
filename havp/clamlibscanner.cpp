@@ -63,7 +63,10 @@ bool ClamLibScanner::ReloadDatabase()
 {
 
     //reload_database ?
-    if(cl_statchkdir(&dbstat) == 1)
+   //PSE: cl_statchkdir has more exit-codes than 1 and 0 !!!
+   //PSE: Error code now catched by InitDatabase (hopefully)
+   //PSE: if(cl_statchkdir(&dbstat) == 1)
+    if(cl_statchkdir(&dbstat) != 0)
     {
         cl_statfree(&dbstat);
 
@@ -93,6 +96,10 @@ int ClamLibScanner::Scanning( )
     {
         LogFile::ErrorMessage ("Could not open file to scan: %s\n", FileName );
         ScannerAnswer="Could not open file to scan";
+//PSEstart
+	//PSE: We are child but parent process wants this answer to know!
+    	WriteScannerAnswer();
+//PSEend
         close(fd);
         exit (2);
     }
@@ -102,8 +109,14 @@ int ClamLibScanner::Scanning( )
 
     if((ret = cl_scandesc(fd, &virname, &size, root, &limits, SCANOPTS)) == CL_VIRUS)
     {
+
         LogFile::ErrorMessage ("Virus %s in file %s detect!\n", virname, FileName );
+
         ScannerAnswer=virname;
+//PSEstart
+	//PSE: We are child but parent process wants this answer to know!
+    	WriteScannerAnswer();
+//PSEend
         close(fd);
         exit (1);
     }
@@ -113,6 +126,10 @@ int ClamLibScanner::Scanning( )
         {
             LogFile::ErrorMessage ("Error Virus scanner: %s %s\n", FileName, cl_perror(ret) );
             ScannerAnswer= cl_perror(ret);
+//PSEstart
+	//PSE: We are child but parent process wants this answer to know!
+    	WriteScannerAnswer();
+//PSEend
             close(fd);
             exit (2);
         }
@@ -120,6 +137,10 @@ int ClamLibScanner::Scanning( )
 
     close(fd);
     ScannerAnswer="Clean";
+//PSEstart
+    //PSE: We are child but parent process wants this answer to know!
+    WriteScannerAnswer();
+//PSEend
 
     exit (0);
 }

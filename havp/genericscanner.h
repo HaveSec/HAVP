@@ -19,6 +19,8 @@
 #define GENERICSCANNER_H
 
 #include "sockethandler.h"
+#include "logfile.h"
+
 
 #include <sys/types.h>
 
@@ -39,6 +41,8 @@ pid_t ScannerPid;
 
 
 public:
+
+int msgqid;
 
 void WriteScannerAnswer ();
 

@@ -262,10 +262,12 @@ bool SocketHandler::CheckForData( )
 bool SocketHandler::IsConnectionDropped()
 {
     char buffer[1];
+    int dropped;
 
     if( CheckForData() == true)
     {
-        if ( ::recv ( sock_fd, buffer, 1, MSG_PEEK ) == 0)
+        dropped = ::recv ( sock_fd, buffer, 1, MSG_PEEK );
+        if (( dropped == 0) || ( dropped == -1))
         {
             return true;
         }
