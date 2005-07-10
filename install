@@ -1,13 +1,18 @@
 Basic Installation
 ==================
 
-The tmp-directory was changed to /var/tmp/havp/ !!!!!
+
+NEW: You have to copy the HTML templates to /etc/havp/templates/  !!!
+
+copy the templates directory from source to /etc/havp/
 
 run ./configure --help and choose the right settings
 
 You can configure "havp/default.h" to fit your needs.
 This is needed if you want to use a parent proxy or for using HAVP in transparent proxy mode.
 Please check the documentation in default.h.
+
+HAVP will change to nobody and nogroup on default!
 
 run make and make install
 
@@ -17,5 +22,10 @@ i.e. mount /dev/hda9 /var/tmp/havp -o mand
 Check the permissions:
 i.e. chown nobody /var/tmp/havp
 
-run havp!
+The logfiles are
+/var/log/havp/havp.log
+/var/log/havp/access.log
+Check for right permissions
+
+run havp
 

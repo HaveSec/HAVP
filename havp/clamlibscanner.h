@@ -39,6 +39,10 @@ bool ReloadDatabase();
 
 bool InitSelfEngine();
 
+//PSEstart
+bool FreeDatabase();
+//PSEend
+
 int ScanningComplete();
 
 int Scanning( );

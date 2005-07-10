@@ -43,14 +43,20 @@
 //Write Log on clean files
 #define LOG_OKS
 
-//Display Virusname (experimental)
-//#define QUEUE
-
 //Access log directory
 #define ACCESSLOG "/var/log/havp/access.log"
 
 //Error log directory
 #define ERRORLOG "/var/log/havp/havp.log"
+
+// HTML Error String
+
+
+#define ERROR_DNS       "/etc/havp/templates/dns.html"
+#define VIRUS_FOUND     "/etc/havp/templates/virus.html"
+#define ERROR_SCANNER   "/etc/havp/templates/scanner.html"
+#define ERROR_BODY   "/etc/havp/templates/error.html"
+
 
 //Time format
 #define TIMEFORMAT "%d/%m/%Y %H:%M:%S"
@@ -73,6 +79,9 @@
 
 //Display initial messages
 #define DISPLAYINITIALMESSAGES
+
+//Display Virusname
+#define QUEUE           
 
 //Disable Encoding - This is a work around for the IE 5.5 bug
 #define NOENCODING 1
@@ -119,15 +128,6 @@
 // CLAMLIB End -------------------------------------
 
 
-// HTML Error String
-
 #define ERRORHEADER "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nConnection: Close\r\n\r\n";
 
-#define DNSERROR "<html><body><h1>Could not resolve DNS name!</h1></body></html>"
-
-#define VIRUSINSERTPOSITION  22
-#define VIRUSFOUND   "<html><body><h1>Virus  found</h1></body></html>";
-
-#define SCANNERERROR "<html><body><h1>Could not scan file: </h1></body></html>";
-#define ERRORINSERTPOSITION  37
 #endif

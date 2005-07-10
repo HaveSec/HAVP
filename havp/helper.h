@@ -18,6 +18,8 @@
 #ifndef HELPER_H
 #define HELPER_H
 
+#include  <errno.h>
+
 int MakeDeamon();
 
 int HardLockTest ( );

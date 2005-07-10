@@ -29,7 +29,9 @@ string ConnectionToBrowser::PrepareHeaderForServer()
     string PortString = "";
     if ( Port != 80 )
     {
-        PortString = ":" + Port;
+        char PortTemp[21];
+        snprintf(PortTemp, 20, ":%d", Port);
+        PortString = PortTemp;
     }
 
     header = RequestType + "http://" + Host + PortString + Request + " HTTP/1.0\r\n";

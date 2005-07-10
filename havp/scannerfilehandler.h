@@ -18,6 +18,7 @@
 #ifndef SCANNERFILEHANDLER_H
 #define SCANNERFILEHANDLER_H
 
+
 #include "genericscanner.h"
 #include "logfile.h"
 #include "default.h"
@@ -30,7 +31,7 @@
 //#include <sys/types.h>
 //#include <sys/stat.h>
 #include <fcntl.h>
-
+#include  <errno.h>
 #include <iostream>
 
 using namespace std;
@@ -61,6 +62,10 @@ bool ExpandFile( char *DataT, int lengthT,  bool unlockT );
 bool InitDatabase();
 
 bool ReloadDatabase();
+
+//PSEstart
+bool FreeDatabase();
+//PSEend
 
 int Scanning ();
 

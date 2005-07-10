@@ -110,7 +110,7 @@ int ClamLibScanner::Scanning( )
     if((ret = cl_scandesc(fd, &virname, &size, root, &limits, SCANOPTS)) == CL_VIRUS)
     {
 
-        LogFile::ErrorMessage ("Virus %s in file %s detect!\n", virname, FileName );
+        LogFile::ErrorMessage ("Virus %s in file %s detected!\n", virname, FileName );
 
         ScannerAnswer=virname;
 //PSEstart
@@ -177,6 +177,13 @@ int ClamLibScanner::ScanningComplete()
 
 }
 
+//PSEstart
+bool ClamLibScanner::FreeDatabase()
+{
+	cl_free(root);
+	return true;
+}
+//PSEend
 
 //Constructor
 ClamLibScanner::ClamLibScanner()

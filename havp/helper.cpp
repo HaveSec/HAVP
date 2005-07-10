@@ -45,24 +45,20 @@ static void DeleteTempfiles (int SignalNo)
 	{
 	//PSE: only parent, no scan-file to delete!!
 	killpg(pgid,SIGINT);
-	exit(0);
-	} else {
-	VirusScanner->DeleteFile();
-    }
 #ifdef QUEUE
     //PSE: make message queue table empty!
     int msqid;
     msqid = VirusScanner->msgqid;
-    struct msqid_ds *buf;
-    if(msgctl(msqid,IPC_RMID,buf) < 0) {
-    //PSE: Two processes want to remove it.
-    //PSE: Therefore an error-message has to occur the second time!
-    //PSE: both codes are possible!
-	if(errno != 22 && errno != 43) {
-    LogFile::ErrorMessage ("Can not remove Message Queue: %d Error: %s \n", msqid , strerror(errno));
-	}
+    if(msqid != -1) {
+    	if(msgctl(msqid,IPC_RMID,NULL) < 0) {
+    		LogFile::ErrorMessage ("Can not remove Message Queue: %d Error: %s \n", msqid , strerror(errno));
+    	}
     }
 #endif
+	exit(0);
+	} else {
+	VirusScanner->DeleteFile();
+    }
     exit (1);
 
 }
@@ -217,3 +213,11 @@ bool ChangeUserAndGroup()
 
     return true;
 }
+
+
+
+
+
+
+
+

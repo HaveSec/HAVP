@@ -72,7 +72,7 @@ bool ScannerFileHandler::UnlockFile()
     //Partial unlock file
     if ( fcntl(fd_scan, F_SETLK, &lock) < 0)
     {
-        LogFile::ErrorMessage ("Could not partial unlock Scannerfile: %s Error: %s fd=%d\n", FileName , strerror(errno), fd_scan);
+        LogFile::ErrorMessage ("Could not unlock Scannerfile: %s Error: %s fd=%d\n", FileName , strerror(errno), fd_scan);
 
         close (fd_scan);
         return false;
@@ -170,6 +170,13 @@ bool ScannerFileHandler::ReloadDatabase()
     return false;
 }
 
+//PSEstart
+bool ScannerFileHandler::FreeDatabase()
+{
+    LogFile::ErrorMessage ("Programm Error: FreeDatabase\n");
+    return -1;
+}
+//PSEend
 
 int ScannerFileHandler::Scanning ()
 {

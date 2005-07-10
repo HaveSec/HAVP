@@ -38,7 +38,7 @@ dnl Perform program name transformation
 AC_ARG_PROGRAM
 
 dnl Automake doc recommends to do this only here. (Janos)
-AM_INIT_AUTOMAKE(havp,0.63)
+AM_INIT_AUTOMAKE(havp,0.64)
 
 dnl almost the same like KDE_SET_PEFIX but the path is /usr/local
 dnl
@@ -57,12 +57,13 @@ dnl without this order in this file, automake will be confused!
 dnl
 AM_CONFIG_HEADER(config.h)
 
+
 dnl checks for programs.
 dnl first check for c/c++ compilers
 AC_CHECK_COMPILERS
 
-CXXFLAGS="$NOOPT_CXXFLAGS" dnl __kdevelop[noopt]__
-CFLAGS="$NOOPT_CFLAGS" dnl __kdevelop[noopt]__
+dnl CXXFLAGS="$NOOPT_CXXFLAGS" dnl __kdevelop[noopt]__
+dnl CFLAGS="$NOOPT_CFLAGS" dnl __kdevelop[noopt]__
 dnl CXXFLAGS="$CXXFLAGS $USE_EXCEPTIONS" dnl __kdevelop[exc]__
 
 dnl create only shared libtool-libraries
@@ -81,7 +82,7 @@ dnl KDE_CHECK_DLOPEN
 
 dnl activate the next macro call for some additional tests
 dnl   (compat, crypt, socket, nsl, dlopen, ...)
-KDE_MISC_TESTS dnl __kdevelop__
+dnl KDE_MISC_TESTS dnl __kdevelop__
 
 dnl KDE_NEED_FLEX dnl __kdevelop__
 dnl AC_PROG_YACC dnl __kdevelop__

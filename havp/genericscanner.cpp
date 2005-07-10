@@ -29,10 +29,6 @@ bool GenericScanner::PrepareScanning( SocketHandler *ProxyServerT )
         return false;
     }
 
-#ifdef QUEUE
-    msgqid = msgget(IPC_PRIVATE, (IPC_CREAT|00600) );
-#endif
-
     if (( ScannerPid = fork() ) < 0)
     {
         return false;            //Parent error
@@ -64,13 +60,15 @@ void GenericScanner::WriteScannerAnswer() {
 		long mtype;
 		char mes[100];
 		} msgbuf, *buf;
-	msgbuf.mtype=42;  // 42 the answer of all questions!
-	ScannerAnswer.copy(msgbuf.mes,100,0);
-	msgbuf.mes[ScannerAnswer.length()] = 0;
-	buf = &msgbuf;
-	if(msgsnd(msgqid,buf,sizeof(msgbuf),IPC_NOWAIT) < 0) {
-		LogFile::ErrorMessage ("Cannot send Message! Error: %s\n", strerror(errno));
+	if(msgqid != -1) {
+		msgbuf.mtype=getpid();
+		ScannerAnswer.copy(msgbuf.mes,100,0);
+		msgbuf.mes[ScannerAnswer.length()] = 0;
+		buf = &msgbuf;
+		if(msgsnd(msgqid,buf,sizeof(msgbuf),IPC_NOWAIT) < 0) {
+			LogFile::ErrorMessage ("Cannot send Message! Error: %s\n", strerror(errno));
 		//PSE: Ooops! And now? Let somebody else do the work!
+		}
 	}
 #endif
 }
@@ -86,14 +84,16 @@ string GenericScanner::ReadScannerAnswer (){
 		long mtype;
 		char mes[100];
 		} msgbuf, *buf;
-	buf = &msgbuf;
-	if(msgrcv(msgqid,buf,sizeof(msgbuf),42L,0) <0) {
-   LogFile::ErrorMessage ("Cannot read Message! Error: %s\n", strerror(errno));
-	Answer="";
-	} else {
-	Answer = msgbuf.mes;
+	if(msgqid != -1) {
+		buf = &msgbuf;
+		long mtyp = ScannerPid;
+		if(msgrcv(msgqid,buf,sizeof(msgbuf),mtyp,0) <0) {
+   	LogFile::ErrorMessage ("Cannot read Message! Error: %s\n", strerror(errno));
+		//PSE: answer is already empty string! Answer="";
+		} else {
+		Answer = msgbuf.mes;
+		}
 	}
-
 #endif
 return Answer;
 }

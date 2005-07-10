@@ -16,39 +16,23 @@
  ***************************************************************************/
 
 #include "proxyhandler.h"
-#include <sys/ipc.h>
-#include <sys/msg.h>
-
 
 bool ProxyHandler::Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusScannerT )
 {
     int CommunicationAnswer;
-    //PSEstart
-    int msqid;
-    struct msqid_ds *buf;
-    //PSEend
 
     if ( (CommunicationAnswer = Communication ( ProxyServerT, VirusScannerT )) != 0)
     {
 
         //ScannningComplete was not called
-        if ( CommunicationAnswer < 200 ){
+        if (( CommunicationAnswer > -200 ) && ( CommunicationAnswer < 0 )) {
         VirusScannerT->ScanningComplete();
         }
 
    	ProxyMessage( CommunicationAnswer , VirusScannerT);
-        //PSE ProxyMessage( CommunicationAnswer );
 
         ToBrowser.Close();
         ToServer.Close();
-
-#ifdef QUEUE
-	//PSE: We have done our job => delete message-queue
-	msqid = VirusScannerT->msgqid;
-	if(msgctl(msqid,IPC_RMID,buf) < 0) {
-		LogFile::ErrorMessage("Cannot delete message queue! Error: %s\n",strerror(errno));
-   	}
-#endif
 
         return false;
     }
@@ -58,17 +42,12 @@ bool ProxyHandler::Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusSca
     LogFile::AccessMessage("%s %d OK\n", ToBrowser.GetCompleteRequest(), ToBrowser.GetPort());
 #endif
 
+//PSE: withdraw Clean-message
+    string ans = VirusScannerT->ReadScannerAnswer();
 
     ToBrowser.Close();
     ToServer.Close();
 
-#ifdef QUEUE
-    //PSE: We have done our job => delete message-queue
-    msqid = VirusScannerT->msgqid;
-    if(msgctl(msqid,IPC_RMID,buf) < 0) {
-	LogFile::ErrorMessage("Cannot delete message queue! Error: %s\n",strerror(errno));
-    }
-#endif
     return true;
 }
 
@@ -378,48 +357,80 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
 bool ProxyHandler::ProxyMessage( int CommunicationAnswerT , GenericScanner *VirusScannerT)
 {
 
-    string VirusError=VIRUSFOUND;
-    string ErrorHeader = ERRORHEADER;
-    string ScannerError = SCANNERERROR;
-    string DNSError = DNSERROR;
     string Answer;
+
+    long size;
+    char* buffer;
+    char ErrorNumber[11];
+    FileHandler fileH;
+    string filename;
+    string sendout="";
+    string message="";
+    string searchstring = "<!--message-->";
+
 
     //PSEstart
     //PSE: now get the answer from the second process
      Answer = VirusScannerT->ReadScannerAnswer();
     //PSEend
 
-    if (( HeaderSend == false ) && (BrowserDropped ==false ))
+    if (BrowserDropped ==true ){
+     LogFile::AccessMessage("%s Browser Droped: %d\n", ToBrowser.GetCompleteRequest(), CommunicationAnswerT);
+     return false;
+    }
+
+    if ( HeaderSend == false )
     {
-         LogFile::AccessMessage("%s Send Error Header: %d - PID: %d\n", ToBrowser.GetCompleteRequest(), CommunicationAnswerT, getpid());
-        ToBrowser.Send( &ErrorHeader );
+       string errorheader = ERRORHEADER;
+       if (ToBrowser.Send( &errorheader ) == false) {
+         LogFile::AccessMessage("%s Browser Droped: %d\n", ToBrowser.GetCompleteRequest(), CommunicationAnswerT);
+         return false;
+       }
     }
 
     if ( CommunicationAnswerT == -50 )
     {
         //Could not resolve DNS Name
         LogFile::AccessMessage("%s %d DNS Failed\n", ToBrowser.GetHost(), ToBrowser.GetPort());
-        ToBrowser.Send( &DNSError );
-
+        message = ToBrowser.GetHost();
+        filename = ERROR_DNS;
     }
     else if ( CommunicationAnswerT == 2 )
     {
         LogFile::AccessMessage("%s %d Scanner Error: %s\n", ToBrowser.GetHost(), ToBrowser.GetPort(), Answer.c_str());
-        ScannerError.insert( ERRORINSERTPOSITION, Answer);
-        ToBrowser.Send( &ScannerError );
-
+        message = Answer;
+        filename = ERROR_SCANNER;
     }
     else if ( CommunicationAnswerT == 1 )
     {
         LogFile::AccessMessage("%s Virus: %s\n", ToBrowser.GetCompleteRequest(), Answer.c_str());
-        VirusError.insert( VIRUSINSERTPOSITION, Answer);
-        ToBrowser.Send( &VirusError );
+        message = Answer;
+        filename = VIRUS_FOUND;
     }
     else
     {
         LogFile::AccessMessage("%s Error: %d\n", ToBrowser.GetCompleteRequest(), CommunicationAnswerT);
+        snprintf(ErrorNumber, 10, "%d", CommunicationAnswerT);
+        message = ErrorNumber;
+        filename = ERROR_BODY;
     }
 
+
+    //Danny
+    if (filename.size() > 0) {
+        size = fileH.FileSize(filename.c_str());
+        buffer = new char[size+1];
+        fileH.FileRead(filename.c_str(), buffer, size);
+        buffer[size] = '\0';
+        sendout = buffer;
+
+        if (message.size() > 0) {
+            fileH.SearchReplace(sendout, searchstring, message);
+        } 
+        ToBrowser.Send( &sendout );
+        delete buffer;
+    }
+    
     return false;
 }
 

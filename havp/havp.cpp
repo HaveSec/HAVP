@@ -26,9 +26,12 @@
 #include "genericscanner.h"
 #include "clamlibscanner.h"
 #include "proxyhandler.h"
+#include "filehandler.h"
 
 #include <sys/wait.h>
-//#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+#include <sys/types.h>
 //#include <unistd.h>
 
 GenericScanner *VirusScanner;
@@ -101,6 +104,22 @@ int main(int argc, char *argv[])
     pid=getpid();
     setpgrp();  //PSE: for cases daemon is not started
     LogFile::ErrorMessage ("Process ID: %d\n", pid);
+
+    //create a unique message queue for all children and grandchildren
+
+#ifdef QUEUE
+    int qid;
+    qid = msgget(IPC_PRIVATE, (IPC_CREAT | 00600) );
+    if ( qid < 0) {
+	LogFile::ErrorMessage ("Cannot create a message queue! Error: %s\n", strerror(errno));
+	if(errno == ENOSPC) {
+		LogFile::ErrorMessage ("System-wide variable MSGMNI too small. Increase this value or reduce number of servers started!");
+	}
+    }
+    VirusScanner->msgqid = qid;
+    LogFile::ErrorMessage ("Message Queue ID: %d\n", qid);
+#endif
+
 //PSEend
 
     #ifdef SERVERNUMBER
@@ -114,6 +133,9 @@ int main(int argc, char *argv[])
         {
             //Child
             VirusScanner->PrepareScanning ( &ProxyServer );
+//PSEstart
+//	    VirusScanner->FreeDatabase();
+//PSEend
             Proxy.Proxy ( &ProxyServer, VirusScanner );
             exit (1);
         }
@@ -135,11 +157,17 @@ int main(int argc, char *argv[])
         {
             //Child
             VirusScanner->PrepareScanning ( &ProxyServer );
+//PSEstart
+//	    VirusScanner->FreeDatabase();
+//PSEend
             Proxy.Proxy ( &ProxyServer, VirusScanner );
             exit (1);
         }
         #else
         VirusScanner->PrepareScanning ( &ProxyServer );
+//PSEstart
+//	VirusScanner->FreeDatabase();
+//PSEend
         Proxy.Proxy ( &ProxyServer, VirusScanner );
         #endif
     }

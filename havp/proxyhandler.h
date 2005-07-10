@@ -22,10 +22,15 @@
 #include "connectiontoserver.h"
 #include "genericscanner.h"
 #include "logfile.h"
+#include "filehandler.h"
+#include "default.h"
 
 #include <iostream>
 #include <string>
 #include <deque>
+#include <stdlib.h>
+#include <errno.h>
+
 
 using namespace std;
 

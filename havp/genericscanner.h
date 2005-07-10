@@ -23,7 +23,7 @@
 
 
 #include <sys/types.h>
-
+#include  <errno.h>
 #include <iostream>
 #include <string>
 
@@ -65,6 +65,10 @@ virtual bool SetFileSize( unsigned long ContentLengthT ) = 0;
 virtual bool ExpandFile( char *dataT, int lengthT , bool unlockT) = 0 ;
 
 virtual bool DeleteFile() = 0;
+
+//PSEstart
+virtual bool FreeDatabase() = 0;
+//PSEend
 
 virtual ~GenericScanner ();
 
