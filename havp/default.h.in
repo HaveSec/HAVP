@@ -80,6 +80,13 @@
 //Display initial messages
 #define DISPLAYINITIALMESSAGES
 
+
+//RECVTIMEOUT in seconds
+#define RECVTIMEOUT    300
+
+//SENDTIMEOUT in seconds
+#define SENDTIMEOUT    300
+
 //Display Virusname
 #define QUEUE           
 

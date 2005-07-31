@@ -19,17 +19,20 @@
 #define CONNECTIONTOSERVER_H
 
 #include "httphandler.h"
-
+#include "logfile.h"
 
 class ConnectionToServer : public HTTPHandler  {
 
 private:
 
  bool AnalyseHeaderLine( string *RequestT );
+ int HTMLResponse;
+
 
 public: 
 
 string PrepareHeaderForBrowser();
+int GetResponse( );
 
   ConnectionToServer();
 	~ConnectionToServer();

@@ -63,6 +63,8 @@ const char *GetHost();
 
 const char *GetCompleteRequest();
 
+const string GetRequestType();
+
 int GetPort();
 
       

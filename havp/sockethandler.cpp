@@ -78,6 +78,10 @@ bool SocketHandler::ConnectToServer (  )
     if ( ::connect(sock_fd, (struct sockaddr *) &s_addr, sizeof( s_addr ) ) == -1)
         return false;
 
+    FD_ZERO(&checkfd);
+    FD_SET(sock_fd,&checkfd);
+
+
     return true;
 }
 
@@ -103,12 +107,19 @@ bool SocketHandler::Send ( string *sock_outT )
 
     int buffer_count;
     string send_temp;
-    fd_set write_allow;
 
-    FD_ZERO( &write_allow );
-    FD_SET( sock_fd, &write_allow );
 
-    select ( sock_fd+1, NULL, &write_allow, NULL, NULL);
+    select ( sock_fd+1, NULL, &checkfd, NULL, NULL);
+
+    //Timeout is changed with select
+    Timeout.tv_sec = SENDTIMEOUT;
+    Timeout.tv_usec = 0;
+    FD_ZERO(&checkfd);
+    FD_SET(sock_fd,&checkfd);
+    if (select( sock_fd+1, NULL, &checkfd, NULL, &Timeout) == 0)
+    {
+     return false;
+    }
 
     buffer_count = ::send ( sock_fd, sock_outT->c_str(), sock_outT->size(), MSG_NOSIGNAL );
 
@@ -134,6 +145,16 @@ ssize_t SocketHandler::Recv ( string *sock_inT , bool sock_delT)
 
     char buffer [ MAXRECV + 1 ];
     ssize_t buffer_count;
+
+    //Timeout is changed with select
+    Timeout.tv_sec = RECVTIMEOUT;
+    Timeout.tv_usec = 0;
+    FD_ZERO(&checkfd);
+    FD_SET(sock_fd,&checkfd);
+    if (select( sock_fd+1 ,&checkfd, NULL, NULL, &Timeout) == 0)
+    {
+      return false;
+    }
 
     if ( sock_delT == true )
     {
@@ -176,6 +197,15 @@ bool SocketHandler::RecvLength ( string *sock_inT , ssize_t sock_lengthT )
 
     while ( sock_lengthT > 0 )
     {
+        //Timeout is changed with select
+        Timeout.tv_sec = RECVTIMEOUT;
+        Timeout.tv_usec = 0;
+        FD_ZERO(&checkfd);
+        FD_SET(sock_fd,&checkfd);
+        if (select( sock_fd+1 ,&checkfd, NULL, NULL, &Timeout) == 0)
+        {
+          return false;
+        }
 
         buffer_count = ::recv ( sock_fd, buffer, rest, 0 );
 
@@ -233,27 +263,16 @@ bool SocketHandler::SetDomainAndPort(const char *domainT, int portT)
 bool SocketHandler::CheckForData( )
 {
     fd_set checkfd;
-    struct timeval Timeout;
+
+
     Timeout.tv_sec = 0;
     Timeout.tv_usec = 0;
-
-    //Enable nonblocking sockets
-    fcntl(sock_fd, F_SETFL, O_NONBLOCK);
-
     FD_ZERO(&checkfd);
     FD_SET(sock_fd,&checkfd);
-
-    select( sock_fd+1 ,&checkfd, NULL, NULL, &Timeout);
-
     if (select( sock_fd+1 ,&checkfd, NULL, NULL, &Timeout) == 0)
     {
-        //Disable nonblocking sockets
-        fcntl(sock_fd, F_SETFL, ~O_NONBLOCK);
         return false;
     }
-
-    //Disable nonblocking sockets
-    fcntl(sock_fd, F_SETFL, ~O_NONBLOCK);
 
     return true;
 }

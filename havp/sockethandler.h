@@ -34,7 +34,11 @@ private:
 int port;
 int sock_fd;
 struct sockaddr_in s_addr;
-  
+
+//For select
+fd_set checkfd;
+struct timeval Timeout;
+
 public:
 
 bool CreateServer( int portT, in_addr_t bind_addrT = INADDR_ANY );

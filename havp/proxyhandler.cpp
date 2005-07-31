@@ -39,7 +39,7 @@ bool ProxyHandler::Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusSca
 
 
 #ifdef LOG_OKS
-    LogFile::AccessMessage("%s %d OK\n", ToBrowser.GetCompleteRequest(), ToBrowser.GetPort());
+    LogFile::AccessMessage("%s %d %d OK\n", ToBrowser.GetCompleteRequest(), ToServer.GetResponse(), ToBrowser.GetPort());
 #endif
 
 //PSE: withdraw Clean-message
@@ -225,6 +225,10 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
 
     Header = ToServer.PrepareHeaderForBrowser();
 
+
+ //Not Modified no Body expected or HEAD with no body
+ if( (ToServer.GetResponse() < 300 ) || (ToServer.GetResponse() > 400 ) || (ToBrowser.GetRequestType() != "HEAD") ) {
+
     //Server Body Transfer
     while ( (BodyLength = ToServer.ReadBodyPart(&BodyTemp)) != 0)
     {
@@ -252,6 +256,7 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
             LogFile::ErrorMessage("ContentLength and Body size does not fit: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
             return -120;
         }
+
 
         //Add string to queue
         BodyQueue.push_back( BodyTemp );
@@ -307,8 +312,13 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
             BodyQueue.erase( TransferData );
         }
 
-    }
+      //End while because file is complete.
+      if ( ContentLength == ContentLengthReference ){
+        break;
+      }
 
+    }//while
+ } 
     //Wait till scanning is complete
     TempScannerAnswer =  VirusScannerT->ScanningComplete();
     if ( TempScannerAnswer != 0)
@@ -409,7 +419,7 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT , GenericScanner *Viru
     }
     else
     {
-        LogFile::AccessMessage("%s Error: %d\n", ToBrowser.GetCompleteRequest(), CommunicationAnswerT);
+        LogFile::AccessMessage("%s Error: %d - Status %d\n", ToBrowser.GetCompleteRequest(), CommunicationAnswerT, ToServer.GetResponse());
         snprintf(ErrorNumber, 10, "%d", CommunicationAnswerT);
         message = ErrorNumber;
         filename = ERROR_BODY;

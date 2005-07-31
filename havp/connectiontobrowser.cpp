@@ -227,6 +227,12 @@ const char *ConnectionToBrowser::GetCompleteRequest()
 }
 
 
+const string ConnectionToBrowser::GetRequestType()
+{
+    return RequestType;
+}
+
+
 int ConnectionToBrowser::GetPort()
 {
     return Port;

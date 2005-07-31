@@ -57,13 +57,44 @@ string ConnectionToServer::PrepareHeaderForBrowser()
 bool ConnectionToServer::AnalyseHeaderLine( string *RequestT )
 {
 
+   string Response ="";
+   string::size_type firstposition;
+   string::size_type lastposition;
+
+   if( RequestT->find( "HTTP/1.", 0 ) == 0 )
+   {
+     if ( (firstposition = RequestT->find_first_not_of("\t ",9)) != string::npos )
+     {
+
+      if ( (lastposition = RequestT->find (" ",firstposition+1)) != string::npos ){
+
+       //LogFile::ErrorMessage("Server Response %s\n", RequestT->c_str());
+
+        Response = RequestT->substr(9, lastposition - 9 );
+        if (sscanf( Response.c_str(), "%d", &HTMLResponse) != 1)
+        {
+          LogFile::ErrorMessage("Unknown Server Response %s\n", Response.c_str());
+          return false;
+        }
+      }
+    }  
+   } 
+
     return true;
 }
 
 
+int ConnectionToServer::GetResponse()
+{
+  return HTMLResponse;
+}
+
 //Consturctor
 ConnectionToServer::ConnectionToServer()
 {
+
+ HTMLResponse = 0;
+
 }
 
 
