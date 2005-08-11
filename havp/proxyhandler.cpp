@@ -39,7 +39,7 @@ bool ProxyHandler::Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusSca
 
 
 #ifdef LOG_OKS
-    LogFile::AccessMessage("%s %d %d OK\n", ToBrowser.GetCompleteRequest(), ToServer.GetResponse(), ToBrowser.GetPort());
+    LogFile::AccessMessage("%s %d %d %s OK\n", ToBrowser.GetCompleteRequest(), ToServer.GetResponse(), ToBrowser.GetPort(), ToBrowser.GetRequestType().c_str() );
 #endif
 
 //PSE: withdraw Clean-message
@@ -227,7 +227,7 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
 
 
  //Not Modified no Body expected or HEAD with no body
- if( (ToServer.GetResponse() < 300 ) || (ToServer.GetResponse() > 400 ) || (ToBrowser.GetRequestType() != "HEAD") ) {
+ if( (ToServer.GetResponse() != 304 ) && (ToServer.GetResponse() != -302 ) && (ToBrowser.GetRequestType() != "HEAD") ) {
 
     //Server Body Transfer
     while ( (BodyLength = ToServer.ReadBodyPart(&BodyTemp)) != 0)
@@ -405,6 +405,12 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT , GenericScanner *Viru
         message = ToBrowser.GetHost();
         filename = ERROR_DNS;
     }
+    else if ( CommunicationAnswerT == -60 )
+    {
+        LogFile::AccessMessage("Server %s is down\n", ToBrowser.GetHost() );
+        message = ToBrowser.GetHost();
+        filename = ERROR_SERVERDOWN;
+    }
     else if ( CommunicationAnswerT == 2 )
     {
         LogFile::AccessMessage("%s %d Scanner Error: %s\n", ToBrowser.GetHost(), ToBrowser.GetPort(), Answer.c_str());
@@ -419,7 +425,7 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT , GenericScanner *Viru
     }
     else
     {
-        LogFile::AccessMessage("%s Error: %d - Status %d\n", ToBrowser.GetCompleteRequest(), CommunicationAnswerT, ToServer.GetResponse());
+        LogFile::AccessMessage("%s Error: %d - Status %d - Method %s\n", ToBrowser.GetCompleteRequest(), CommunicationAnswerT, ToServer.GetResponse(), ToBrowser.GetRequestType().c_str() );
         snprintf(ErrorNumber, 10, "%d", CommunicationAnswerT);
         message = ErrorNumber;
         filename = ERROR_BODY;

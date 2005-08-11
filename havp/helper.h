@@ -28,4 +28,8 @@ bool ChangeUserAndGroup();
 
 void InstallSignal ();
 
+void RereadDatabase ();
+
+void StartNewChild ();
+
 #endif

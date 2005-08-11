@@ -32,12 +32,20 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <sys/types.h>
+#include <time.h>
 //#include <unistd.h>
 
 GenericScanner *VirusScanner;
+bool rereaddatabase;
+int startchild;
+int Instances = 0;
+time_t LastRefresh = time(NULL);
 
 int main(int argc, char *argv[])
 {
+
+    rereaddatabase = false;
+    startchild = 0;
 
     InstallSignal();
 
@@ -113,7 +121,7 @@ int main(int argc, char *argv[])
     if ( qid < 0) {
 	LogFile::ErrorMessage ("Cannot create a message queue! Error: %s\n", strerror(errno));
 	if(errno == ENOSPC) {
-		LogFile::ErrorMessage ("System-wide variable MSGMNI too small. Increase this value or reduce number of servers started!");
+		LogFile::ErrorMessage ("System-wide variable MSGMNI too small. Increase this value!");
 	}
     }
     VirusScanner->msgqid = qid;
@@ -128,6 +136,7 @@ int main(int argc, char *argv[])
     for( int i = 0; i < SERVERNUMBER; i++ )
     {
         pid=fork();
+        Instances++;
 
         if (pid == 0)
         {
@@ -145,24 +154,59 @@ int main(int argc, char *argv[])
     while(1)
     {
 
-        VirusScanner->ReloadDatabase();
+        //Signal Refresh
+        if(rereaddatabase) {
+		      rereaddatabase = false;
+		      VirusScanner->ReloadDatabase();
+    		  LogFile::ErrorMessage ("Database reread by signal\n");
+	      }
+
+        //Time Refresh
+        if ( time(NULL) > (LastRefresh + DBRELOAD*60) ){
+          LastRefresh = time(NULL);
+		      rereaddatabase = false;
+		      VirusScanner->ReloadDatabase();
+    		  LogFile::ErrorMessage ("Database reread by time\n");
+        }
 
         #ifdef SERVERNUMBER
+
         int status;
-        pid = wait( &status);
-
-        pid=fork();
-
-        if (pid == 0)
+        if( (pid = waitpid(-1,&status,WNOHANG)) != 0 )
         {
+          Instances--;
+          //LogFile::ErrorMessage ("PID %d\n", pid);
+        }
+
+	if ((startchild) || (Instances < SERVERNUMBER)){
+          //LogFile::ErrorMessage ("Instances %d - startchild %d - Number %d\n", Instances, startchild, SERVERNUMBER);
+
+        	pid=fork();
+          Instances++;
+        	if (pid < 0)
+          {
+           LogFile::ErrorMessage ("Could not fork child");
+           Instances--;
+        	} else if (pid == 0) {
             //Child
-            VirusScanner->PrepareScanning ( &ProxyServer );
+            	VirusScanner->PrepareScanning ( &ProxyServer );
 //PSEstart
 //	    VirusScanner->FreeDatabase();
 //PSEend
-            Proxy.Proxy ( &ProxyServer, VirusScanner );
-            exit (1);
-        }
+            	Proxy.Proxy ( &ProxyServer, VirusScanner );
+            	exit (1);
+        	} else {
+		      startchild--;
+		      }
+	}
+
+ //LogFile::ErrorMessage ("Instances %d - startchild %d\n", Instances, startchild);
+
+ if(Instances >= SERVERNUMBER)
+ {
+	pause();
+ }
+
         #else
         VirusScanner->PrepareScanning ( &ProxyServer );
 //PSEstart

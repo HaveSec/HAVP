@@ -31,6 +31,26 @@
 
 extern GenericScanner *VirusScanner;
 
+static void ChildExited (int SignalNo)
+{
+	int dummy;
+	dummy++;
+}
+static void RereadDatabase (int SignalNo)
+{
+ extern bool rereaddatabase;
+ rereaddatabase = true;
+}
+static void StartNewChild (int SignalNo)
+{
+ extern int startchild;
+
+ if ( startchild < 0 ){
+ startchild = 0;
+ }
+
+ startchild++;
+}
 static void DeleteTempfiles (int SignalNo)
 {
 //PSEstart
@@ -79,17 +99,33 @@ InstallSignal ()
         LogFile::ErrorMessage ("Could not install signal handler\n" );
         exit (-1);
     }
+    if (sigaction (SIGTERM, &Signal, NULL) != 0)
+    {
+        LogFile::ErrorMessage ("Could not install signal handler\n" );
+        exit (-1);
+    }
+
+    Signal.sa_handler = RereadDatabase;          //function
     if (sigaction (SIGHUP, &Signal, NULL) != 0)
     {
         LogFile::ErrorMessage ("Could not install signal handler\n" );
         exit (-1);
     }
 
-    if (sigaction (SIGTERM, &Signal, NULL) != 0)
+    Signal.sa_handler = StartNewChild;          //function
+    if (sigaction (SIGUSR1, &Signal, NULL) != 0)
     {
         LogFile::ErrorMessage ("Could not install signal handler\n" );
         exit (-1);
     }
+
+    Signal.sa_handler = ChildExited;          //function
+    if (sigaction (SIGCHLD, &Signal, NULL) != 0)
+    {
+        LogFile::ErrorMessage ("Could not install signal handler\n" );
+        exit (-1);
+    }
+
 
 }
 

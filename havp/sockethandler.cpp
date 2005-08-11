@@ -20,6 +20,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <signal.h>
 #include "sockethandler.h"
 
 //Create Server Socket
@@ -94,10 +95,14 @@ bool SocketHandler::AcceptClient ( SocketHandler *accept_socketT )
 
     close ( sock_fd );
 
-    if ( accept_socketT->sock_fd == -1 )
+//PSE: Trigger a new process
+	  kill(getpgrp(),SIGUSR1);
+
+    if ( accept_socketT->sock_fd == -1 ){
         return false;
-    else
+    } else {
         return true;
+    }
 }
 
 

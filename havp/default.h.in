@@ -24,7 +24,7 @@
 #define USER "@HAVPUSER_DEF@"
 #define GROUP "@HAVPGROUP_DEF@"
 
-//Fork max server
+//Fork min server
 #define SERVERNUMBER @HAVPPOOL_DEF@
 
 //Make daemon
@@ -36,6 +36,10 @@
 //Parent Proxy (Name)
 //#define PARENTPROXY "localhost"
 //#define PARENTPORT 3128
+
+
+//Reload database interval in minutes
+#define DBRELOAD  60
 
 //Don't let pass when scanner failed
 #define CATCHONSCANNERERROR
@@ -52,10 +56,11 @@
 // HTML Error String
 
 
-#define ERROR_DNS       "/etc/havp/templates/dns.html"
-#define VIRUS_FOUND     "/etc/havp/templates/virus.html"
-#define ERROR_SCANNER   "/etc/havp/templates/scanner.html"
-#define ERROR_BODY   "/etc/havp/templates/error.html"
+#define ERROR_DNS       "/etc/havp/templates/dns_en.html"
+#define VIRUS_FOUND     "/etc/havp/templates/virus_en.html"
+#define ERROR_SCANNER   "/etc/havp/templates/scanner_en.html"
+#define ERROR_SERVERDOWN "/etc/havp/templates/down_en.html"
+#define ERROR_BODY   "/etc/havp/templates/error_en.html"
 
 
 //Time format

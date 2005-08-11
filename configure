@@ -1028,9 +1028,9 @@ Optional Packages:
   --with-extra-libs=DIR   adds non standard library paths
   --with-havp-user=(nobody)      Username under havp will run
   --with-havp-group=(nogroup)      Username under havp will run
-  --with-havp-server-pool=(number)      Number of HAVP servers handle connections
+  --with-havp-server-pool=(number)      Minimum number of HAVP servers handle connections
   --with-havp-port=(port)      TCP server port
-  --with-havp-bind=(IP)      Bind to IP
+  --with-havp-bind=(IP)      Bind to IP - You have to quote the IP
 
 Some influential environment variables:
   CC          C compiler command
@@ -1772,7 +1772,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=havp
- VERSION=0.65
+ VERSION=0.66
 
 
 cat >>confdefs.h <<_ACEOF
@@ -16423,7 +16423,7 @@ if test "${with_havp_server_pool+set}" = set; then
   withval="$with_havp_server_pool"
   HAVPPOOL_DEF="$withval"
 else
-  HAVPPOOL_DEF="100"
+  HAVPPOOL_DEF="4"
 fi;
 
 # Check whether --with-havp-port or --without-havp-port was given.

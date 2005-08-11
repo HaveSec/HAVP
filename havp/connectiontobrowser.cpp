@@ -68,6 +68,9 @@ string ConnectionToBrowser::PrepareHeaderForServer()
         } else if (( it->find( "Accept-Encoding", 0 ) && NOENCODING ) == 0 )
         {
             continue;
+        } else if ( it->find( "Via", 0 ) == 0 )
+        {
+            continue;
         } else if( it->find( "Connection", 0) == 0 )
         {
             continue;
