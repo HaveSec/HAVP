@@ -38,9 +38,10 @@ bool ProxyHandler::Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusSca
     }
 
 
-#ifdef LOG_OKS
+// #ifdef LOG_OKS
+    if(Params::GetConfigBool("LOG_OKS"))
     LogFile::AccessMessage("%s %d %d %s OK\n", ToBrowser.GetCompleteRequest(), ToServer.GetResponse(), ToBrowser.GetPort(), ToBrowser.GetRequestType().c_str() );
-#endif
+// #endif
 
 //PSE: withdraw Clean-message
     string ans = VirusScannerT->ReadScannerAnswer();
@@ -103,19 +104,24 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
         return -30;
     }
 
-    #if defined (PARENTPROXY) && defined (PARENTPORT)
-    if( ToServer.SetDomainAndPort( PARENTPROXY, PARENTPORT ) == false )
+    // #if defined (PARENTPROXY) && defined (PARENTPORT)
+    string parentproxy=Params::GetConfigString("PARENTPROXY");
+    int parentport=Params::GetConfigInt("PARENTPORT");
+    if( parentproxy != "" && parentport != 0 ) {
+    if( ToServer.SetDomainAndPort( parentproxy.c_str(), parentport ) == false )
     {
-        LogFile::ErrorMessage("Could not resolve parent proxy: %s\n", PARENTPROXY);
+        LogFile::ErrorMessage("Could not resolve parent proxy: %s\n", parentproxy.c_str() );
         return -50;
     }
-    #else
+    // #else
+    } else {
     if( ToServer.SetDomainAndPort( ToBrowser.GetHost(), ToBrowser.GetPort() ) == false )
     {
         LogFile::ErrorMessage("Could not resolve hostname: %s\n", ToBrowser.GetHost() );
         return -50;
     }
-    #endif
+    // #endif
+    }
 
     if( ToServer.ConnectToServer ( ) == false)
     {
@@ -434,7 +440,10 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT , GenericScanner *Viru
 
     //Danny
     if (filename.size() > 0) {
+      	string path=Params::GetConfigString("TEMPLATEPATH");
+      	filename = path + "/" + filename;
         size = fileH.FileSize(filename.c_str());
+	if(size) {  // size=0 if error on open
         buffer = new char[size+1];
         fileH.FileRead(filename.c_str(), buffer, size);
         buffer[size] = '\0';
@@ -445,6 +454,7 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT , GenericScanner *Viru
         } 
         ToBrowser.Send( &sendout );
         delete buffer;
+	}
     }
     
     return false;

@@ -1,7 +1,7 @@
 /***************************************************************************
-                          connectiontobrowser.h  -  description
+                          whitelist.h  -  description
                              -------------------
-    begin                : Sa Feb 12 2005
+    begin                : Don Aug 18 2005
     copyright            : (C) 2005 by Christian Hilgers
     email                : christian@hilgers.ag
  ***************************************************************************/
@@ -15,62 +15,55 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef CONNECTIONTOBROWSER_H
-#define CONNECTIONTOBROWSER_H
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "httphandler.h"
-#include "logfile.h"
-#include "params.h"
+#ifndef WHITELIST_H
+#define WHITELIST_H
 
 #include <iostream>
-#include <algorithm>
-#include <string>
+#include <vector>
 
-#include <stdarg.h>
-#include <stdio.h>
+using namespace std;
 
-using namespace std; 
-
-class ConnectionToBrowser : public HTTPHandler  {
+/**
+@author Christian Hilgers
+*/
+class Whitelist{
 
 private:
 
-string Request;
+struct PathStruct
+{
+ string Page;
+ char exact;
+};
 
-string Host;
+struct URLStruct
+{
+ string Domain;
+ bool exact;
+ vector <struct PathStruct> Path;
+};
 
-int Port;
+struct WhitelistStruct
+{
+ string Toplevel;
+ vector <struct URLStruct> URL;
+};
+
+vector <WhitelistStruct> WhitelistDB;
 
 
-vector <string> Methods;
+bool AnalyseURL( string UrlT );
 
-string RequestType;
-
-bool AnalyseHeaderLine( string *RequestT );
-
-bool GetHostAndPortOfRequest(string *RequestT);
-
-bool GetHostAndPortOfHostLine( string *HostLineT );
+char CheckItem ( string *ItemT );
 
 public:
 
-string PrepareHeaderForServer();
+bool CreateWhitelist(string WhitelistFileT);
 
-const char *GetHost();
+    Whitelist();
 
-const char *GetCompleteRequest();
+    ~Whitelist();
 
-const string GetRequestType();
-
-int GetPort();
-
-      
-	ConnectionToBrowser();
-	~ConnectionToBrowser();
 };
 
 #endif

@@ -1,0 +1,78 @@
+<!DOCTYPE kdevelop>
+<kdevelop>
+  <general>
+    <author>Christian Hilgers</author>
+    <email>christian@hilgers.ag</email>
+    <projectmanagement>KDevAutoProject</projectmanagement>
+    <primarylanguage>C++</primarylanguage>
+    <keywords/>
+  </general>
+  <kdevautoproject>
+    <general>
+      <mainprogram>havp</mainprogram>
+    </general>
+    <configure>
+      <configargs>\s--build=i386-linux --host=i386-linux --target=i386-linux\s</configargs>
+    </configure>
+    <make>
+      <abortonerror/>
+      <numberofjobs/>
+      <dontact/>
+      <makebin/>
+      <envvars>
+        <envvar value="1" name="WANT_AUTOCONF_2_5" />
+        <envvar value="1" name="WANT_AUTOMAKE_1_6" />
+      </envvars>
+    </make>
+    <compiler>
+      <cflags/>
+      <cxxflags>\s-O0 -g3 -Wall</cxxflags>
+    </compiler>
+    <run>
+      <directoryradio>executable</directoryradio>
+    </run>
+  </kdevautoproject>
+  <kdevfileview>
+    <groups>
+      <group pattern="*.h;*.hh;*.hxx;*.hpp;*.H" name="Header" />
+      <group pattern="*.cpp;*.c;*.cc;*.C;*.cxx;*.ec;*.ecpp;*.lxx;*.l++;*.ll;*.l" name="Quellen" />
+      <group pattern="AUTHORS;COPYING;ChangeLog;INSTALL;README;TODO;NEWS" name="GNU" />
+      <group pattern="*" name="Andere" />
+      <hidenonprojectfiles>false</hidenonprojectfiles>
+      <hidenonlocation>false</hidenonlocation>
+    </groups>
+    <tree>
+      <hidepatterns>*.o,*.lo,CVS</hidepatterns>
+      <hidenonprojectfiles>false</hidenonprojectfiles>
+    </tree>
+  </kdevfileview>
+  <kdevdoctreeview>
+    <ignoretocs>
+      <toc>gtk</toc>
+      <toc>gnustep</toc>
+      <toc>python</toc>
+      <toc>php</toc>
+      <toc>perl</toc>
+    </ignoretocs>
+  </kdevdoctreeview>
+  <kdevdebugger>
+    <general>
+      <dbgshell>libtool</dbgshell>
+    </general>
+  </kdevdebugger>
+  <kdevcppsupport>
+    <references/>
+    <codecompletion>
+      <includeGlobalFunctions>true</includeGlobalFunctions>
+      <includeTypes>true</includeTypes>
+      <includeEnums>true</includeEnums>
+      <includeTypedefs>false</includeTypedefs>
+      <automaticCodeCompletion>true</automaticCodeCompletion>
+      <automaticArgumentsHint>true</automaticArgumentsHint>
+      <automaticHeaderCompletion>true</automaticHeaderCompletion>
+      <codeCompletionDelay>250</codeCompletionDelay>
+      <argumentsHintDelay>400</argumentsHintDelay>
+      <headerCompletionDelay>250</headerCompletionDelay>
+    </codecompletion>
+  </kdevcppsupport>
+</kdevelop>

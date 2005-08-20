@@ -51,30 +51,34 @@ bool SocketHandler::CreateServer( int portT, in_addr_t bind_addrT )
 
 
 //Create Server Socket, convert ASCII address representation into binary one
-bool SocketHandler::CreateServer( int portT, const char *bind_addrT )
+bool SocketHandler::CreateServer( int portT, string bind_addrT )
 {
-    return CreateServer( portT, bind_addrT == NULL ? INADDR_ANY : inet_addr( bind_addrT ) );
+    return CreateServer( portT, bind_addrT == "NULL" ? INADDR_ANY : inet_addr( bind_addrT.c_str() ) );
 }
 
 
 //Connect to Server
 bool SocketHandler::ConnectToServer (  )
 {
-    #if defined (SOURCE_ADDRESS)
-    struct sockaddr_in l_addr;
-    #endif
+    // #if defined (SOURCE_ADDRESS)
+    // struct sockaddr_in l_addr;
+    // #endif
 
     s_addr.sin_family = AF_INET;
 
     if ( (sock_fd = socket(s_addr.sin_family, SOCK_STREAM, 0)) == -1 )
         return false;
 
-    #if defined (SOURCE_ADDRESS)
+    // #if defined (SOURCE_ADDRESS)
+    string source_address=Params::GetConfigString("SOURCE_ADDRESS");
+    if(source_address != "") {
+    struct sockaddr_in l_addr;
     l_addr.sin_family = AF_INET;
-    l_addr.sin_addr.s_addr = inet_addr(SOURCE_ADDRESS);
+    l_addr.sin_addr.s_addr = inet_addr(source_address.c_str() );
     if ( ::bind ( sock_fd, (struct sockaddr *) &l_addr, sizeof ( l_addr ) ) == -1 )
         return false;
-    #endif
+    }
+    // #endif
 
     if ( ::connect(sock_fd, (struct sockaddr *) &s_addr, sizeof( s_addr ) ) == -1)
         return false;

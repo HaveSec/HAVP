@@ -16,7 +16,6 @@
  ***************************************************************************/
 
 #include "connectiontobrowser.h"
-#include "logfile.h"
 
 //Prepare Header for Server
 string ConnectionToBrowser::PrepareHeaderForServer()
@@ -25,7 +24,10 @@ string ConnectionToBrowser::PrepareHeaderForServer()
     string header;
     bool found= false;
 
-    #if defined (PARENTPROXY) && defined (PARENTPORT)
+    // #if defined (PARENTPROXY) && defined (PARENTPORT)
+    string parentproxy=Params::GetConfigString("PARENTPROXY");
+    int parentport=Params::GetConfigInt("PARENTPORT");
+    if( parentproxy != "" && parentport != 0 ) {
     string PortString = "";
     if ( Port != 80 )
     {
@@ -35,9 +37,11 @@ string ConnectionToBrowser::PrepareHeaderForServer()
     }
 
     header = RequestType + "http://" + Host + PortString + Request + " HTTP/1.0\r\n";
-    #else
+    // #else
+    } else {
     header = RequestType + Request + " HTTP/1.0\r\n";
-    #endif
+    }
+    // #endif
 
     vector<string>::iterator it;
 
@@ -96,12 +100,14 @@ string ConnectionToBrowser::PrepareHeaderForServer()
 bool ConnectionToBrowser::AnalyseHeaderLine( string *RequestT )
 {
 
-    #ifdef TRANSPARENT
+    // #ifdef TRANSPARENT
+    if(Params::GetConfigBool("TRANSPARENT")) {
     if( RequestT->find( "Host:", 0 ) == 0 )
     {
         return GetHostAndPortOfHostLine( RequestT );
     }
-    #endif
+    // #endif
+    }
 
     //Looking for GET, POST, HEAD
     for(unsigned int i=0;i < Methods.size(); i++)
@@ -152,7 +158,8 @@ bool ConnectionToBrowser::GetHostAndPortOfRequest(string *RequestT )
 
     string PortString;
 
-    #ifndef TRANSPARENT
+    // #ifndef TRANSPARENT
+    if(! Params::GetConfigBool("TRANSPARENT")) {
 
     string HostwithPort;
     string::size_type End;
@@ -190,14 +197,16 @@ bool ConnectionToBrowser::GetHostAndPortOfRequest(string *RequestT )
 
     Request = RequestT->substr(End, RequestT->length()-Begin);
 
-    #else
+    // #else
+    } else {
 
     if  ((Begin = RequestT->find("/", 0)) == string::npos )
     {
         return false;
     }
     Request = RequestT->substr(Begin, RequestT->length()-Begin);
-    #endif
+    // #endif
+    }
 
     //Get rid of HTTP (1.0)
     if ((Begin = Request.rfind(" HTTP",string::npos)) == string::npos )

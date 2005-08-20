@@ -1,8 +1,8 @@
 /***************************************************************************
-                          connectiontobrowser.h  -  description
+                          params.h  -  description
                              -------------------
-    begin                : Sa Feb 12 2005
-    copyright            : (C) 2005 by Christian Hilgers
+    begin                : So Feb 20 2005
+    copyright            : (C) 2005 by Peter Sebald / Christian Hilgers
     email                : christian@hilgers.ag
  ***************************************************************************/
 
@@ -15,62 +15,45 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef CONNECTIONTOBROWSER_H
-#define CONNECTIONTOBROWSER_H
 
-#ifdef HAVE_CONFIG_H
+#ifndef PARAMS_H
+#define PARAMS_H
+#include "default.h"
 #include <config.h>
-#endif
-
-#include "httphandler.h"
-#include "logfile.h"
-#include "params.h"
-
 #include <iostream>
-#include <algorithm>
 #include <string>
+#include <cstdlib>
+#include <map>
+#include <fstream>
+#include <ctype.h>
 
-#include <stdarg.h>
-#include <stdio.h>
+using namespace std;
 
-using namespace std; 
-
-class ConnectionToBrowser : public HTTPHandler  {
+class Params {
 
 private:
 
-string Request;
+static map <string,string> params;
 
-string Host;
+static void ReadConfig(string file);
 
-int Port;
+static void ShowConfig();
 
+static void Usage();
 
-vector <string> Methods;
-
-string RequestType;
-
-bool AnalyseHeaderLine( string *RequestT );
-
-bool GetHostAndPortOfRequest(string *RequestT);
-
-bool GetHostAndPortOfHostLine( string *HostLineT );
+static void SetDefaults();
 
 public:
 
-string PrepareHeaderForServer();
+static bool SetParams(int argcT, char* argv[]);
 
-const char *GetHost();
+static void SetConfig(string key, string val);
 
-const char *GetCompleteRequest();
+static bool GetConfigBool(string key);
 
-const string GetRequestType();
+static string GetConfigString(string key);
 
-int GetPort();
+static int GetConfigInt(string key);
 
-      
-	ConnectionToBrowser();
-	~ConnectionToBrowser();
 };
-
 #endif

@@ -1,0 +1,135 @@
+#! /bin/bash
+#
+#
+####
+# This init-script tries to be LSB conform but platform independent.
+# 
+# Therefore check the following two variables to fit to your requests:
+# HAVP_BIN and HAVP_CONFIG
+# Any configuration of HAVP is done in havp.config
+# Type havp --help for help and read havp.config you should have received.
+
+#
+# Check for missing binaries
+#
+HAVP_BIN=/usr/local/bin/havp
+test -x $HAVP_BIN || exit 5
+
+#
+# Check for existence of config file and read it
+# HAVP needs no configuration file to run. But you have to modify
+# havp.config to fit to your environment.
+# 
+OPTION=
+HAVP_CONFIG=/etc/havp/havp.config
+if [ -f $HAVP_CONFIG ] ; then
+OPTION="-c $HAVP_CONFIG"
+fi
+
+source <<eof /dev/stdin
+$($HAVP_BIN $OPTION -s)
+eof
+
+check_for_pathes () {
+	err=
+	[ -d ${PIDFILE%/*} ] || err=$PIDFILE
+	[ -d ${PIDFILE%/*} ] || err=$PIDFILE
+	[ -d ${ACCESSLOG%/*} ] || err=(${err[*]} $ACCESSLOG)
+	[ -d ${ERRORLOG%/*} ] || err=(${err[*]} $ERRORLOG)
+	[ -d ${SCANTEMPFILE%/*} ] || err=(${err[*]} $SCANTEMPFILE)
+	# [ -d ${TEMPLATEPATH%/*} ] || err=(${err[*]} $TEMPLATEPATH)
+	if [ -z $err ] ; then
+		return 0
+	else
+		echo " "
+		echo Path to ${err[*]} invalid!
+		echo "Starting HAVP ...failed"
+		return 1
+	fi
+}
+
+# Return values acc. to LSB for all commands but status:
+# 0	  - success
+# 1       - generic or unspecified error
+# 2       - invalid or excess argument(s)
+# 3       - unimplemented feature (e.g. "reload")
+# 4       - user had insufficient privileges
+# 5       - program is not installed
+# 6       - program is not configured
+# 7       - program is not running
+# 8--199  - reserved (8--99 LSB, 100--149 distrib, 150--199 appl)
+# 
+# Note that starting an already running service, stopping
+# or restarting a not-running service as well as the restart
+# with force-reload (in case signaling is not supported) are
+# considered a success.
+
+case "$1" in
+    start)
+	echo -n "Starting HAVP ..."
+	check_for_pathes || exit 100
+	if [ ! -f $PIDFILE ]; then touch $PIDFILE ; fi
+	chown $USER.$GROUP $PIDFILE
+	$HAVP_BIN $OPTION
+	echo "done"
+
+	;;
+    stop)
+	echo -n "Shutting down HAVP    "
+
+	kill -INT $(<$PIDFILE)
+	echo "done"
+
+	;;
+    restart)
+	$0 stop
+	$0 start
+
+	;;
+    force-reload)
+	## Signal the daemon to reload its config. Most daemons
+	## do this on signal 1 (SIGHUP).
+	## If it does not support it, restart.
+
+	echo -n "Reload service HAVP "
+	# if it supports it:
+	#killproc -HUP $FOO_BIN
+	#touch /var/run/FOO.pid
+
+	# Otherwise:
+	$0 stop  &&  $0 start
+
+	;;
+    reload)
+	## Like force-reload, but if daemon does not support
+	## signaling, do nothing (!)
+
+	# If it supports signaling:
+	#echo -n "Reload service FOO "
+	#killproc -HUP $FOO_BIN
+	#touch /var/run/FOO.pid
+
+	# Otherwise if it does not support reload:
+	;;
+    status)
+	echo -n "Checking for service HAVP "
+	## Check status with checkproc(8), if process is running
+	## checkproc will return with exit status 0.
+
+	# Return value is slightly different for the status command:
+	# 0 - service up and running
+	# 1 - service dead, but /var/run/  pid  file exists
+	# 2 - service dead, but /var/lock/ lock file exists
+	# 3 - service not running (unused)
+	# 4 - service status unknown :-(
+	# 5--199 reserved (5--99 LSB, 100--149 distro, 150--199 appl.)
+	
+	# NOTE: checkproc returns LSB compliant status values.
+	# checkproc $HAVP_BIN
+	exit 4
+	;;
+    *)
+	echo "Usage: $0 {start|stop|status|restart|force-reload|reload}"
+	exit 1
+	;;
+esac

@@ -19,6 +19,7 @@
 #define SOCKETHANDLER_H
 
 #include "default.h"
+#include "params.h"
 
 #include <netinet/in.h>
 #include <netdb.h>
@@ -43,7 +44,7 @@ public:
 
 bool CreateServer( int portT, in_addr_t bind_addrT = INADDR_ANY );
  
-bool CreateServer( int portT, const char *bind_addrT );
+bool CreateServer( int portT, string bind_addrT );
 
 bool AcceptClient ( SocketHandler *accept_socketT );
 

@@ -17,6 +17,7 @@
 
 #include "scannerfilehandler.h"
 #include "default.h"
+#include "params.h"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,6 +32,16 @@
 
 extern GenericScanner *VirusScanner;
 
+bool WritePidFile(pid_t pid)
+{
+    string pidfile=Params::GetConfigString("PIDFILE");
+    ofstream pidf(pidfile.c_str(),ios_base::trunc);
+    if(!pidf) return false;
+    pidf << pid ;
+    pidf.close();
+    return true;
+}
+
 static void ChildExited (int SignalNo)
 {
 	int dummy;
@@ -44,11 +55,6 @@ static void RereadDatabase (int SignalNo)
 static void StartNewChild (int SignalNo)
 {
  extern int startchild;
-
- if ( startchild < 0 ){
- startchild = 0;
- }
-
  startchild++;
 }
 static void DeleteTempfiles (int SignalNo)
@@ -209,17 +215,14 @@ int HardLockTest ( )
     exit (1);
 }
 
-
-bool ChangeUserAndGroup()
+bool ChangeUserAndGroup(string usr, string grp)
 {
-
-    #ifdef GROUP
-
+    if(grp != "") {
     struct group *group;
 
-    if ((group = getgrnam ( GROUP )) == NULL)
+    if ((group = getgrnam ( grp.c_str() )) == NULL)
     {
-        cout << GROUP << " unknown Group" << endl;
+        cout << "unknown group: " << grp << endl;
         return false;
     }
 
@@ -228,15 +231,14 @@ bool ChangeUserAndGroup()
         cout << "Could not change Group-ID" << endl;
         return false;
     }
-    #endif
-
-    #ifdef USER
+    }
+    if(usr != "") {
 
     struct passwd *user;
 
-    if ((user = getpwnam ( USER )) == NULL)
+    if ((user = getpwnam ( usr.c_str() )) == NULL)
     {
-        cout << USER << " unknown User" << endl;
+        cout << "unknown user: " << usr << endl;
         return false;
     }
 
@@ -245,15 +247,6 @@ bool ChangeUserAndGroup()
         cout << "Could not change User-ID" << endl;
         return false;
     }
-    #endif
-
+    }
     return true;
 }
-
-
-
-
-
-
-
-

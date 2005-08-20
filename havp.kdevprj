@@ -21,15 +21,15 @@ addcxxflags=
 bin_program=havp
 cflags=
 cppflags=
-cxxflags=\s-O3 -Wall
+cxxflags=\s-O0 -g3 -Wall
 ldadd=-lclamav
-ldflags=\s                                                          \s
+ldflags=\s                                                            \s
 
 [General]
 AMChanged=false
 author=Christian Hilgers
 configure_args=\s--build=i386-linux --host=i386-linux --target=i386-linux\s
-debug_args=
+debug_args=-c havp.config
 email=christian@hilgers.ag
 kdevprj_version=1.3
 lfv_open_groups=Header,Quellen
@@ -41,7 +41,7 @@ project_type=normal_cpp
 sgml_file=/home/hilgers/source/havp/havp/docs/en/index.sgml
 short_info=
 sub_dir=havp/
-version=0.66
+version=0.67
 version_control=None
 workspace=1
 
@@ -94,7 +94,7 @@ install_location=
 type=DATA
 
 [havp/Makefile.am]
-files=havp/havp.cpp,havp/sockethandler.cpp,havp/sockethandler.h,havp/default.h,havp/httphandler.cpp,havp/httphandler.h,havp/connectiontobrowser.cpp,havp/connectiontobrowser.h,havp/connectiontoserver.cpp,havp/connectiontoserver.h,havp/genericscanner.cpp,havp/genericscanner.h,havp/scannerfilehandler.cpp,havp/scannerfilehandler.h,havp/clamlibscanner.cpp,havp/clamlibscanner.h,havp/logfile.cpp,havp/logfile.h,havp/proxyhandler.cpp,havp/proxyhandler.h,havp/helper.cpp,havp/helper.h,havp/filehandler.cpp,havp/filehandler.h
+files=havp/havp.cpp,havp/sockethandler.cpp,havp/sockethandler.h,havp/default.h,havp/httphandler.cpp,havp/httphandler.h,havp/connectiontobrowser.cpp,havp/connectiontobrowser.h,havp/connectiontoserver.cpp,havp/connectiontoserver.h,havp/genericscanner.cpp,havp/genericscanner.h,havp/scannerfilehandler.cpp,havp/scannerfilehandler.h,havp/clamlibscanner.cpp,havp/clamlibscanner.h,havp/logfile.cpp,havp/logfile.h,havp/proxyhandler.cpp,havp/proxyhandler.h,havp/helper.cpp,havp/helper.h,havp/filehandler.cpp,havp/filehandler.h,havp/params.cpp,havp/params.h,havp/whitelist.cpp,havp/whitelist.h
 sub_dirs=docs
 type=prog_main
 
@@ -257,6 +257,18 @@ install=false
 install_location=
 type=HEADER
 
+[havp/params.cpp]
+dist=true
+install=false
+install_location=
+type=SOURCE
+
+[havp/params.h]
+dist=true
+install=false
+install_location=
+type=HEADER
+
 [havp/proxyhandler.cpp]
 dist=true
 install=false
@@ -288,6 +300,18 @@ install_location=
 type=SOURCE
 
 [havp/sockethandler.h]
+dist=true
+install=false
+install_location=
+type=HEADER
+
+[havp/whitelist.cpp]
+dist=true
+install=false
+install_location=
+type=SOURCE
+
+[havp/whitelist.h]
 dist=true
 install=false
 install_location=

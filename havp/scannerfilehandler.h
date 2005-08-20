@@ -22,6 +22,7 @@
 #include "genericscanner.h"
 #include "logfile.h"
 #include "default.h"
+#include "params.h"
 
 //#include <stdio.h>
 //#include <stdlib.h>

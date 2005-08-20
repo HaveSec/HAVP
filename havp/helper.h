@@ -24,7 +24,9 @@ int MakeDeamon();
 
 int HardLockTest ( );
 
-bool ChangeUserAndGroup();
+bool ChangeUserAndGroup(string usr, string grp);
+
+bool WritePidFile(pid_t pid);
 
 void InstallSignal ();
 

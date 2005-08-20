@@ -24,6 +24,7 @@
 #include "logfile.h"
 #include "filehandler.h"
 #include "default.h"
+#include "params.h"
 
 #include <iostream>
 #include <string>

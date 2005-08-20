@@ -27,6 +27,7 @@
 #include "clamlibscanner.h"
 #include "proxyhandler.h"
 #include "filehandler.h"
+#include "params.h"
 
 #include <sys/wait.h>
 #include <sys/ipc.h>
@@ -47,47 +48,49 @@ int main(int argc, char *argv[])
     rereaddatabase = false;
     startchild = 0;
 
+    if(Params::SetParams(argc,argv) == false) exit(253);
     InstallSignal();
 
     SocketHandler ProxyServer;
     ProxyHandler Proxy;
     VirusScanner = new (ClamLibScanner);
 
-    if ( ChangeUserAndGroup( ) == false)
-        exit (-1);
+    if(Params::GetConfigBool("DISPLAYINITIALMESSAGES")) {
+   	cout << "Starting Havp Version: " << VERSION << endl;
+    }
 
-    if (LogFile::InitLogFiles( ACCESSLOG, ERRORLOG ) == false)
+    string user=Params::GetConfigString("USER");
+    string group=Params::GetConfigString("GROUP");
+    if ( ChangeUserAndGroup(user,group) == false) exit (-1);
+
+    string accesslog = Params::GetConfigString("ACCESSLOG");
+    string errorlog = Params::GetConfigString("ERRORLOG");
+    if (LogFile::InitLogFiles( accesslog.c_str(), errorlog.c_str() ) == false)
     {
         cout << "Could not create logfiles" << endl;
         exit (-1);
     }
+    LogFile::ErrorMessage("Starting Havp Version: %s\n", VERSION );
+    LogFile::ErrorMessage ("Change to group %s\n", group.c_str());
+    LogFile::ErrorMessage ("Change to user %s\n", user.c_str());
 
-    #ifdef  DISPLAYINITIALMESSAGES
-    cout << "Starting Havp Version:" << VERSION << endl;
-    #endif
+    string parentproxy=Params::GetConfigString("PARENTPROXY");
+    int parentport=Params::GetConfigInt("PARENTPORT");
+    if( parentproxy != "" && parentport != 0 )
+    LogFile::ErrorMessage("Use parent proxy: %s %d\n", parentproxy.c_str(), parentport );
 
-    LogFile::ErrorMessage("Starting Havp Version: %s\n", VERSION);
-    #ifdef USER
-    LogFile::ErrorMessage ("Change to User %s\n", USER);
-    #endif
-    #ifdef GROUP
-    LogFile::ErrorMessage ("Change to Group %s\n", GROUP);
-    #endif
-
-    #if defined (PARENTPROXY) && defined (PARENTPORT)
-    LogFile::ErrorMessage("Use parent proxy: %s %d\n", PARENTPROXY, PARENTPORT );
-    #endif
-
-    #ifdef TRANSPARENT
+    if(Params::GetConfigBool("TRANSPARENT"))
     LogFile::ErrorMessage("Use transparent proxy mode\n");
-    #endif
 
     if( HardLockTest ( )!= 1)
     {
         exit (-1);
     }
-
-    if( ProxyServer.CreateServer( PORT, BIND_ADDRESS ) == false)
+ 
+    const char *ba;
+    int port=Params::GetConfigInt("PORT");
+    string bind_address=Params::GetConfigString("BIND_ADDRESS");
+    if( ProxyServer.CreateServer( port, bind_address ) == false)
     {
         cout << "Could not create Server" << endl;
         LogFile::ErrorMessage("Could not create Server\n");
@@ -101,9 +104,7 @@ int main(int argc, char *argv[])
         exit (-1);
     }
 
-    #ifdef DAEMON
-    MakeDeamon();
-    #endif
+    if(Params::GetConfigBool("DAEMON")) MakeDeamon();
 
 //PSEstart
     //PSE: parent pid of all processes started from now on
@@ -112,9 +113,9 @@ int main(int argc, char *argv[])
     pid=getpid();
     setpgrp();  //PSE: for cases daemon is not started
     LogFile::ErrorMessage ("Process ID: %d\n", pid);
+    if(! WritePidFile(pid)) cout << "Can not write to PIDFILE!\n";
 
     //create a unique message queue for all children and grandchildren
-
 #ifdef QUEUE
     int qid;
     qid = msgget(IPC_PRIVATE, (IPC_CREAT | 00600) );
@@ -130,10 +131,10 @@ int main(int argc, char *argv[])
 
 //PSEend
 
-    #ifdef SERVERNUMBER
     //PSE: pid_t pid;
     //Start Server
-    for( int i = 0; i < SERVERNUMBER; i++ )
+    int servernumber = Params::GetConfigInt("SERVERNUMBER");
+    for( int i = 0; i < servernumber; i++ )
     {
         pid=fork();
         Instances++;
@@ -149,44 +150,42 @@ int main(int argc, char *argv[])
             exit (1);
         }
     }
-    #endif
 
+    int dbreload=Params::GetConfigInt("DBRELOAD");
     while(1)
     {
 
         //Signal Refresh
         if(rereaddatabase) {
-		      rereaddatabase = false;
-		      VirusScanner->ReloadDatabase();
+		  rereaddatabase = false;
+		  VirusScanner->ReloadDatabase();
+                  LastRefresh = time(NULL);
     		  LogFile::ErrorMessage ("Database reread by signal\n");
-	      }
+	}
 
         //Time Refresh
-        if ( time(NULL) > (LastRefresh + DBRELOAD*60) ){
-          LastRefresh = time(NULL);
-		      rereaddatabase = false;
-		      VirusScanner->ReloadDatabase();
+        if ( time(NULL) > (LastRefresh + dbreload*60) ){
+                  LastRefresh = time(NULL);
+		  VirusScanner->ReloadDatabase();
     		  LogFile::ErrorMessage ("Database reread by time\n");
         }
 
-        #ifdef SERVERNUMBER
-
+	if(servernumber > 0) {
         int status;
-        if( (pid = waitpid(-1,&status,WNOHANG)) != 0 )
+        if( (pid = waitpid(-1,&status,WNOHANG)) > 0 )
         {
           Instances--;
           //LogFile::ErrorMessage ("PID %d\n", pid);
         }
 
-	if ((startchild) || (Instances < SERVERNUMBER)){
-          //LogFile::ErrorMessage ("Instances %d - startchild %d - Number %d\n", Instances, startchild, SERVERNUMBER);
+	if ((startchild) || (Instances < servernumber)){
+          //LogFile::ErrorMessage ("Instances %d - startchild %d - Number %d\n", Instances, startchild, servernumber);
 
         	pid=fork();
-          Instances++;
-        	if (pid < 0)
-          {
-           LogFile::ErrorMessage ("Could not fork child");
-           Instances--;
+          	Instances++;
+        	if (pid < 0) {
+           		LogFile::ErrorMessage ("Could not fork child");
+           		Instances--;
         	} else if (pid == 0) {
             //Child
             	VirusScanner->PrepareScanning ( &ProxyServer );
@@ -196,24 +195,24 @@ int main(int argc, char *argv[])
             	Proxy.Proxy ( &ProxyServer, VirusScanner );
             	exit (1);
         	} else {
-		      startchild--;
-		      }
+		      if(startchild) startchild--;
+		}
 	}
 
  //LogFile::ErrorMessage ("Instances %d - startchild %d\n", Instances, startchild);
 
- if(Instances >= SERVERNUMBER)
+ if(Instances >= servernumber)
  {
 	pause();
  }
 
-        #else
+	} else {
         VirusScanner->PrepareScanning ( &ProxyServer );
 //PSEstart
 //	VirusScanner->FreeDatabase();
 //PSEend
         Proxy.Proxy ( &ProxyServer, VirusScanner );
-        #endif
+	}
     }
     return 0;
 }

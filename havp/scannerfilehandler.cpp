@@ -31,7 +31,8 @@ bool ScannerFileHandler::OpenAndLockFile( )
     lock.l_whence = SEEK_SET;                     // SEEK_SET, SEEK_CUR oder SEEK_END
     lock.l_len    = MAXFILELOCKSIZE;              // number of bytes; 0 = EOF
 
-    strncpy( FileName, SCANTEMPFILE, MAXSCANTEMPFILELENGTH);
+    string scantempfile=Params::GetConfigString("SCANTEMPFILE");
+    strncpy( FileName, scantempfile.c_str(), MAXSCANTEMPFILELENGTH);
 
     if ( (fd_scan = mkstemp( FileName )) < 0 )
     {

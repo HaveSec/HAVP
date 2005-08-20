@@ -1,31 +1,56 @@
 Basic Installation
 ==================
 
+NEW Changes:
+1. New Configurationfile
+2. Path to remplates and HTML templates have changed 
 
-NEW: You have to copy the HTML templates to /etc/havp/templates/  !!!
+Installation:
 
-copy the templates directory from source to /etc/havp/
+configure
+make
+make install
 
-run ./configure --help and choose the right settings
+Copy HTML templates / Configurationfile and rc-script:
 
-You can configure "havp/default.h" to fit your needs.
-This is needed if you want to use a parent proxy or for using HAVP in transparent proxy mode.
-Please check the documentation in default.h.
+cd sourcetohavp/havp/etc
+cp -r havp /etc/
+cp init.d/havp /etc/init.d/
 
-HAVP will change to nobody and nogroup on default!
+Edit the configfile:
+vi /etc/havp/havp.config
 
-run make and make install
+Create the logfile directory:
 
-mount a filesystem with mandatory locks to /var/tmp/havp
+i.e.: mkdir /var/log/havp
+Make the directory writable for to the user define in havp.config
+i.e. chown nobody /var/log/havp
+
+Create the tempfile directory:
+i.e.: mkdir /var/tmp/havp
+
+!!!!!!!!This directory needs mandatory looks!!!!!!!!
+Mount a filesystem with mandatory locks to /var/tmp/havp
 i.e. mount /dev/hda9 /var/tmp/havp -o mand
 
-Check the permissions:
+You can also use a ramdisk, but downloaded files must be smaller than the ramdisk!
+mkfs.ext3 /dev/ram0
+mount /dev/ram0 /var/tmp/havp -o mand
+
+Make the directory writable for to the user define in havp.config
 i.e. chown nobody /var/tmp/havp
 
-The logfiles are
+Start havp:
+
+/etc/init.d/havp start
+
+If you have problems check the logfiles
+
 /var/log/havp/havp.log
 /var/log/havp/access.log
-Check for right permissions
 
-run havp
+If you don't want to use the rc-script you can start havp directly:
+/usr/local/bin/havp -c Configfile -p Pidfile
+/usr/local/bin/havp -h (shows help)
+
 
