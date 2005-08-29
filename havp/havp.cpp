@@ -28,6 +28,7 @@
 #include "proxyhandler.h"
 #include "filehandler.h"
 #include "params.h"
+#include "whitelist.h"
 
 #include <sys/wait.h>
 #include <sys/ipc.h>
@@ -36,11 +37,13 @@
 #include <time.h>
 //#include <unistd.h>
 
+Whitelist Whitelist;
 GenericScanner *VirusScanner;
 bool rereaddatabase;
 int startchild;
 int Instances = 0;
 time_t LastRefresh = time(NULL);
+
 
 int main(int argc, char *argv[])
 {
@@ -61,7 +64,7 @@ int main(int argc, char *argv[])
 
     string user=Params::GetConfigString("USER");
     string group=Params::GetConfigString("GROUP");
-    if ( ChangeUserAndGroup(user,group) == false) exit (-1);
+//    if ( ChangeUserAndGroup(user,group) == false) exit (-1);
 
     string accesslog = Params::GetConfigString("ACCESSLOG");
     string errorlog = Params::GetConfigString("ERRORLOG");
@@ -70,7 +73,16 @@ int main(int argc, char *argv[])
         cout << "Could not create logfiles" << endl;
         exit (-1);
     }
+
     LogFile::ErrorMessage("Starting Havp Version: %s\n", VERSION );
+
+    string whitelistfile = Params::GetConfigString("WHITELIST");
+    if ( Whitelist.CreateWhitelist(whitelistfile) == false ) {
+      cout << "Could not read whitelist!" << endl;
+      exit(-1);
+    }
+
+
     LogFile::ErrorMessage ("Change to group %s\n", group.c_str());
     LogFile::ErrorMessage ("Change to user %s\n", user.c_str());
 
@@ -87,7 +99,6 @@ int main(int argc, char *argv[])
         exit (-1);
     }
  
-    const char *ba;
     int port=Params::GetConfigInt("PORT");
     string bind_address=Params::GetConfigString("BIND_ADDRESS");
     if( ProxyServer.CreateServer( port, bind_address ) == false)

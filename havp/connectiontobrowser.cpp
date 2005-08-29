@@ -231,6 +231,11 @@ const char *ConnectionToBrowser::GetHost()
     return Host.c_str();
 }
 
+const string ConnectionToBrowser::GetRequest()
+{
+    return Request;
+}
+
 
 const char *ConnectionToBrowser::GetCompleteRequest()
 {

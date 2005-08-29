@@ -426,7 +426,7 @@ distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH
 #>- DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 #>+ 4
-KDE_DIST=stamp-h.in readme subdirs configure.files havp.kdevelop todo authors install copying Doxyfile Makefile.dist havp.kdevses configure.in.in stamp-h2 
+KDE_DIST=stamp-h.in readme subdirs havp.kdevelop.pcs configure.files havp.kdevelop todo authors install copying Doxyfile Makefile.dist havp.kdevses configure.in.in stamp-h2 
 
 DISTFILES= $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST) $(KDE_DIST)
 
@@ -642,7 +642,6 @@ dist-hook:
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
-
 
 #>+ 2
 docs-am:

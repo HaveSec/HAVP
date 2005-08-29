@@ -61,6 +61,7 @@ public:
 string PrepareHeaderForServer();
 
 const char *GetHost();
+const string GetRequest();
 
 const char *GetCompleteRequest();
 

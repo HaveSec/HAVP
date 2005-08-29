@@ -33,11 +33,12 @@ bool Whitelist::CreateWhitelist(string WhitelistFileT)
  string Start;
  string URL;
  string Domain;
+ char ExactDomain;
  string Path;
+ char ExactPath;
  string Toplevel;
- bool ToplevelFound;
  struct WhitelistStruct NewToplevel;
-
+ string::size_type ToplevelCounter;
 
  Input.open( WhitelistFileT.c_str());
 
@@ -53,49 +54,27 @@ bool Whitelist::CreateWhitelist(string WhitelistFileT)
  	Start = Line.substr(0,1);
 	i1 = Line.find_first_not_of(" \t");
  	if(Start != "#" && i1 != Line.npos ) {
- 		i2 = Line.find_last_of(" \t");
-		URL = Line.substr(i1,i2-i1);
+ 	  i2 = Line.find_last_of(" \t");
+	  URL = Line.substr(i1,i2-i1);
 
-    if ((i1 = URL.find("/")) == string::npos )
-    {
-     Domain = URL.substr(0,i1);
-     if ((i1 = Domain.rfind(".")) == string::npos ) //IPs are not detected and last part is handled as toplevel-domain :-(
-     {
-      Toplevel = Domain.substr( i1, Domain.size()-i1-1);
-      ToplevelFound = false;
+          if (AnalyseURL( URL, &Toplevel, &Domain, &ExactDomain, &Path, &ExactPath ) == false ) {
+            return false;
+          }
 
-      for(string::size_type i=0;i < WhitelistDB.size(); i++)
-      {
-       if (Toplevel == WhitelistDB.at(i).Toplevel)
-       {
-         ToplevelFound = true;
-         //Domain, Path;
+          ToplevelCounter = 0;
+          while (1) {
+            if(ToplevelCounter == WhitelistDB.size()){             
+              NewToplevel.Toplevel = Toplevel;
+              WhitelistDB.push_back( NewToplevel );
+            }
 
-         for(string::size_type n=0;n <WhitelistDB.at(i).URL.size(); n++)
-         {
-           if (Domain == WhitelistDB.at(i).URL.at(n).Domain )
-           {
-             //WhitelistDB.at(i).URL.at(n).Path
+             if(WhitelistDB.at(ToplevelCounter).Toplevel == Toplevel){
+               InsertURL( &WhitelistDB.at(ToplevelCounter), Domain, ExactDomain, Path, ExactPath );
+               break;
+             }
+            ToplevelCounter++;
            }
-
-         }
-
-
-
-       }
-      }
-
-     if( ToplevelFound == false )
-     {
-      NewToplevel.Toplevel = Toplevel;
-      WhitelistDB.push_back ( NewToplevel );
-     }
-
-     }
-
-    }
-
- 	}
+        }
  }
 
 
@@ -104,45 +83,50 @@ bool Whitelist::CreateWhitelist(string WhitelistFileT)
 return true;
 }
 
-bool Whitelist::AnalyseURL( string UrlT )
+
+bool Whitelist::AnalyseURL( string UrlT, string *ToplevelT, string *DomainT, char *ExactDomainT, string *PathT, char *ExactPathT )
 {
+
+*ToplevelT = "";
+*DomainT = "";
+*PathT = "";
 
 string::size_type i1;
 
-string Domain;
-string Toplevel;
-string Path;
-char ExactPath;
-char ExactDomain;
-
-    if ((i1 = UrlT.find("/")) == string::npos )
+    if ((i1 = UrlT.find("/")) != string::npos )
     {
-     Domain = UrlT.substr(0,i1);
-     Path = UrlT.substr(i1, UrlT.size()-i1);
-     //Check Path!!!
+     *DomainT = UrlT.substr(0,i1);
+     *PathT = UrlT.substr(i1+1, UrlT.size()-i1-1);
     } else {
-     Domain = UrlT;
-     Path = "";
-     ExactPath = 'y';
+     *DomainT = UrlT;
+     *PathT = "";
     }
 
-    if ((i1 = Domain.rfind(".")) == string::npos ) //IPs are not detected and last part is handled as toplevel-domain :-(
+    if ((i1 = DomainT->rfind(".")) != string::npos ) //IPs are not detected and last part is handled as toplevel-domain :-(
     {
-      Toplevel = Domain.substr( i1, Domain.size()-i1-1);
-      Domain = Domain.substr (0,i1);
-      //Check Path!!!
+      *ToplevelT = DomainT->substr( i1+1, DomainT->size()-i1-1);
+      *DomainT = DomainT->substr (0,i1+ToplevelT->size()+1);
     } else {
-     if ( Domain != "*" )
+     if ( *DomainT != "*" )
      {
-       LogFile::ErrorMessage ("Missing Toplevel Domain: %s\n", UrlT.c_str());
+//       LogFile::ErrorMessage ("Whitelist missing Toplevel Domain: %s\n", UrlT.c_str());
+       LogFile::ErrorMessage ("Whitelist missing Toplevel Domain: %s\n", DomainT->c_str());
        return false;
-     } else {
-       Domain ="";
-       ExactDomain = 'r';
      }
-
     }
-   
+
+*ExactDomainT = CheckItem( DomainT );
+if ( (*ExactDomainT != 'l') && (*ExactDomainT != 'n') ) {
+  LogFile::ErrorMessage ("Whitelist invalid Domain: %s\n", DomainT->c_str() );
+  return false;
+} 
+
+*ExactPathT = CheckItem( PathT );
+if  (*ExactPathT == 'e') {
+  LogFile::ErrorMessage ("Whitelist invalid Path: %s\n", PathT->c_str() );
+  return false;
+} 
+
 return true;
 }
 
@@ -151,37 +135,176 @@ return true;
 char Whitelist::CheckItem ( string *ItemT )
 {
 
-char position;
+char position='n';
 string character;
 
+if ( ItemT->size() == 0 ) return position;
 character = ItemT->substr(0,1);
 
 if( character == "*" ){
  ItemT->erase(0,1);
- position = 'r';
+ position = 'l';
 }
 
+if ( ItemT->size() == 0 ) return position;
 character = ItemT->substr(ItemT->size()-1,1);
 
 if( character == "*" ){
  ItemT->erase(ItemT->size()-1,1);
 
- if ( position == 'r' ){
+ if ( position == 'l' ){
   position = 'b';
  } else {
-  position = 'l';
+  position = 'r';
  }
 }
 
 if (ItemT->find("*") != string::npos ){
 LogFile::ErrorMessage ("Whitelist - To many wildcards in %s\n", ItemT->c_str());
-position = 'i';
+position = 'e';
 }
 
 return position;
 
 }
 
+void Whitelist::InsertURL( struct WhitelistStruct *WhitelistDBT, string DomainT, char ExactDomainT, string PathT, char ExactPathT ){
+
+unsigned int DomainCounter = 0;
+struct DomainStruct NewDomain;
+struct PathStruct NewPath;
+
+          while (1) {
+
+            if(DomainCounter == WhitelistDBT->Domain.size()){             
+              NewDomain.Domain = DomainT; 
+              NewDomain.exact = ExactDomainT;
+              WhitelistDBT->Domain.push_back( NewDomain );
+            }
+
+             if(WhitelistDBT->Domain.at(DomainCounter).Domain == DomainT){
+              NewPath.Path = PathT; 
+              NewPath.exact = ExactPathT;
+              WhitelistDBT->Domain.at(DomainCounter).Path.push_back( NewPath ); 
+              break;
+             }
+             DomainCounter++;
+          }
+}
+
+void Whitelist::DisplayWhitelist( ) {
+
+
+vector<WhitelistStruct>::iterator ToplevelI;
+vector<DomainStruct>::iterator DomainI;
+vector<PathStruct>::iterator PathI;
+
+ cout << "Whitelist:" << endl;
+ //cout << "Toplevel - Domain - Path" << endl;
+
+ for(ToplevelI = WhitelistDB.begin(); ToplevelI != WhitelistDB.end(); ToplevelI++)
+ {
+   if ( ToplevelI->Toplevel == "" ){
+     cout << " - " << "*" << endl;
+   } else {
+     cout << " - " << ToplevelI->Toplevel << endl;
+   }
+   for(DomainI = ToplevelI->Domain.begin(); DomainI != ToplevelI->Domain.end(); DomainI++)
+   {
+     cout << "   - " << DisplayLine(DomainI->Domain, DomainI->exact) << endl;
+     for(PathI = DomainI->Path.begin(); PathI != DomainI->Path.end(); PathI++)
+     {
+       cout << "       - " << DisplayLine(PathI->Path, PathI->exact) << endl;
+     }
+   }
+ }
+
+
+}
+
+string Whitelist::DisplayLine( string LineT, char positionT ) {
+
+string Newline = LineT;
+
+if ( positionT == 'r' ){
+Newline = LineT + "*";
+} else if ( positionT == 'l' ){
+Newline = "*" +LineT;
+} else if ( positionT == 'b' ){
+Newline = "*" + LineT + "*";
+}
+
+return Newline;
+}
+
+
+bool Whitelist::URLWhitelisted ( string DomainT, string PathT ) {
+
+vector<WhitelistStruct>::iterator ToplevelI;
+vector<DomainStruct>::iterator DomainI;
+vector<PathStruct>::iterator PathI;
+
+ //Cut leading /
+ PathT.erase(0,1);
+
+ for(ToplevelI = WhitelistDB.begin(); ToplevelI != WhitelistDB.end(); ToplevelI++)
+ {
+
+//cout << ToplevelI->Toplevel << " " << DomainT.size() - ToplevelI->Toplevel.size() << " " << DomainT.rfind( ToplevelI->Toplevel ) << endl;
+
+   if ((ToplevelI->Toplevel == "") || ( DomainT.rfind( ToplevelI->Toplevel ) == DomainT.size() - ToplevelI->Toplevel.size() )){
+
+     for(DomainI = ToplevelI->Domain.begin(); DomainI != ToplevelI->Domain.end(); DomainI++)
+     {
+
+//cout << DomainT << " " << DomainI->Domain << " " << DomainI->exact << endl;
+
+       if( FindString( DomainI->Domain, DomainT, DomainI->exact ) == true) {
+
+        for(PathI = DomainI->Path.begin(); PathI != DomainI->Path.end(); PathI++)
+        {
+
+//cout << PathT << " " << PathI->Path << " " << PathI->exact << endl;
+
+          if( FindString( PathI->Path, PathT, PathI->exact ) == true) {
+            return true;
+          }
+        }
+      }
+     }
+   }
+  }
+return false;
+}
+
+bool Whitelist::FindString( string SearchT, string LineT, char positionT ) {
+
+if ( positionT == 'l' ){
+
+//cout << LineT.rfind( SearchT ) << " " << (LineT.size() - SearchT.size()) << endl;
+
+   if ( LineT.rfind( SearchT ) == (LineT.size() - SearchT.size()) ){
+     return true;
+   }
+
+} else if ( positionT == 'r' ){
+
+   if ( LineT.find( SearchT ) == 0 ){
+     return true;
+   }
+
+} else if ( positionT == 'b' ){
+   if ( LineT.find( SearchT ) != string::npos ){
+     return true;
+   }
+} else if ( positionT == 'n' ){
+   if ( LineT == SearchT ){
+     return true;
+   }
+}
+
+return false;
+}
 
 Whitelist::Whitelist(){
 }

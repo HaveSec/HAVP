@@ -31,6 +31,7 @@ void Params::SetDefaults()
 	SetConfig("PORT",buf);
 	SetConfig("BIND_ADDRESS",BIND_ADDRESS);
 // Parameters only setable by havp.config (whereever it is)
+ 	SetConfig("WHITELIST","/etc/havp/whitelist");
 	SetConfig("PIDFILE","/var/run/havp.pid");
 	SetConfig("DAEMON","true");
 	SetConfig("TRANSPARENT","false");
@@ -72,7 +73,7 @@ void Params::SetConfig(string param, string value)
 	} else {
 		param.erase(e,param.size());
 	}
-	int j=0;
+	string::size_type j=0;
 	while( j < e ) { 
 		param[j++] = toupper(*i++);
 	}
@@ -122,8 +123,9 @@ void Params::Usage()
 }
 
 bool Params::SetParams(int argvT, char* argcT[])
-{int i;
+{
  char ch;
+ bool showconf = false;
  string option,value;
  typedef string::size_type ST;
 
@@ -149,8 +151,8 @@ bool Params::SetParams(int argvT, char* argcT[])
 				break;
 				}
 			case 's':
-				ShowConfig();
-				return false;
+				showconf = true;
+                                break;
 			case 'h':
 		default:
 			{
@@ -176,16 +178,23 @@ bool Params::SetParams(int argvT, char* argcT[])
 		Usage();
 		return false;
 	} else if( option == "show-config") {
-		ShowConfig();
-		return false;
+		showconf = true;
 	} else if( option == "pid-file" || option == "p" ) {
 		SetConfig("PIDFILE",value);
 	} else if( option == "conf-file" || option == "c" ) {
 		ReadConfig(value);
+        } else if(showconf == true) {
+                //Nothing to prefent Usage
 	} else {
 		Usage();
 		return false;
 	}
  }
+
+if(showconf == true) {
+ ShowConfig();
+ return false;
+}
+
  return true;
 }

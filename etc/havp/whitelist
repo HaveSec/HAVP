@@ -1,0 +1,21 @@
+#
+# This is the whitelist file for HAVP
+# 
+# All lines starting with a hash (#) or empty lines are ignored.
+#
+# Lines can hold URLs with wildcards with following rules:
+# Line must cointain Domain/Path
+# Domains can have a wildcard at begin.
+# Pages can hav a wildcard at begin and end.
+# URLs without wildcards are exact
+#e.g
+# www.server-side.de    (Only this URL is whitelisted)
+# www.server-side.de/*  (Domain is completely whitelisted)
+# *server-side.de/index.html
+# */*.gif               (All .gif are whitelisted)
+# www.server-side.de/novirus*
+# www.server-side.de/*novirus*
+
+# Whitelist clamav download
+*sourceforge.net/*clamav-*
+

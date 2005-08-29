@@ -16,6 +16,9 @@
  ***************************************************************************/
 
 #include "proxyhandler.h"
+#include "whitelist.h"
+
+extern Whitelist Whitelist;
 
 bool ProxyHandler::Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusScannerT )
 {
@@ -58,6 +61,7 @@ bool ProxyHandler::Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusSca
 int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *VirusScannerT)
 {
 
+    bool ScannerOff;
     int TempScannerAnswer;
 
     bool unlock = false;
@@ -103,6 +107,8 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
         LogFile::ErrorMessage("Could not Analyse header\n%s\n", Header.c_str());
         return -30;
     }
+
+    ScannerOff = Whitelist.URLWhitelisted ( ToBrowser.GetHost(), ToBrowser.GetRequest() );
 
     // #if defined (PARENTPROXY) && defined (PARENTPORT)
     string parentproxy=Params::GetConfigString("PARENTPROXY");
@@ -267,11 +273,14 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
         //Add string to queue
         BodyQueue.push_back( BodyTemp );
 
-        //Expand file to scan
-        if ( VirusScannerT->ExpandFile( (char *)BodyTemp.c_str(), BodyTemp.length() , unlock ) == false )
+        if (ScannerOff != true) 
         {
+          //Expand file to scan
+          if ( VirusScannerT->ExpandFile( (char *)BodyTemp.c_str(), BodyTemp.length() , unlock ) == false )
+          {
             LogFile::ErrorMessage("Could not expand tempfile: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
             return -130;
+          }
         }
 
         TransferData = BodyQueue.begin();
