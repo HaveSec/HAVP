@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 
     string user=Params::GetConfigString("USER");
     string group=Params::GetConfigString("GROUP");
-//    if ( ChangeUserAndGroup(user,group) == false) exit (-1);
+    if ( ChangeUserAndGroup(user,group) == false) exit (-1);
 
     string accesslog = Params::GetConfigString("ACCESSLOG");
     string errorlog = Params::GetConfigString("ERRORLOG");

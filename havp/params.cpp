@@ -30,7 +30,10 @@ void Params::SetDefaults()
 	snprintf(buf,6,"%d",PORT);
 	SetConfig("PORT",buf);
 	SetConfig("BIND_ADDRESS",BIND_ADDRESS);
+	SetConfig("KEEPBACKBUFFER",KEEPBACKBUFFER);
+ 	SetConfig("TRICKLING",TRICKLING);
 // Parameters only setable by havp.config (whereever it is)
+ 	SetConfig("MAXSCANSIZE","0");
  	SetConfig("WHITELIST","/etc/havp/whitelist");
 	SetConfig("PIDFILE","/var/run/havp.pid");
 	SetConfig("DAEMON","true");

@@ -244,8 +244,8 @@ vector<WhitelistStruct>::iterator ToplevelI;
 vector<DomainStruct>::iterator DomainI;
 vector<PathStruct>::iterator PathI;
 
- //Cut leading /
- PathT.erase(0,1);
+//Delete / add Path
+PathT.erase(0,1);
 
  for(ToplevelI = WhitelistDB.begin(); ToplevelI != WhitelistDB.end(); ToplevelI++)
  {

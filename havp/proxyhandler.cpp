@@ -88,6 +88,10 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
     string BodyTemp;
     int TransferDataLength=0;
 
+    unsigned int maxscansize = Params::GetConfigInt("MAXSCANSIZE");
+    int TricklingTime = Params::GetConfigInt("TRICKLING");
+    unsigned int KeepBackBuffer = Params::GetConfigInt("KEEPBACKBUFFER");
+
     if( ProxyServerT->AcceptClient( &ToBrowser ) == false)
     {
         BrowserDropped = true;
@@ -224,13 +228,14 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
 
     ContentLengthReference = ToServer.GetContentLength( );
 
-    if ( ContentLengthReference > 0 )
+    //Also check if file is too large for scanning
+    if ( ( ContentLengthReference > 0 ) && ( ( ContentLengthReference < maxscansize ) || (maxscansize == 0) ) )
     {
         unlock = true;
         //Set tempfile to right size
         if ( VirusScannerT->SetFileSize( ContentLengthReference ) == false )
         {
-            LogFile::ErrorMessage("Could set file size: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+            LogFile::ErrorMessage("Could set file size - Check disk space: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
             return -90;
         }
     }
@@ -240,6 +245,9 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
 
  //Not Modified no Body expected or HEAD with no body
  if( (ToServer.GetResponse() != 304 ) && (ToServer.GetResponse() != -302 ) && (ToBrowser.GetRequestType() != "HEAD") ) {
+
+    //Start Time for Trickling
+    time_t LastTrickling = time(NULL);
 
     //Server Body Transfer
     while ( (BodyLength = ToServer.ReadBodyPart(&BodyTemp)) != 0)
@@ -265,7 +273,7 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
         ContentLength += BodyLength;
         if ( (unlock == true) && ( ContentLength > ContentLengthReference ) )
         {
-            LogFile::ErrorMessage("ContentLength and Body size does not fit: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+            LogFile::ErrorMessage("ContentLength and Body size does not fit - body too long: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
             return -120;
         }
 
@@ -273,19 +281,60 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
         //Add string to queue
         BodyQueue.push_back( BodyTemp );
 
+        //File to large for scanning
+        if ( (maxscansize != 0) && ( ContentLength > maxscansize ) )
+        {
+         ScannerOff = true;
+        }
+
         if (ScannerOff != true) 
         {
           //Expand file to scan
           if ( VirusScannerT->ExpandFile( (char *)BodyTemp.c_str(), BodyTemp.length() , unlock ) == false )
           {
-            LogFile::ErrorMessage("Could not expand tempfile: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+            LogFile::ErrorMessage("Could not expand tempfile - Check disk space: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
             return -130;
           }
         }
 
         TransferData = BodyQueue.begin();
 
-        if ( KEEPBACKBUFFER < (TransferDataLength - TransferData->length()) )
+        //Trickling
+        if ((TricklingTime != 0) && (LastTrickling + TricklingTime < time(NULL)))
+        {
+            //Send header only once
+            if ( HeaderSend == false )
+            {
+                HeaderSend  = true;
+                if( ToBrowser.SendHeader(&Header) == false)
+                {
+                  BrowserDropped = true;
+                  LogFile::ErrorMessage("Could not send Header to Browser: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+                  return -135;
+                }
+            }
+         LastTrickling = time(NULL);
+
+         BodyTemp = *TransferData;
+         TransferDataLength -= 1; //send one character
+         string character = TransferData->substr(0,1);
+         TransferData->erase(0,1);
+         if (ToBrowser.Send( &character ) == false)
+            {
+              BrowserDropped = true;
+              LogFile::ErrorMessage("Could not send Body to Browser: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+              return -138;
+            }
+
+         if ( TransferData->size() == 0 )
+         {
+            BodyQueue.erase( TransferData );
+         }
+        }
+
+
+        //Send Data
+        if ( KeepBackBuffer < (TransferDataLength - TransferData->length()) )
         {
 
 //This check will not work at the moment
@@ -334,8 +383,21 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
 
     }//while
  } 
+
+    if ( (ContentLengthReference != 0) && ( ContentLength != ContentLengthReference )){ 
+            LogFile::ErrorMessage("ContentLength and Body size does not fit - body too short: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());;
+      return -121;
+    }
+
+
     //Wait till scanning is complete
     TempScannerAnswer =  VirusScannerT->ScanningComplete();
+
+    //Should we listen on the scanner output?
+    if (ScannerOff == true) {
+        TempScannerAnswer = 0;
+    }
+
     if ( TempScannerAnswer != 0)
     {
         #ifdef CATCHONSCANNERERROR

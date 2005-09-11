@@ -1,32 +1,73 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
 <!DOCTYPE KDevPrjSession>
 <KDevPrjSession>
-<DocsAndViews NumberOfDocuments="3" >
-<Doc0 CursorPosLine="112" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="88" FileName="/home/hilgers/programmierung/havp/havp-0.68/configure.in.in" >
-<View0 Top="24" Width="400" Attach="1" Height="300" Left="3" Focus="0" Type="KWriteView" MinMaxMode="0" />  </Doc0>
-  <Doc1 CursorPosLine="79" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="0" FileName="/home/hilgers/programmierung/havp/havp-0.68/havp/havp.cpp" >
-<View0 Top="165" Width="831" Attach="1" Height="664" Left="46" Focus="0" Type="KWriteView" MinMaxMode="0" />  </Doc1>
-  <Doc2 CursorPosLine="275" Type="KWriteDoc" NumberOfViews="1" CursorPosCol="22" FileName="/home/hilgers/programmierung/havp/havp-0.68/havp/proxyhandler.cpp" >
-<View0 Top="44" Width="837" Attach="1" Height="691" Left="44" Focus="1" Type="KWriteView" MinMaxMode="2" />  </Doc2> </DocsAndViews>
+ <DocsAndViews NumberOfDocuments="12" >
+  <Doc0 NumberOfViews="1" URL="file:///home/hilgers/source/havp/cvs/havp/havp/proxyhandler.cpp" >
+   <View0 line="368" Type="Source" />
+  </Doc0>
+  <Doc1 NumberOfViews="1" URL="file:///home/hilgers/source/havp/cvs/havp/havp/whitelist.cpp" >
+   <View0 line="141" Type="Source" />
+  </Doc1>
+  <Doc2 NumberOfViews="1" URL="file:///home/hilgers/source/havp/cvs/havp/havp/whitelist.h" >
+   <View0 line="65" Type="Source" />
+  </Doc2>
+  <Doc3 NumberOfViews="1" URL="file:///home/hilgers/source/havp/cvs/havp/havp/sockethandler.h" >
+   <View0 line="30" Type="Source" />
+  </Doc3>
+  <Doc4 NumberOfViews="1" URL="file:///home/hilgers/source/havp/cvs/havp/havp/helper.cpp" >
+   <View0 line="92" Type="Source" />
+  </Doc4>
+  <Doc5 NumberOfViews="1" URL="file:///home/hilgers/source/havp/cvs/havp/havp/havp.cpp" >
+   <View0 line="172" Type="Source" />
+  </Doc5>
+  <Doc6 NumberOfViews="1" URL="file:///home/hilgers/source/havp/cvs/havp/havp/connectiontobrowser.cpp" >
+   <View0 line="233" Type="Source" />
+  </Doc6>
+  <Doc7 NumberOfViews="1" URL="file:///home/hilgers/source/havp/cvs/havp/havp/connectiontobrowser.h" >
+   <View0 line="62" Type="Source" />
+  </Doc7>
+  <Doc8 NumberOfViews="1" URL="file:///home/hilgers/source/havp/cvs/havp/etc/havp/havp.config" >
+   <View0 line="168" Type="Source" />
+  </Doc8>
+  <Doc9 NumberOfViews="1" URL="file:///home/hilgers/source/havp/cvs/havp/havp/params.cpp" >
+   <View0 line="32" Type="Source" />
+  </Doc9>
+  <Doc10 NumberOfViews="1" URL="file:///home/hilgers/source/havp/cvs/havp/havp/default.h.in" >
+   <View0 line="38" Type="Source" />
+  </Doc10>
+  <Doc11 NumberOfViews="1" URL="file:///home/hilgers/source/havp/cvs/havp/havp/default.h" >
+   <View0 line="38" Type="Source" />
+  </Doc11>
+ </DocsAndViews>
  <pluginList>
-<kdevdebugger>
-<breakpointList>
-<breakpoint0 type="1" location="/home/hilgers/source/havp/cvs/havp/havp/proxyhandler.cpp:111" condition="" enabled="1" />
-    <breakpoint1 type="1" location="/home/hilgers/source/havp/cvs/havp/havp/whitelist.cpp:280" condition="" enabled="1" />
-    <breakpoint2 type="1" location="/home/hilgers/source/havp/cvs/havp/havp/whitelist.cpp:251" condition="" enabled="1" />
-    <breakpoint3 type="1" location="/home/hilgers/source/havp/cvs/havp/havp/havp.cpp:84" condition="" enabled="1" />
-    <breakpoint4 type="1" location="/home/hilgers/source/havp/cvs/havp/havp/params.cpp:134" condition="" enabled="1" />   </breakpointList>  </kdevdebugger>
+  <kdevdebugger>
+   <breakpointList>
+    <breakpoint0 location="/home/hilgers/source/havp/cvs/havp/havp/whitelist.cpp:280" type="1" condition="" enabled="1" />
+    <breakpoint1 location="/home/hilgers/source/havp/cvs/havp/havp/whitelist.cpp:251" type="1" condition="" enabled="1" />
+    <breakpoint2 location="/home/hilgers/source/havp/cvs/havp/havp/havp.cpp:84" type="1" condition="" enabled="1" />
+    <breakpoint3 location="/home/hilgers/source/havp/cvs/havp/havp/params.cpp:136" type="1" condition="" enabled="1" />
+    <breakpoint4 location="/home/hilgers/source/havp/cvs/havp/havp/proxyhandler.cpp:115" type="1" condition="" enabled="1" />
+   </breakpointList>
+  </kdevdebugger>
   <kdevbookmarks>
-<bookmarks>
-<bookmark url="/home/hilgers/source/havp/cvs/havp/havp/havp.cpp" >
-<mark line="53" />
-     <mark line="76" />    </bookmark>
+   <bookmarks>
+    <bookmark url="/home/hilgers/source/havp/cvs/havp/havp/havp.cpp" >
+     <mark line="53" />
+     <mark line="76" />
+    </bookmark>
     <bookmark url="/home/hilgers/source/havp/cvs/havp/havp/whitelist.cpp" >
-<mark line="96" />    </bookmark>   </bookmarks>  </kdevbookmarks>
+     <mark line="96" />
+    </bookmark>
+    <bookmark url="/home/hilgers/source/havp/cvs/havp/havp/params.cpp" >
+     <mark line="170" />
+    </bookmark>
+   </bookmarks>
+  </kdevbookmarks>
   <kdevvalgrind>
-<executable path="" params="" />
+   <executable path="" params="" />
    <valgrind path="" params="" />
    <calltree path="" params="" />
-   <kcachegrind path="" />  </kdevvalgrind> </pluginList>
- <LastCompileConfig>(Default)</LastCompileConfig>
- <Mainframe MaximizeMode="1" /></KDevPrjSession>
+   <kcachegrind path="" />
+  </kdevvalgrind>
+ </pluginList>
+</KDevPrjSession>
