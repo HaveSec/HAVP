@@ -18,7 +18,8 @@
 #include "proxyhandler.h"
 #include "whitelist.h"
 
-extern Whitelist Whitelist;
+extern URLList Whitelist;
+extern URLList Blacklist;
 
 bool ProxyHandler::Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusScannerT )
 {
@@ -112,8 +113,13 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
         return -30;
     }
 
-    ScannerOff = Whitelist.URLWhitelisted ( ToBrowser.GetHost(), ToBrowser.GetRequest() );
+    ScannerOff = Whitelist.URLFound ( ToBrowser.GetHost(), ToBrowser.GetRequest() );
 
+    if ( Blacklist.URLFound ( ToBrowser.GetHost(), ToBrowser.GetRequest() ) == true ) {
+      LogFile::ErrorMessage("URL is blacklisted: %s\n", ToBrowser.GetCompleteRequest() );
+      return -45;
+    }
+ 
     // #if defined (PARENTPROXY) && defined (PARENTPORT)
     string parentproxy=Params::GetConfigString("PARENTPROXY");
     int parentport=Params::GetConfigInt("PARENTPORT");
@@ -271,7 +277,7 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
 
         //Body size check
         ContentLength += BodyLength;
-        if ( (unlock == true) && ( ContentLength > ContentLengthReference ) )
+        if ( (unlock == true) && (ScannerOff != true) && ( ContentLength > ContentLengthReference ) )
         {
             LogFile::ErrorMessage("ContentLength and Body size does not fit - body too long: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
             return -120;
@@ -384,10 +390,11 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
     }//while
  } 
 
-    if ( (ContentLengthReference != 0) && ( ContentLength != ContentLengthReference )){ 
-            LogFile::ErrorMessage("ContentLength and Body size does not fit - body too short: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());;
-      return -121;
-    }
+// Check if there is some body e.g head
+//    if ( (ToBrowser.GetRequestType() != "HEAD") && (ContentLengthReference != 0) && (ScannerOff != true) && ( ContentLength != ContentLengthReference )){ 
+//            LogFile::ErrorMessage("ContentLength and Body size does not fit - body too short: %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());;
+//      return -121;
+//    }
 
 
     //Wait till scanning is complete
@@ -482,11 +489,11 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT , GenericScanner *Viru
         message = ToBrowser.GetHost();
         filename = ERROR_DNS;
     }
-    else if ( CommunicationAnswerT == -60 )
+    else if ( CommunicationAnswerT == -45 )
     {
-        LogFile::AccessMessage("Server %s is down\n", ToBrowser.GetHost() );
-        message = ToBrowser.GetHost();
-        filename = ERROR_SERVERDOWN;
+        LogFile::AccessMessage("URL %s is blacklisted\n", ToBrowser.GetCompleteRequest() );
+        message = ToBrowser.GetCompleteRequest();
+        filename = ERROR_BLACKLIST;
     }
     else if ( CommunicationAnswerT == 2 )
     {

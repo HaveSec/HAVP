@@ -24,7 +24,7 @@
 
 using namespace std;
 
-bool Whitelist::CreateWhitelist(string WhitelistFileT)
+bool URLList::CreateURLList(string URLListFileT)
 {
 
  string::size_type i1, i2;
@@ -37,14 +37,14 @@ bool Whitelist::CreateWhitelist(string WhitelistFileT)
  string Path;
  char ExactPath;
  string Toplevel;
- struct WhitelistStruct NewToplevel;
+ struct URLListStruct NewToplevel;
  string::size_type ToplevelCounter;
 
- Input.open( WhitelistFileT.c_str());
+ Input.open( URLListFileT.c_str());
 
  if(!Input)
  {
-   LogFile::ErrorMessage ("Cannot open Whitelist: %s\n", WhitelistFileT.c_str());
+   LogFile::ErrorMessage ("Cannot open URLList: %s\n", URLListFileT.c_str());
    return false;
  }
 
@@ -63,13 +63,13 @@ bool Whitelist::CreateWhitelist(string WhitelistFileT)
 
           ToplevelCounter = 0;
           while (1) {
-            if(ToplevelCounter == WhitelistDB.size()){             
+            if(ToplevelCounter == URLListDB.size()){             
               NewToplevel.Toplevel = Toplevel;
-              WhitelistDB.push_back( NewToplevel );
+              URLListDB.push_back( NewToplevel );
             }
 
-             if(WhitelistDB.at(ToplevelCounter).Toplevel == Toplevel){
-               InsertURL( &WhitelistDB.at(ToplevelCounter), Domain, ExactDomain, Path, ExactPath );
+             if(URLListDB.at(ToplevelCounter).Toplevel == Toplevel){
+               InsertURL( &URLListDB.at(ToplevelCounter), Domain, ExactDomain, Path, ExactPath );
                break;
              }
             ToplevelCounter++;
@@ -84,7 +84,16 @@ return true;
 }
 
 
-bool Whitelist::AnalyseURL( string UrlT, string *ToplevelT, string *DomainT, char *ExactDomainT, string *PathT, char *ExactPathT )
+bool URLList::ReloadURLList( string URLListFileT )
+{
+
+URLListDB.clear();
+
+return CreateURLList( URLListFileT );
+
+}
+
+bool URLList::AnalyseURL( string UrlT, string *ToplevelT, string *DomainT, char *ExactDomainT, string *PathT, char *ExactPathT )
 {
 
 *ToplevelT = "";
@@ -109,21 +118,21 @@ string::size_type i1;
     } else {
      if ( *DomainT != "*" )
      {
-//       LogFile::ErrorMessage ("Whitelist missing Toplevel Domain: %s\n", UrlT.c_str());
-       LogFile::ErrorMessage ("Whitelist missing Toplevel Domain: %s\n", DomainT->c_str());
+//       LogFile::ErrorMessage ("URLList missing Toplevel Domain: %s\n", UrlT.c_str());
+       LogFile::ErrorMessage ("URLList missing Toplevel Domain: %s\n", DomainT->c_str());
        return false;
      }
     }
 
 *ExactDomainT = CheckItem( DomainT );
 if ( (*ExactDomainT != 'l') && (*ExactDomainT != 'n') ) {
-  LogFile::ErrorMessage ("Whitelist invalid Domain: %s\n", DomainT->c_str() );
+  LogFile::ErrorMessage ("URLList invalid Domain: %s\n", DomainT->c_str() );
   return false;
 } 
 
 *ExactPathT = CheckItem( PathT );
 if  (*ExactPathT == 'e') {
-  LogFile::ErrorMessage ("Whitelist invalid Path: %s\n", PathT->c_str() );
+  LogFile::ErrorMessage ("URLList invalid Path: %s\n", PathT->c_str() );
   return false;
 } 
 
@@ -132,7 +141,7 @@ return true;
 
 
 
-char Whitelist::CheckItem ( string *ItemT )
+char URLList::CheckItem ( string *ItemT )
 {
 
 char position='n';
@@ -160,7 +169,7 @@ if( character == "*" ){
 }
 
 if (ItemT->find("*") != string::npos ){
-LogFile::ErrorMessage ("Whitelist - To many wildcards in %s\n", ItemT->c_str());
+LogFile::ErrorMessage ("URLList - To many wildcards in %s\n", ItemT->c_str());
 position = 'e';
 }
 
@@ -168,7 +177,7 @@ return position;
 
 }
 
-void Whitelist::InsertURL( struct WhitelistStruct *WhitelistDBT, string DomainT, char ExactDomainT, string PathT, char ExactPathT ){
+void URLList::InsertURL( struct URLListStruct *URLListDBT, string DomainT, char ExactDomainT, string PathT, char ExactPathT ){
 
 unsigned int DomainCounter = 0;
 struct DomainStruct NewDomain;
@@ -176,33 +185,33 @@ struct PathStruct NewPath;
 
           while (1) {
 
-            if(DomainCounter == WhitelistDBT->Domain.size()){             
+            if(DomainCounter == URLListDBT->Domain.size()){             
               NewDomain.Domain = DomainT; 
               NewDomain.exact = ExactDomainT;
-              WhitelistDBT->Domain.push_back( NewDomain );
+              URLListDBT->Domain.push_back( NewDomain );
             }
 
-             if(WhitelistDBT->Domain.at(DomainCounter).Domain == DomainT){
+             if(URLListDBT->Domain.at(DomainCounter).Domain == DomainT){
               NewPath.Path = PathT; 
               NewPath.exact = ExactPathT;
-              WhitelistDBT->Domain.at(DomainCounter).Path.push_back( NewPath ); 
+              URLListDBT->Domain.at(DomainCounter).Path.push_back( NewPath ); 
               break;
              }
              DomainCounter++;
           }
 }
 
-void Whitelist::DisplayWhitelist( ) {
+void URLList::DisplayURLList( ) {
 
 
-vector<WhitelistStruct>::iterator ToplevelI;
+vector<URLListStruct>::iterator ToplevelI;
 vector<DomainStruct>::iterator DomainI;
 vector<PathStruct>::iterator PathI;
 
- cout << "Whitelist:" << endl;
+ cout << "URLList:" << endl;
  //cout << "Toplevel - Domain - Path" << endl;
 
- for(ToplevelI = WhitelistDB.begin(); ToplevelI != WhitelistDB.end(); ToplevelI++)
+ for(ToplevelI = URLListDB.begin(); ToplevelI != URLListDB.end(); ToplevelI++)
  {
    if ( ToplevelI->Toplevel == "" ){
      cout << " - " << "*" << endl;
@@ -222,7 +231,7 @@ vector<PathStruct>::iterator PathI;
 
 }
 
-string Whitelist::DisplayLine( string LineT, char positionT ) {
+string URLList::DisplayLine( string LineT, char positionT ) {
 
 string Newline = LineT;
 
@@ -238,16 +247,16 @@ return Newline;
 }
 
 
-bool Whitelist::URLWhitelisted ( string DomainT, string PathT ) {
+bool URLList::URLFound ( string DomainT, string PathT ) {
 
-vector<WhitelistStruct>::iterator ToplevelI;
+vector<URLListStruct>::iterator ToplevelI;
 vector<DomainStruct>::iterator DomainI;
 vector<PathStruct>::iterator PathI;
 
 //Delete / add Path
 PathT.erase(0,1);
 
- for(ToplevelI = WhitelistDB.begin(); ToplevelI != WhitelistDB.end(); ToplevelI++)
+ for(ToplevelI = URLListDB.begin(); ToplevelI != URLListDB.end(); ToplevelI++)
  {
 
 //cout << ToplevelI->Toplevel << " " << DomainT.size() - ToplevelI->Toplevel.size() << " " << DomainT.rfind( ToplevelI->Toplevel ) << endl;
@@ -277,7 +286,7 @@ PathT.erase(0,1);
 return false;
 }
 
-bool Whitelist::FindString( string SearchT, string LineT, char positionT ) {
+bool URLList::FindString( string SearchT, string LineT, char positionT ) {
 
 if ( positionT == 'l' ){
 
@@ -306,7 +315,7 @@ if ( positionT == 'l' ){
 return false;
 }
 
-Whitelist::Whitelist(){
+URLList::URLList(){
 }
-Whitelist::~Whitelist(){
+URLList::~URLList(){
 }

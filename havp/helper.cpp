@@ -1,7 +1,7 @@
 /***************************************************************************
                           helper.cpp  -  description
                              -------------------
-    begin                : Sa Mär 5 2005
+    begin                : Sa Mï¿½ 5 2005
     copyright            : (C) 2005 by Christian Hilgers
     email                : christian@hilgers.ag
  ***************************************************************************/
@@ -52,6 +52,13 @@ static void RereadDatabase (int SignalNo)
  extern bool rereaddatabase;
  rereaddatabase = true;
 }
+
+static void RereadURLList (int SignalNo)
+{
+ extern bool rereadUrlList;
+ rereadUrlList = true;
+}
+
 static void StartNewChild (int SignalNo)
 {
  extern int startchild;
@@ -113,6 +120,13 @@ InstallSignal ()
 
     Signal.sa_handler = RereadDatabase;          //function
     if (sigaction (SIGHUP, &Signal, NULL) != 0)
+    {
+        LogFile::ErrorMessage ("Could not install signal handler\n" );
+        exit (-1);
+    }
+
+    Signal.sa_handler = RereadURLList;          //function
+    if (sigaction (SIGUSR2, &Signal, NULL) != 0)
     {
         LogFile::ErrorMessage ("Could not install signal handler\n" );
         exit (-1);

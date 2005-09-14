@@ -86,6 +86,9 @@ case "$1" in
 	$0 start
 
 	;;
+    reload-lists)
+        kill -SIGUSR2 $(<$PIDFILE)
+	;;
     force-reload)
 	## Signal the daemon to reload its config. Most daemons
 	## do this on signal 1 (SIGHUP).

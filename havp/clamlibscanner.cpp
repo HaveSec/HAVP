@@ -15,9 +15,14 @@
  *                                                                         *
  ***************************************************************************/
 
+
+
+#include "default.h"
 #include "clamlibscanner.h"
 #include <sys/types.h>
 #include <sys/wait.h>
+
+#ifdef USECLAM
 
 //Init Clamav scanner engine
 bool ClamLibScanner::InitDatabase()
@@ -198,3 +203,5 @@ ClamLibScanner::ClamLibScanner()
 ClamLibScanner::~ClamLibScanner()
 {
 }
+
+#endif

@@ -1767,7 +1767,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=havp
- VERSION=0.67
+ VERSION=0.70
 
 
 cat >>confdefs.h <<_ACEOF
@@ -5410,7 +5410,7 @@ fi;
 
 
 
-
+CXXFLAGS="$NOOPT_CXXFLAGS" CFLAGS="$NOOPT_CFLAGS"
 # Check whether --enable-shared or --disable-shared was given.
 if test "${enable_shared+set}" = set; then
   enableval="$enable_shared"
@@ -17629,6 +17629,11 @@ cat >>$CONFIG_STATUS <<\_ACEOF
 
 { (exit 0); exit 0; }
 _ACEOF
+if test "x$with_fast_perl" = "xyes"; then    
+  perl -i.bak $ac_aux_dir/conf.change.pl $CONFIG_STATUS    \
+    || mv $CONFIG_STATUS.bak $CONFIG_STATUS    
+  rm -f $CONFIG_STATUS.bak
+fi    
 chmod +x $CONFIG_STATUS
 ac_clean_files=$ac_clean_files_save
 
@@ -18933,6 +18938,11 @@ cat >>$CONFIG_STATUS <<\_ACEOF
 
 { (exit 0); exit 0; }
 _ACEOF
+if test "x$with_fast_perl" = "xyes"; then    
+  perl -i.bak $ac_aux_dir/conf.change.pl $CONFIG_STATUS    \
+    || mv $CONFIG_STATUS.bak $CONFIG_STATUS    
+  rm -f $CONFIG_STATUS.bak
+fi    
 chmod +x $CONFIG_STATUS
 ac_clean_files=$ac_clean_files_save
 

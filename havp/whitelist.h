@@ -26,7 +26,7 @@ using namespace std;
 /**
 @author Christian Hilgers
 */
-class Whitelist {
+class URLList {
 
 private:
 
@@ -43,19 +43,19 @@ struct DomainStruct
  vector <struct PathStruct> Path;
 };
 
-struct WhitelistStruct
+struct URLListStruct
 {
  string Toplevel;
  vector <struct DomainStruct> Domain;
 };
 
-vector <WhitelistStruct> WhitelistDB;
+vector <URLListStruct> URLListDB;
 
 char CheckItem ( string *ItemT );
 
 bool AnalyseURL( string UrlT, string *ToplevelT, string *DomainT, char *ExactDomainT, string *PathT, char *ExactPathT );
 
-void InsertURL( struct WhitelistStruct *WhitelistDBT, string DomainT, char ExactDomainT, string PathT, char ExactPathT );
+void InsertURL( struct URLListStruct *URLListDBT, string DomainT, char ExactDomainT, string PathT, char ExactPathT );
 
 string DisplayLine( string LineT, char positionT );
 
@@ -63,15 +63,17 @@ bool FindString( string SearchT, string LineT, char positionT );
 
 public:
 
-bool URLWhitelisted ( string DomainT, string PathT );
+bool URLFound ( string DomainT, string PathT );
 
-bool CreateWhitelist(string WhitelistFileT);
+bool CreateURLList(string URLListFileT);
 
-void DisplayWhitelist( );
+bool ReloadURLList( string URLListFileT );
 
-    Whitelist();
+void DisplayURLList( );
 
-    ~Whitelist();
+    URLList();
+
+    ~URLList();
 
 };
 

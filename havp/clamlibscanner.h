@@ -15,6 +15,8 @@
  *                                                                         *
  ***************************************************************************/
 
+#ifdef USECLAM
+
 #ifndef CLAMLIBSCANNER_H
 #define CLAMLIBSCANNER_H
 
@@ -51,4 +53,5 @@ int Scanning( );
 	~ClamLibScanner();
 };
 
+#endif
 #endif

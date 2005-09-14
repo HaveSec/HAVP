@@ -33,8 +33,13 @@ void Params::SetDefaults()
 	SetConfig("KEEPBACKBUFFER",KEEPBACKBUFFER);
  	SetConfig("TRICKLING",TRICKLING);
 // Parameters only setable by havp.config (whereever it is)
+#ifdef USEKASPERSKY
+ 	SetConfig("AVECLIENT","/usr/local/bin/aveclient");
+ 	SetConfig("AVESOCKET","/var/run/aveserver");
+#endif
  	SetConfig("MAXSCANSIZE","0");
  	SetConfig("WHITELIST","/etc/havp/whitelist");
+ 	SetConfig("BLACKLIST","/etc/havp/blacklist");
 	SetConfig("PIDFILE","/var/run/havp.pid");
 	SetConfig("DAEMON","true");
 	SetConfig("TRANSPARENT","false");

@@ -22,6 +22,17 @@
 //##############################################################
 //Paramter in Configurationfile
 
+//Choose your scanner (only one)
+
+#define WHICHSCANNER HAVPSCANNER_DEF
+
+//#if WHICHSCANNER == kaspersky
+// #define USEKASPERSKY
+//#else
+ #define USECLAM
+//#endif
+
+
 //Change to User and Group
 #define USER "nobody"
 #define GROUP "nogroup"
@@ -44,17 +55,11 @@
 //##############################################################
 //Configuration not setable in havp.config
 
-//Parent Proxy (Name)
-//TO CONFIG //#define PARENTPROXY "localhost"
-//TO CONFIG //#define PARENTPORT 3128
+//Kaspersky Options - Do not change!!!
+#define KASPERSKYOPTION " -s -p "
 
 //Don't let pass when scanner failed
 #define CATCHONSCANNERERROR
-
-//Source IP address to be used for sending away packages. define for using it.
-//undefine if you want the OS to choose the source address.
-//TO CONFIG //#define SOURCE_ADDRESS ( "127.0.0.1" )
-
 
 //Time format
 #define TIMEFORMAT "%d/%m/%Y %H:%M:%S"
@@ -96,7 +101,7 @@
 #define ERROR_SCANNER   "scanner.html"
 #define ERROR_SERVERDOWN "down.html"
 #define ERROR_BODY   "error.html"
-
+#define ERROR_BLACKLIST "blacklist.html"
 
 
 

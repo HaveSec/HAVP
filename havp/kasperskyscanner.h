@@ -1,7 +1,7 @@
 /***************************************************************************
-                          helper.h  -  description
+                          kasperskyscanner.h  -  description
                              -------------------
-    begin                : Sa M� 5 2005
+    begin                : Sa Feb 12 2005
     copyright            : (C) 2005 by Christian Hilgers
     email                : christian@hilgers.ag
  ***************************************************************************/
@@ -15,23 +15,31 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef HELPER_H
-#define HELPER_H
+#ifndef KASPERSKYSCANNER_H
+#define KASPERSKYSCANNER_H
 
-#include  <errno.h>
+#include "scannerfilehandler.h"
 
-int MakeDeamon();
+class KasperskyScanner : public ScannerFileHandler  {
 
-int HardLockTest ( );
+private:
 
-bool ChangeUserAndGroup(string usr, string grp);
+public:
 
-bool WritePidFile(pid_t pid);
+bool InitDatabase();
 
-void InstallSignal ();
+bool ReloadDatabase();
 
-//void RereadDatabase ();
+bool InitSelfEngine();
 
-//void StartNewChild ();
+bool FreeDatabase();
+
+int ScanningComplete();
+
+int Scanning( );
+
+	KasperskyScanner();
+	~KasperskyScanner();
+};
 
 #endif

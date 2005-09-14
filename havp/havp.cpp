@@ -37,9 +37,20 @@
 #include <time.h>
 //#include <unistd.h>
 
-Whitelist Whitelist;
+
+#ifdef USECLAM
+#include "clamlibscanner.h"
+#endif
+
+#ifdef USEKASPERSKY
+#include "kasperskyscanner.h"
+#endif
+
 GenericScanner *VirusScanner;
+URLList Whitelist;
+URLList Blacklist;
 bool rereaddatabase;
+bool rereadUrlList;
 int startchild;
 int Instances = 0;
 time_t LastRefresh = time(NULL);
@@ -56,7 +67,14 @@ int main(int argc, char *argv[])
 
     SocketHandler ProxyServer;
     ProxyHandler Proxy;
+
+#ifdef USECLAM
     VirusScanner = new (ClamLibScanner);
+#endif
+
+#ifdef USEKASPERSKY
+    VirusScanner = new (KasperskyScanner);
+#endif
 
     if(Params::GetConfigBool("DISPLAYINITIALMESSAGES")) {
    	cout << "Starting Havp Version: " << VERSION << endl;
@@ -77,11 +95,16 @@ int main(int argc, char *argv[])
     LogFile::ErrorMessage("Starting Havp Version: %s\n", VERSION );
 
     string whitelistfile = Params::GetConfigString("WHITELIST");
-    if ( Whitelist.CreateWhitelist(whitelistfile) == false ) {
+    if ( Whitelist.CreateURLList(whitelistfile) == false ) {
       cout << "Could not read whitelist!" << endl;
       exit(-1);
     }
 
+    string blacklistfile = Params::GetConfigString("BLACKLIST");
+    if ( Blacklist.CreateURLList(blacklistfile) == false ) {
+      cout << "Could not read blacklist!" << endl;
+      exit(-1);
+    }
 
     LogFile::ErrorMessage ("Change to group %s\n", group.c_str());
     LogFile::ErrorMessage ("Change to user %s\n", user.c_str());
@@ -179,6 +202,13 @@ int main(int argc, char *argv[])
                   LastRefresh = time(NULL);
 		  VirusScanner->ReloadDatabase();
     		  LogFile::ErrorMessage ("Database reread by time\n");
+        }
+
+        if(rereadUrlList) {
+		  rereadUrlList = false;
+		  Whitelist.ReloadURLList(whitelistfile);
+                  Blacklist.ReloadURLList(blacklistfile);
+    		  LogFile::ErrorMessage ("Whitelist/Blacklist reread\n");
         }
 
 	if(servernumber > 0) {
