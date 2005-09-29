@@ -1,7 +1,7 @@
 /***************************************************************************
-                          clamlibscanner.h  -  description
+                          havp.h  -  description
                              -------------------
-    begin                : Sa Feb 12 2005
+    begin                : Sa M� 5 2005
     copyright            : (C) 2005 by Christian Hilgers
     email                : christian@hilgers.ag
  ***************************************************************************/
@@ -15,40 +15,9 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef CLAMLIBSCANNER_H
-#define CLAMLIBSCANNER_H
+#ifndef HAVP_H
+#define HAVP_H
 
-#include <clamav.h>
-
-#include "scannerfilehandler.h"
-
-
-class ClamLibScanner : public ScannerFileHandler  {
-
-private:
-
-struct cl_node *root;
-struct cl_limits limits;
-struct cl_stat dbstat;
-
-public:
-
-bool InitDatabase();
-
-bool ReloadDatabase();
-
-bool InitSelfEngine();
-
-//PSEstart
-bool FreeDatabase();
-//PSEend
-
-int ScanningComplete();
-
-int Scanning( );
-
-	ClamLibScanner();
-	~ClamLibScanner();
-};
 
 #endif
+

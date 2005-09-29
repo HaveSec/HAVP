@@ -19,18 +19,27 @@
 #ifndef DEFAULT_H
 #define DEFAULT_H
 
+#define VERSION "0.71"
+
 //##############################################################
 //Paramter in Configurationfile
 
 //Choose your scanner (only one)
 
-#define WHICHSCANNER HAVPSCANNER_DEF
 
-//#if WHICHSCANNER == kaspersky
-// #define USEKASPERSKY
-//#else
+#if @SCANNER@ == 1
+ #define USEKASPERSKY
+ #define CONFIGPARAMS "USER","GROUP","SERVERNUMBER","PORT","BIND_ADDRESS","SOURCE_ADDRESS","KEEPBACKBUFFER","TRICKLING","MAXSCANSIZE","WHITELIST","BLACKLIST","PIDFILE","DAEMON","TRANSPARENT","LOG_OKS","ACCESSLOG","ERRORLOG","DISPLAYINITIALMESSAGES","DBRELOAD","SCANTEMPFILE","TEMPLATEPATH","AVECLIENT","AVESOCKET"
+#else
  #define USECLAM
-//#endif
+ #define CONFIGPARAMS "USER","GROUP","SERVERNUMBER","PORT","BIND_ADDRESS","SOURCE_ADDRESS","KEEPBACKBUFFER","TRICKLING","MAXSCANSIZE","WHITELIST","BLACKLIST","PIDFILE","DAEMON","TRANSPARENT","LOG_OKS","ACCESSLOG","ERRORLOG","DISPLAYINITIALMESSAGES","DBRELOAD","SCANTEMPFILE","TEMPLATEPATH"
+
+#endif
+
+#define WHITELISTFILE "/usr/local/etc/havp/whitelist"
+#define BLACKLISTFILE "/usr/local/etc/havp/blacklist"
+#define TEMPLATEDIR  "/usr/local/etc/havp/templates/en"
+#define CONFIGFILE "/usr/local/etc/havp/havp.config"
 
 
 //Change to User and Group
@@ -102,8 +111,6 @@
 #define ERROR_SERVERDOWN "down.html"
 #define ERROR_BODY   "error.html"
 #define ERROR_BLACKLIST "blacklist.html"
-
-
 
 //CLAMLIB Config -----------------------------------
 

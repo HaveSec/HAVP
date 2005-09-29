@@ -1,9 +1,12 @@
 Basic Installation
 ==================
 
+This software is GPL!
+
+
 NEW Changes:
-1. New Configurationfile
-2. Path to remplates and HTML templates have changed 
+Path to HTML templates and configuration files have changed !!!
+White- and Blacklist (this list is very slow. Don't add to many URLs!)
 
 Installation:
 
@@ -11,16 +14,10 @@ configure
 make
 make install
 
-Copy HTML templates / Configurationfile and rc-script:
-
-cd sourcetohavp/havp/etc
-cp -r havp /etc/
-cp init.d/havp /etc/init.d/
-
 Edit the configfile:
-vi /etc/havp/havp.config
+vi /usr/local/etc/havp/havp.config
 
-Create the logfile directory:
+Edit rights of the logfile directory:
 
 i.e.: mkdir /var/log/havp
 Make the directory writable for to the user define in havp.config
@@ -52,5 +49,7 @@ If you have problems check the logfiles
 If you don't want to use the rc-script you can start havp directly:
 /usr/local/bin/havp -c Configfile -p Pidfile
 /usr/local/bin/havp -h (shows help)
+
+
 
 

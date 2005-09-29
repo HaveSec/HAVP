@@ -37,7 +37,6 @@
 #include <time.h>
 //#include <unistd.h>
 
-
 #ifdef USECLAM
 #include "clamlibscanner.h"
 #endif
@@ -82,7 +81,7 @@ int main(int argc, char *argv[])
 
     string user=Params::GetConfigString("USER");
     string group=Params::GetConfigString("GROUP");
-    if ( ChangeUserAndGroup(user,group) == false) exit (-1);
+    if ( ChangeUserAndGroup("", group) == false) exit (-1);
 
     string accesslog = Params::GetConfigString("ACCESSLOG");
     string errorlog = Params::GetConfigString("ERRORLOG");
@@ -93,6 +92,7 @@ int main(int argc, char *argv[])
     }
 
     LogFile::ErrorMessage("Starting Havp Version: %s\n", VERSION );
+
 
     string whitelistfile = Params::GetConfigString("WHITELIST");
     if ( Whitelist.CreateURLList(whitelistfile) == false ) {
@@ -106,8 +106,6 @@ int main(int argc, char *argv[])
       exit(-1);
     }
 
-    LogFile::ErrorMessage ("Change to group %s\n", group.c_str());
-    LogFile::ErrorMessage ("Change to user %s\n", user.c_str());
 
     string parentproxy=Params::GetConfigString("PARENTPROXY");
     int parentport=Params::GetConfigInt("PARENTPORT");
@@ -139,31 +137,29 @@ int main(int argc, char *argv[])
     }
 
     if(Params::GetConfigBool("DAEMON")) MakeDeamon();
+    setpgrp();  //PSE: for cases daemon is not started
 
-//PSEstart
     //PSE: parent pid of all processes started from now on
     //PSE: may be used later to kill the daemon
     pid_t pid;
     pid=getpid();
-    setpgrp();  //PSE: for cases daemon is not started
+    if(! WritePidFile(pid)) {
+      cout << "Can not write to PIDFILE!\n";
+      LogFile::ErrorMessage ("Can not write to PIDFILE!\n");
+    }
     LogFile::ErrorMessage ("Process ID: %d\n", pid);
-    if(! WritePidFile(pid)) cout << "Can not write to PIDFILE!\n";
 
     //create a unique message queue for all children and grandchildren
 #ifdef QUEUE
-    int qid;
-    qid = msgget(IPC_PRIVATE, (IPC_CREAT | 00600) );
-    if ( qid < 0) {
-	LogFile::ErrorMessage ("Cannot create a message queue! Error: %s\n", strerror(errno));
-	if(errno == ENOSPC) {
-		LogFile::ErrorMessage ("System-wide variable MSGMNI too small. Increase this value!");
-	}
-    }
-    VirusScanner->msgqid = qid;
-    LogFile::ErrorMessage ("Message Queue ID: %d\n", qid);
+    if ((VirusScanner->msgqid = CreateQueue(user)) < 0){
+       exit(-1);
+     }
+    LogFile::ErrorMessage ("Message Queue ID: %d\n", VirusScanner->msgqid);
 #endif
 
-//PSEend
+    LogFile::ErrorMessage ("Change to group %s\n", group.c_str());
+    LogFile::ErrorMessage ("Change to user %s\n", user.c_str());
+
 
     //PSE: pid_t pid;
     //Start Server
@@ -176,10 +172,8 @@ int main(int argc, char *argv[])
         if (pid == 0)
         {
             //Child
+            if ( ChangeUserAndGroup(user,"") == false) exit (-1);
             VirusScanner->PrepareScanning ( &ProxyServer );
-//PSEstart
-//	    VirusScanner->FreeDatabase();
-//PSEend
             Proxy.Proxy ( &ProxyServer, VirusScanner );
             exit (1);
         }
@@ -213,13 +207,13 @@ int main(int argc, char *argv[])
 
 	if(servernumber > 0) {
         int status;
-        if( (pid = waitpid(-1,&status,WNOHANG)) > 0 )
+        while( (pid = waitpid(-1,&status,WNOHANG)) > 0 )
         {
           Instances--;
           //LogFile::ErrorMessage ("PID %d\n", pid);
         }
 
-	if ((startchild) || (Instances < servernumber)){
+	while ((startchild) || (Instances < servernumber)){
           //LogFile::ErrorMessage ("Instances %d - startchild %d - Number %d\n", Instances, startchild, servernumber);
 
         	pid=fork();
@@ -229,10 +223,8 @@ int main(int argc, char *argv[])
            		Instances--;
         	} else if (pid == 0) {
             //Child
+                if ( ChangeUserAndGroup(user,"") == false) exit (-1);
             	VirusScanner->PrepareScanning ( &ProxyServer );
-//PSEstart
-//	    VirusScanner->FreeDatabase();
-//PSEend
             	Proxy.Proxy ( &ProxyServer, VirusScanner );
             	exit (1);
         	} else {
@@ -249,9 +241,6 @@ int main(int argc, char *argv[])
 
 	} else {
         VirusScanner->PrepareScanning ( &ProxyServer );
-//PSEstart
-//	VirusScanner->FreeDatabase();
-//PSEend
         Proxy.Proxy ( &ProxyServer, VirusScanner );
 	}
     }

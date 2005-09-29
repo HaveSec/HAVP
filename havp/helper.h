@@ -30,6 +30,8 @@ bool WritePidFile(pid_t pid);
 
 void InstallSignal ();
 
+int CreateQueue(string usr );
+
 //void RereadDatabase ();
 
 //void StartNewChild ();

@@ -160,7 +160,7 @@ ssize_t HTTPHandler::ReadBodyPart( string* bodyT )
     *bodyT = "";
     ssize_t count;
 
-    if ( (count = SocketHandler::Recv( bodyT, true )) == -1)
+    if ( (count = SocketHandler::Recv( bodyT, true )) <= -1)
     {
         return -1;
     }

@@ -198,16 +198,17 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
         //IE Bug
         if ( ToBrowser.CheckForData() == true )
         {
-            if ( ToBrowser.Recv( &TempString, false) == false)
+            if ( ToBrowser.Recv( &TempString, false) < 0)
             {
               BrowserDropped = true;
               LogFile::ErrorMessage("Could not check for IE POST Bug %s Port %d\n", ToBrowser.GetHost(), ToBrowser.GetPort());
               return -76;
-            }
-
-            if ( TempString == "\r\n" )
+            } else if ( TempString == "\r\n" )
             {
                 ToBrowser.RecvLength( &TempString, 2);
+            } else if (TempString == "" )
+            {
+              //Browser shut down send. This could be ok??
             }
             else
             {

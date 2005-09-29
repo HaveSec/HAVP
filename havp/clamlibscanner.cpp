@@ -22,8 +22,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#ifdef USECLAM
-
 //Init Clamav scanner engine
 bool ClamLibScanner::InitDatabase()
 {
@@ -204,4 +202,3 @@ ClamLibScanner::~ClamLibScanner()
 {
 }
 
-#endif

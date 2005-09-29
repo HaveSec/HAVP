@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include "sockethandler.h"
+#include "logfile.h"
 
 //Create Server Socket
 bool SocketHandler::CreateServer( int portT, in_addr_t bind_addrT )
@@ -33,18 +34,26 @@ bool SocketHandler::CreateServer( int portT, in_addr_t bind_addrT )
     s_addr.sin_port = htons ( portT );
 
     sock_fd = socket ( AF_INET, SOCK_STREAM, 0 );
-    if ( sock_fd == -1 )
+    if ( sock_fd == -1 ) {
+        LogFile::ErrorMessage("%s\n", strerror(errno));
         return false;
+    }
 
     // Enable re-use Socket
-    if ( setsockopt ( sock_fd, SOL_SOCKET, SO_REUSEADDR, &i, sizeof (i) ) == -1 )
+    if ( setsockopt ( sock_fd, SOL_SOCKET, SO_REUSEADDR, &i, sizeof (i) ) == -1 ){
+        LogFile::ErrorMessage("%s\n", strerror(errno));
         return false;
+     }
 
-    if ( ::bind ( sock_fd, (struct sockaddr *) &s_addr, sizeof ( s_addr ) ) == -1 )
+    if ( ::bind ( sock_fd, (struct sockaddr *) &s_addr, sizeof ( s_addr ) ) == -1 ) {
+        LogFile::ErrorMessage("%s\n", strerror(errno));
         return false;
+     }
 
-    if ( ::listen ( sock_fd, MAXCONNECTIONS ) == -1)
+    if ( ::listen ( sock_fd, MAXCONNECTIONS ) == -1) {
+       LogFile::ErrorMessage("%s\n", strerror(errno));
         return false;
+    }
 
     return true;
 }
@@ -53,35 +62,56 @@ bool SocketHandler::CreateServer( int portT, in_addr_t bind_addrT )
 //Create Server Socket, convert ASCII address representation into binary one
 bool SocketHandler::CreateServer( int portT, string bind_addrT )
 {
-    return CreateServer( portT, bind_addrT == "NULL" ? INADDR_ANY : inet_addr( bind_addrT.c_str() ) );
+in_addr_t BindAddress;
+
+  if( bind_addrT == "NULL" ){
+    return CreateServer( portT,  INADDR_ANY );
+  } else {
+    if ((BindAddress = inet_addr(bind_addrT.c_str() )) == INADDR_NONE)
+    {
+      LogFile::ErrorMessage("Invalid BIND_ADRESSE: %s\n", bind_addrT.c_str());
+      return false;
+    }
+    return CreateServer( portT,  BindAddress );
+  } 
+
+
 }
 
 
 //Connect to Server
 bool SocketHandler::ConnectToServer (  )
 {
-    // #if defined (SOURCE_ADDRESS)
-    // struct sockaddr_in l_addr;
-    // #endif
-
     s_addr.sin_family = AF_INET;
 
-    if ( (sock_fd = socket(s_addr.sin_family, SOCK_STREAM, 0)) == -1 )
+    if ( (sock_fd = socket(s_addr.sin_family, SOCK_STREAM, 0)) == -1 ) {
+        LogFile::ErrorMessage("%s\n", strerror(errno));
         return false;
+    }
 
-    // #if defined (SOURCE_ADDRESS)
     string source_address=Params::GetConfigString("SOURCE_ADDRESS");
     if(source_address != "") {
     struct sockaddr_in l_addr;
     l_addr.sin_family = AF_INET;
-    l_addr.sin_addr.s_addr = inet_addr(source_address.c_str() );
-    if ( ::bind ( sock_fd, (struct sockaddr *) &l_addr, sizeof ( l_addr ) ) == -1 )
+    l_addr.sin_port = 0;	//System takes care about local Port
+
+
+    if ((l_addr.sin_addr.s_addr = inet_addr(source_address.c_str() )) == INADDR_NONE)
+    {
+      LogFile::ErrorMessage("Invalid SOURCE_ADRESSE: %s\n", source_address.c_str());
+      return false;
+    }
+    if ( ::bind ( sock_fd, (struct sockaddr *) &l_addr, sizeof ( l_addr ) ) == -1 ) {
+        LogFile::ErrorMessage("%s\n", strerror(errno));
         return false;
+      }
     }
     // #endif
 
-    if ( ::connect(sock_fd, (struct sockaddr *) &s_addr, sizeof( s_addr ) ) == -1)
+    if ( ::connect(sock_fd, (struct sockaddr *) &s_addr, sizeof( s_addr ) ) == -1) {
+        LogFile::ErrorMessage("%s\n", strerror(errno));
         return false;
+      }
 
     FD_ZERO(&checkfd);
     FD_SET(sock_fd,&checkfd);
@@ -135,7 +165,7 @@ bool SocketHandler::Send ( string *sock_outT )
     if ( buffer_count == (int) sock_outT->size() )
     {
        return true;
-    } else if ( buffer_count == -1 ) {
+    } else if ( buffer_count <= 0 ) {
       return false;
     }
 
@@ -218,7 +248,7 @@ bool SocketHandler::RecvLength ( string *sock_inT , ssize_t sock_lengthT )
 
         buffer_count = ::recv ( sock_fd, buffer, rest, 0 );
 
-        if ( buffer_count <= -1 )
+        if ( buffer_count <= 0 )
         {
             return false;
         }

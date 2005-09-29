@@ -12,7 +12,7 @@
 #
 # Check for missing binaries
 #
-HAVP_BIN=/usr/local/bin/havp
+HAVP_BIN=/usr/local/sbin/havp
 test -x $HAVP_BIN || exit 5
 
 #
@@ -21,10 +21,10 @@ test -x $HAVP_BIN || exit 5
 # havp.config to fit to your environment.
 # 
 OPTION=
-HAVP_CONFIG=/etc/havp/havp.config
-if [ -f $HAVP_CONFIG ] ; then
-OPTION="-c $HAVP_CONFIG"
-fi
+#HAVP_CONFIG=/usr/local/etc/havp/havp.config
+#if [ -f $HAVP_CONFIG ] ; then
+#OPTION="-c $HAVP_CONFIG"
+#fi
 
 source <<eof /dev/stdin
 $($HAVP_BIN $OPTION -s)
@@ -32,8 +32,8 @@ eof
 
 check_for_pathes () {
 	err=
-	[ -d ${PIDFILE%/*} ] || err=$PIDFILE
-	[ -d ${PIDFILE%/*} ] || err=$PIDFILE
+#	[ -d ${PIDFILE%/*} ] || err=$PIDFILE
+#	[ -d ${PIDFILE%/*} ] || err=$PIDFILE
 	[ -d ${ACCESSLOG%/*} ] || err=(${err[*]} $ACCESSLOG)
 	[ -d ${ERRORLOG%/*} ] || err=(${err[*]} $ERRORLOG)
 	[ -d ${SCANTEMPFILE%/*} ] || err=(${err[*]} $SCANTEMPFILE)
@@ -68,8 +68,8 @@ case "$1" in
     start)
 	echo -n "Starting HAVP ..."
 	check_for_pathes || exit 100
-	if [ ! -f $PIDFILE ]; then touch $PIDFILE ; fi
-	chown $USER.$GROUP $PIDFILE
+#	if [ ! -f $PIDFILE ]; then touch $PIDFILE ; fi
+#	chown $USER.$GROUP $PIDFILE
 	$HAVP_BIN $OPTION
 	echo "done"
 
@@ -132,7 +132,7 @@ case "$1" in
 	exit 4
 	;;
     *)
-	echo "Usage: $0 {start|stop|status|restart|force-reload|reload}"
+	echo "Usage: $0 {start|stop|status|restart|force-reload|reload|reload-lists}"
 	exit 1
 	;;
 esac

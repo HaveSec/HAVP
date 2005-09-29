@@ -16,6 +16,7 @@
  ***************************************************************************/
 
 #include "params.h"
+#include "logfile.h"
 
 map <string,string> Params::params;
 
@@ -37,9 +38,10 @@ void Params::SetDefaults()
  	SetConfig("AVECLIENT","/usr/local/bin/aveclient");
  	SetConfig("AVESOCKET","/var/run/aveserver");
 #endif
+	SetConfig("SOURCE_ADDRESS","");
  	SetConfig("MAXSCANSIZE","0");
- 	SetConfig("WHITELIST","/etc/havp/whitelist");
- 	SetConfig("BLACKLIST","/etc/havp/blacklist");
+ 	SetConfig("WHITELIST", WHITELISTFILE );
+ 	SetConfig("BLACKLIST", BLACKLISTFILE );
 	SetConfig("PIDFILE","/var/run/havp.pid");
 	SetConfig("DAEMON","true");
 	SetConfig("TRANSPARENT","false");
@@ -49,7 +51,7 @@ void Params::SetDefaults()
 	SetConfig("DISPLAYINITIALMESSAGES","true");
 	SetConfig("DBRELOAD","60");
 	SetConfig("SCANTEMPFILE","/var/tmp/havp/havp-XXXXXX");
-	SetConfig("TEMPLATEPATH","/etc/havp/templates/en");
+	SetConfig("TEMPLATEPATH", TEMPLATEDIR );
 }
 
 void Params::ReadConfig(string file)
@@ -74,6 +76,10 @@ void Params::ReadConfig(string file)
 }
 void Params::SetConfig(string param, string value)
 { 
+
+string TempParams[] =  {CONFIGPARAMS};
+bool ParamFound = false;
+
 	string::const_iterator i = param.begin();
  	string::size_type e = param.find_first_of(" \t");
 	if(e == param.npos) {
@@ -85,7 +91,22 @@ void Params::SetConfig(string param, string value)
 	while( j < e ) { 
 		param[j++] = toupper(*i++);
 	}
-	params[param]=value;	
+
+        for(unsigned int i = 0; i < sizeof(TempParams)/sizeof(string); i++)
+        {
+           if ( param == TempParams[i] )
+           {
+              ParamFound = true;
+           }
+        }
+        
+        if (ParamFound == true ) {
+	  params[param]=value;
+        } else {
+        cout << "Unknown Config Parameter: " << param << endl;
+        LogFile::ErrorMessage ("Unknown Config Parameter: %s\n", param.c_str() );
+        exit (-1);
+        }	
 }
 
 int Params::GetConfigInt(string param)
@@ -125,7 +146,7 @@ void Params::Usage()
  cout << "HAVP Version " << VERSION << "\n\n";
  cout << "Possible options are:\n";
  cout << "--help | -h                         This pamphlet\n";
- cout << "--pid-file=FileName | -p Filename   Path to PID-File\n";
+// cout << "--pid-file=FileName | -p Filename   Path to PID-File\n";
  cout << "--conf-file=FileName | -c Filename  Use this Config-File\n";
  cout << "--show-config | -s                  Show configuration HAVP is using\n";
 }
@@ -135,6 +156,7 @@ bool Params::SetParams(int argvT, char* argcT[])
  char ch;
  bool showconf = false;
  string option,value;
+ string cfgfile=CONFIGFILE;
  typedef string::size_type ST;
 
  SetDefaults();
@@ -148,7 +170,7 @@ bool Params::SetParams(int argvT, char* argcT[])
 		strncpy(&ch,option.c_str(),1);
 		switch ( ch ) {
 			case 'c':
-			case 'p':
+//			case 'p':
 				{
 				--argvT;
 				if( argvT == 0 ) {
@@ -187,17 +209,19 @@ bool Params::SetParams(int argvT, char* argcT[])
 		return false;
 	} else if( option == "show-config") {
 		showconf = true;
-	} else if( option == "pid-file" || option == "p" ) {
-		SetConfig("PIDFILE",value);
+//	} else if( option == "pid-file" || option == "p" ) {
+//		SetConfig("PIDFILE",value);
 	} else if( option == "conf-file" || option == "c" ) {
-		ReadConfig(value);
+		cfgfile = value;
         } else if(showconf == true) {
-                //Nothing to prefent Usage
+                //Nothing: prevent Usage
 	} else {
 		Usage();
 		return false;
 	}
  }
+
+ReadConfig( cfgfile ); 
 
 if(showconf == true) {
  ShowConfig();

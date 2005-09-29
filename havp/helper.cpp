@@ -34,11 +34,27 @@ extern GenericScanner *VirusScanner;
 
 bool WritePidFile(pid_t pid)
 {
+    string usr=Params::GetConfigString("USER");
+
+    struct passwd *user;
+
+    if ((user = getpwnam ( usr.c_str() )) == NULL)
+    {
+        LogFile::ErrorMessage ("Unknown User: %s\n", usr.c_str() );
+        return false;
+    }
+
     string pidfile=Params::GetConfigString("PIDFILE");
     ofstream pidf(pidfile.c_str(),ios_base::trunc);
     if(!pidf) return false;
     pidf << pid ;
     pidf.close();
+
+//    if ( chown( pidfile.c_str(), user->pw_uid , -1) == -1){
+//      LogFile::ErrorMessage ("%s \n", strerror(errno));
+//      return false;
+//    }
+
     return true;
 }
 
@@ -88,6 +104,18 @@ static void DeleteTempfiles (int SignalNo)
     	}
     }
 #endif
+
+    //Delete PIDfile
+    string pidfile=Params::GetConfigString("PIDFILE");
+
+if ( setuid(0) == -1) {
+     LogFile::ErrorMessage ("Setuid: %s\n", strerror(errno));
+    }
+
+    if ( unlink ( pidfile.c_str() ) == -1) {
+     LogFile::ErrorMessage ("Can not remove Message Pidfile: %s\n", strerror(errno));
+    }
+ 
 	exit(0);
 	} else {
 	VirusScanner->DeleteFile();
@@ -232,35 +260,103 @@ int HardLockTest ( )
 bool ChangeUserAndGroup(string usr, string grp)
 {
     if(grp != "") {
-    struct group *group;
+      struct group *group;
 
-    if ((group = getgrnam ( grp.c_str() )) == NULL)
-    {
+      if ((group = getgrnam ( grp.c_str() )) == NULL)
+      {
         cout << "unknown group: " << grp << endl;
         return false;
-    }
+      }
 
-    if ( setgid( group->gr_gid ) < 0 )
-    {
+      if ( setgid( group->gr_gid ) < 0 )
+      {
         cout << "Could not change Group-ID" << endl;
         return false;
-    }
-    }
+      }
+     }
+
     if(usr != "") {
 
-    struct passwd *user;
+      struct passwd *user;
 
-    if ((user = getpwnam ( usr.c_str() )) == NULL)
-    {
+      if ((user = getpwnam ( usr.c_str() )) == NULL)
+      {
         cout << "unknown user: " << usr << endl;
         return false;
-    }
+      }
 
-    if ( setuid( user->pw_uid ) < 0 )
-    {
+      if ( setuid( user->pw_uid ) < 0 )
+      {
         cout << "Could not change User-ID" << endl;
         return false;
-    }
+      }
     }
     return true;
+}
+
+
+int CreateQueue( string usr )
+{
+    int qid;
+
+    int uid = getuid();
+    int gid = getgid();
+
+//    if(grp != "") {
+//      struct group *group;
+
+//      if ((group = getgrnam ( grp.c_str() )) == NULL)
+//      {
+//        cout << "Unknown group: " << grp << endl;
+//        return -1;
+//      }
+
+//      if ( setegid( group->gr_gid ) < 0 )
+//      {
+//        cout << "Could not change Group-ID" << endl;
+//        return -1;
+//      }
+//     }
+
+    if(usr != "") {
+
+      struct passwd *user;
+
+      if ((user = getpwnam ( usr.c_str() )) == NULL)
+      {
+        cout << "Unknown user: " << usr << endl;
+        return -1;
+      }
+
+      if ( seteuid( user->pw_uid ) < 0 )
+      {
+        cout << "Could not change User-ID" << endl;
+        return -1;
+      }
+    }
+
+    qid = msgget(IPC_PRIVATE, (IPC_CREAT | 00600) );
+    if ( qid < 0) {
+	LogFile::ErrorMessage ("Cannot create a message queue! Error: %s\n", strerror(errno));
+	if(errno == ENOSPC) {
+		LogFile::ErrorMessage ("System-wide variable MSGMNI too small. Increase this value!");
+	}
+    return -1;
+    }
+
+//Change rights back;
+//      if ( setegid( gid ) < 0 )
+//      {
+//        cout << "Could not change Group-ID back" << endl;
+//        return -1;
+//      }
+
+      if ( seteuid( uid ) < 0 )
+      {
+        cout << "Could not change User-ID back" << endl;
+        return -1;
+      }
+
+
+return qid;
 }
