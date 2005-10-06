@@ -27,18 +27,16 @@ using namespace std;
 bool URLList::CreateURLList(string URLListFileT)
 {
 
+
  string::size_type i1, i2;
  ifstream Input;
  string Line;
  string Start;
  string URL;
  string Domain;
- char ExactDomain;
- string Path;
- char ExactPath;
- string Toplevel;
- struct URLListStruct NewToplevel;
- string::size_type ToplevelCounter;
+ struct PathStruct AnalysedURL;
+
+// string::size_type ToplevelCounter;
 
  Input.open( URLListFileT.c_str());
 
@@ -57,28 +55,21 @@ bool URLList::CreateURLList(string URLListFileT)
  	  i2 = Line.find_last_of(" \t");
 	  URL = Line.substr(i1,i2-i1);
 
-          if (AnalyseURL( URL, &Toplevel, &Domain, &ExactDomain, &Path, &ExactPath ) == false ) {
+          if (AnalyseURL( URL, &Domain, &AnalysedURL.ExactDomain, &AnalysedURL.Path, &AnalysedURL.ExactPath ) == false ) {
             return false;
           }
 
-          ToplevelCounter = 0;
-          while (1) {
-            if(ToplevelCounter == URLListDB.size()){             
-              NewToplevel.Toplevel = Toplevel;
-              URLListDB.push_back( NewToplevel );
-            }
+//cout << URL << endl << Domain << endl << AnalysedURL.ExactDomain << endl << AnalysedURL.Path << endl << AnalysedURL.ExactPath << endl << "--" << endl;
 
-             if(URLListDB.at(ToplevelCounter).Toplevel == Toplevel){
-               InsertURL( &URLListDB.at(ToplevelCounter), Domain, ExactDomain, Path, ExactPath );
-               break;
-             }
-            ToplevelCounter++;
-           }
+         URLLists[Domain].push_back( AnalysedURL );
+
         }
+
  }
 
 
  Input.close();
+
 
 return true;
 }
@@ -86,17 +77,17 @@ return true;
 
 bool URLList::ReloadURLList( string URLListFileT )
 {
-
+/*
 URLListDB.clear();
 
 return CreateURLList( URLListFileT );
-
+*/
+return true;
 }
 
-bool URLList::AnalyseURL( string UrlT, string *ToplevelT, string *DomainT, char *ExactDomainT, string *PathT, char *ExactPathT )
+bool URLList::AnalyseURL( string UrlT, string *DomainT, char *ExactDomainT, string *PathT, char *ExactPathT )
 {
 
-*ToplevelT = "";
 *DomainT = "";
 *PathT = "";
 
@@ -108,21 +99,12 @@ string::size_type i1;
      *PathT = UrlT.substr(i1+1, UrlT.size()-i1-1);
     } else {
      *DomainT = UrlT;
+     if( UrlT == "") {
+       LogFile::ErrorMessage ("Invalid Domain\n");
+      }
      *PathT = "";
     }
 
-    if ((i1 = DomainT->rfind(".")) != string::npos ) //IPs are not detected and last part is handled as toplevel-domain :-(
-    {
-      *ToplevelT = DomainT->substr( i1+1, DomainT->size()-i1-1);
-      *DomainT = DomainT->substr (0,i1+ToplevelT->size()+1);
-    } else {
-     if ( *DomainT != "*" )
-     {
-//       LogFile::ErrorMessage ("URLList missing Toplevel Domain: %s\n", UrlT.c_str());
-       LogFile::ErrorMessage ("URLList missing Toplevel Domain: %s\n", DomainT->c_str());
-       return false;
-     }
-    }
 
 *ExactDomainT = CheckItem( DomainT );
 if ( (*ExactDomainT != 'l') && (*ExactDomainT != 'n') ) {
@@ -177,33 +159,11 @@ return position;
 
 }
 
-void URLList::InsertURL( struct URLListStruct *URLListDBT, string DomainT, char ExactDomainT, string PathT, char ExactPathT ){
 
-unsigned int DomainCounter = 0;
-struct DomainStruct NewDomain;
-struct PathStruct NewPath;
-
-          while (1) {
-
-            if(DomainCounter == URLListDBT->Domain.size()){             
-              NewDomain.Domain = DomainT; 
-              NewDomain.exact = ExactDomainT;
-              URLListDBT->Domain.push_back( NewDomain );
-            }
-
-             if(URLListDBT->Domain.at(DomainCounter).Domain == DomainT){
-              NewPath.Path = PathT; 
-              NewPath.exact = ExactPathT;
-              URLListDBT->Domain.at(DomainCounter).Path.push_back( NewPath ); 
-              break;
-             }
-             DomainCounter++;
-          }
-}
 
 void URLList::DisplayURLList( ) {
 
-
+/*
 vector<URLListStruct>::iterator ToplevelI;
 vector<DomainStruct>::iterator DomainI;
 vector<PathStruct>::iterator PathI;
@@ -228,7 +188,7 @@ vector<PathStruct>::iterator PathI;
    }
  }
 
-
+*/
 }
 
 string URLList::DisplayLine( string LineT, char positionT ) {
@@ -247,67 +207,88 @@ return Newline;
 }
 
 
+bool URLList::Search ( string *DomainT, char ExactDomainT, string *PathT ) {
+
+vector<PathStruct>::iterator PathI;
+
+vector <struct PathStruct> *List = &URLLists[*DomainT];
+
+if ( List == NULL ){
+return false;
+}
+
+ for(PathI = List->begin(); PathI != List->end(); PathI++)
+ {
+
+   if ( ( ExactDomainT != 'n' ) && (PathI->ExactDomain != ExactDomainT )){
+     continue;
+   }
+
+//cout << "D: " << *DomainT << " P: " << *PathT << " L: " << PathI->Path << endl;
+
+   if( FindString( &PathI->Path, PathT, PathI->ExactPath ) == true) {
+            return true;
+   }
+
+ }
+
+return false;
+}
+
 bool URLList::URLFound ( string DomainT, string PathT ) {
 
-vector<URLListStruct>::iterator ToplevelI;
-vector<DomainStruct>::iterator DomainI;
-vector<PathStruct>::iterator PathI;
+string::size_type pos;
 
 //Delete / add Path
 PathT.erase(0,1);
 
- for(ToplevelI = URLListDB.begin(); ToplevelI != URLListDB.end(); ToplevelI++)
- {
+if ( Search ( &DomainT, 'n', &PathT ) == true){
+  return true;
+ }
 
-//cout << ToplevelI->Toplevel << " " << DomainT.size() - ToplevelI->Toplevel.size() << " " << DomainT.rfind( ToplevelI->Toplevel ) << endl;
+while ( (pos = DomainT.find(".")) != string::npos){
 
-   if ((ToplevelI->Toplevel == "") || ( DomainT.rfind( ToplevelI->Toplevel ) == DomainT.size() - ToplevelI->Toplevel.size() )){
+DomainT.erase(0, pos);
 
-     for(DomainI = ToplevelI->Domain.begin(); DomainI != ToplevelI->Domain.end(); DomainI++)
-     {
+if ( Search ( &DomainT, 'l', &PathT ) == true){
+  return true;
+ }
 
-//cout << DomainT << " " << DomainI->Domain << " " << DomainI->exact << endl;
+DomainT.erase(0, 1);
+if ( Search ( &DomainT, 'l', &PathT ) == true){
+  return true;
+ }
+}
+DomainT="";
+if ( Search ( &DomainT, 'l', &PathT ) == true){
+  return true;
+ }
 
-       if( FindString( DomainI->Domain, DomainT, DomainI->exact ) == true) {
-
-        for(PathI = DomainI->Path.begin(); PathI != DomainI->Path.end(); PathI++)
-        {
-
-//cout << PathT << " " << PathI->Path << " " << PathI->exact << endl;
-
-          if( FindString( PathI->Path, PathT, PathI->exact ) == true) {
-            return true;
-          }
-        }
-      }
-     }
-   }
-  }
 return false;
 }
 
-bool URLList::FindString( string SearchT, string LineT, char positionT ) {
+bool URLList::FindString( string *SearchT, string *LineT, char positionT ) {
 
 if ( positionT == 'l' ){
 
 //cout << LineT.rfind( SearchT ) << " " << (LineT.size() - SearchT.size()) << endl;
 
-   if ( LineT.rfind( SearchT ) == (LineT.size() - SearchT.size()) ){
+   if ( LineT->rfind( *SearchT ) == (LineT->size() - SearchT->size()) ){
      return true;
    }
 
 } else if ( positionT == 'r' ){
 
-   if ( LineT.find( SearchT ) == 0 ){
+   if ( LineT->find( *SearchT ) == 0 ){
      return true;
    }
 
 } else if ( positionT == 'b' ){
-   if ( LineT.find( SearchT ) != string::npos ){
+   if ( LineT->find( *SearchT ) != string::npos ){
      return true;
    }
 } else if ( positionT == 'n' ){
-   if ( LineT == SearchT ){
+   if ( *LineT == *SearchT ){
      return true;
    }
 }

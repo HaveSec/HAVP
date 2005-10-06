@@ -14,6 +14,11 @@ configure
 make
 make install
 
+You can define the virus scanner by the configure --with-scanner= option:
+ - libclamav = Clamav Library
+ - fprot = F-Prot server (f-protd)
+ - aveclient = Kaspersky aveclient
+
 Edit the configfile:
 vi /usr/local/etc/havp/havp.config
 

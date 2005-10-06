@@ -18,8 +18,10 @@
 #ifndef WHITELIST_H
 #define WHITELIST_H
 
+#include <string>
 #include <iostream>
 #include <vector>
+#include <map>
 
 using namespace std;
 
@@ -33,33 +35,30 @@ private:
 struct PathStruct
 {
  string Path;
- char exact;
+ char ExactPath;
+ char ExactDomain;
+ 
 };
 
+/*
 struct DomainStruct
 {
- string Domain;
- char exact;
  vector <struct PathStruct> Path;
 };
+*/
 
-struct URLListStruct
-{
- string Toplevel;
- vector <struct DomainStruct> Domain;
-};
-
-vector <URLListStruct> URLListDB;
+map <string, vector <struct PathStruct> > URLLists;
 
 char CheckItem ( string *ItemT );
 
-bool AnalyseURL( string UrlT, string *ToplevelT, string *DomainT, char *ExactDomainT, string *PathT, char *ExactPathT );
+bool AnalyseURL( string UrlT, string *DomainT, char *ExactDomainT, string *PathT, char *ExactPathT );
 
-void InsertURL( struct URLListStruct *URLListDBT, string DomainT, char ExactDomainT, string PathT, char ExactPathT );
 
 string DisplayLine( string LineT, char positionT );
 
-bool FindString( string SearchT, string LineT, char positionT );
+bool FindString( string *SearchT, string *LineT, char positionT );
+
+bool Search ( string *DomainT, char ExactDomainT, string *PathT );
 
 public:
 

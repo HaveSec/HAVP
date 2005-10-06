@@ -113,13 +113,14 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
         return -30;
     }
 
+
     ScannerOff = Whitelist.URLFound ( ToBrowser.GetHost(), ToBrowser.GetRequest() );
 
     if ( Blacklist.URLFound ( ToBrowser.GetHost(), ToBrowser.GetRequest() ) == true ) {
       LogFile::ErrorMessage("URL is blacklisted: %s\n", ToBrowser.GetCompleteRequest() );
       return -45;
     }
- 
+
     // #if defined (PARENTPROXY) && defined (PARENTPORT)
     string parentproxy=Params::GetConfigString("PARENTPROXY");
     int parentport=Params::GetConfigInt("PARENTPORT");

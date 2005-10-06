@@ -30,16 +30,22 @@ AC_ARG_ENABLE(debug,
 
 
 
-AC_ARG_WITH(scanner, [  --with-scanner=libclamav      Virus Scanner Clamav or Kaspersky (libclamav or aveclient)], HAVPSCANNER_DEF="$withval", HAVPSCANNER_DEF="libclamav")
+AC_ARG_WITH(scanner, [  --with-scanner=libclamav      Virus Scanner Clamav, F-Prot or Kaspersky (libclamav, fprot or aveclient)], HAVPSCANNER_DEF="$withval", HAVPSCANNER_DEF="libclamav")
 
 if test $HAVPSCANNER_DEF = aveclient ; then
  SCANNEROBJECT=kasperskyscanner.o
  SCANNER=1
  SCANNERLIB=
 else
- SCANNEROBJECT=clamlibscanner.o
- SCANNER=0
- SCANNERLIB="-lclamav"
+   if test $HAVPSCANNER_DEF = fprot ; then
+    SCANNEROBJECT=f-protscanner.o
+    SCANNER=2
+    SCANNERLIB=
+   else
+    SCANNEROBJECT=clamlibscanner.o
+    SCANNER=0
+    SCANNERLIB="-lclamav"
+   fi
 fi
 
 AC_SUBST(SCANNER)

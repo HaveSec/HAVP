@@ -38,6 +38,10 @@ void Params::SetDefaults()
  	SetConfig("AVECLIENT","/usr/local/bin/aveclient");
  	SetConfig("AVESOCKET","/var/run/aveserver");
 #endif
+#ifdef USEFPROT
+ 	SetConfig("FPROTPORT","10200");
+ 	SetConfig("FPROTSERVER","127.0.0.1");
+#endif
 	SetConfig("SOURCE_ADDRESS","");
  	SetConfig("MAXSCANSIZE","0");
  	SetConfig("WHITELIST", WHITELISTFILE );

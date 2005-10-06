@@ -41,6 +41,10 @@
 #include "clamlibscanner.h"
 #endif
 
+#ifdef USEFPROT
+#include "f-protscanner.h"
+#endif
+
 #ifdef USEKASPERSKY
 #include "kasperskyscanner.h"
 #endif
@@ -69,6 +73,10 @@ int main(int argc, char *argv[])
 
 #ifdef USECLAM
     VirusScanner = new (ClamLibScanner);
+#endif
+
+#ifdef USEFPROT
+    VirusScanner = new (FProtScanner);
 #endif
 
 #ifdef USEKASPERSKY
