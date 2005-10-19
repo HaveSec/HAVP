@@ -256,9 +256,24 @@ int ConnectionToBrowser::GetPort()
 }
 
 
+bool ConnectionToBrowser::RewriteHost()
+{
+
+    if(URLRewrite[Host] != "" )
+    {
+      Host = URLRewrite[Host];
+      return true;
+    }
+return false;
+}
+
 //Constructor
 ConnectionToBrowser::ConnectionToBrowser()
 {
+
+#ifdef REWRITE
+REWRITE
+#endif
 
     string TempMethods[] =  {METHODS};
 

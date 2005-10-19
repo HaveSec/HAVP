@@ -24,7 +24,6 @@
 #include "helper.h"
 #include "sockethandler.h"
 #include "genericscanner.h"
-#include "clamlibscanner.h"
 #include "proxyhandler.h"
 #include "filehandler.h"
 #include "params.h"
@@ -87,10 +86,6 @@ int main(int argc, char *argv[])
    	cout << "Starting Havp Version: " << VERSION << endl;
     }
 
-    string user=Params::GetConfigString("USER");
-    string group=Params::GetConfigString("GROUP");
-    if ( ChangeUserAndGroup("", group) == false) exit (-1);
-
     string accesslog = Params::GetConfigString("ACCESSLOG");
     string errorlog = Params::GetConfigString("ERRORLOG");
     if (LogFile::InitLogFiles( accesslog.c_str(), errorlog.c_str() ) == false)
@@ -147,6 +142,15 @@ int main(int argc, char *argv[])
     if(Params::GetConfigBool("DAEMON")) MakeDeamon();
     setpgrp();  //PSE: for cases daemon is not started
 
+
+    string user=Params::GetConfigString("USER");
+    string group=Params::GetConfigString("GROUP");
+    if ( ChangeUserAndGroup("", group) == false) exit (-1);
+    if ( ChangeUserAndGroup(user,"") == false) exit (-1);
+
+    LogFile::ErrorMessage ("Change to group %s\n", group.c_str());
+    LogFile::ErrorMessage ("Change to user %s\n", user.c_str());
+
     //PSE: parent pid of all processes started from now on
     //PSE: may be used later to kill the daemon
     pid_t pid;
@@ -159,34 +163,16 @@ int main(int argc, char *argv[])
 
     //create a unique message queue for all children and grandchildren
 #ifdef QUEUE
-    if ((VirusScanner->msgqid = CreateQueue(user)) < 0){
+    if ((VirusScanner->msgqid = CreateQueue()) < 0){
        exit(-1);
      }
     LogFile::ErrorMessage ("Message Queue ID: %d\n", VirusScanner->msgqid);
 #endif
 
-    LogFile::ErrorMessage ("Change to group %s\n", group.c_str());
-    LogFile::ErrorMessage ("Change to user %s\n", user.c_str());
+   int maxserver=Params::GetConfigInt("MAXSERVERS");
 
 
-    //PSE: pid_t pid;
-    //Start Server
     int servernumber = Params::GetConfigInt("SERVERNUMBER");
-    for( int i = 0; i < servernumber; i++ )
-    {
-        pid=fork();
-        Instances++;
-
-        if (pid == 0)
-        {
-            //Child
-            if ( ChangeUserAndGroup(user,"") == false) exit (-1);
-            VirusScanner->PrepareScanning ( &ProxyServer );
-            Proxy.Proxy ( &ProxyServer, VirusScanner );
-            exit (1);
-        }
-    }
-
     int dbreload=Params::GetConfigInt("DBRELOAD");
     while(1)
     {
@@ -229,11 +215,19 @@ int main(int argc, char *argv[])
         	if (pid < 0) {
            		LogFile::ErrorMessage ("Could not fork child");
            		Instances--;
+                        //Sleep and hope error goes away
+                        sleep(10);
         	} else if (pid == 0) {
             //Child
-                if ( ChangeUserAndGroup(user,"") == false) exit (-1);
-            	VirusScanner->PrepareScanning ( &ProxyServer );
-            	Proxy.Proxy ( &ProxyServer, VirusScanner );
+                int reqs = 0;
+
+                // Use child for 100 requests
+                while (reqs < 100)
+                {
+                    reqs++;
+            	    VirusScanner->PrepareScanning ( &ProxyServer );
+            	    Proxy.Proxy ( &ProxyServer, VirusScanner );
+                }
             	exit (1);
         	} else {
 		      if(startchild) startchild--;
@@ -244,7 +238,11 @@ int main(int argc, char *argv[])
 
  if(Instances >= servernumber)
  {
-	pause();
+        bool hangup = ProxyServer.CheckForData();
+	sleep(1);
+        if( (hangup == true) && (Instances < maxserver) && (ProxyServer.CheckForData() == true) ) {
+         startchild++; 
+        }
  }
 
 	} else {

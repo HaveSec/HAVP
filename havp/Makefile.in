@@ -19,6 +19,8 @@ install: all
 	install -m 755 havp $(sbindir)/havp
 	install -d /var/log/havp/
 	install -d /var/tmp/havp/
+	install -d /var/run/havp/
+	chmod a+rw /var/run/havp/
 	install -d /etc/init.d/
 	install -m 755 ../etc/init.d/havp /etc/init.d/
 	install -m 644 -D ../etc/havp/havp.config $(etcdir)/havp/havp.config

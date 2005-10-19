@@ -34,6 +34,7 @@ extern GenericScanner *VirusScanner;
 
 bool WritePidFile(pid_t pid)
 {
+/*
     string usr=Params::GetConfigString("USER");
 
     struct passwd *user;
@@ -43,7 +44,7 @@ bool WritePidFile(pid_t pid)
         LogFile::ErrorMessage ("Unknown User: %s\n", usr.c_str() );
         return false;
     }
-
+*/
     string pidfile=Params::GetConfigString("PIDFILE");
     ofstream pidf(pidfile.c_str(),ios_base::trunc);
     if(!pidf) return false;
@@ -295,28 +296,13 @@ bool ChangeUserAndGroup(string usr, string grp)
 }
 
 
-int CreateQueue( string usr )
+int CreateQueue(  )
 {
     int qid;
 
+/*
     int uid = getuid();
     int gid = getgid();
-
-//    if(grp != "") {
-//      struct group *group;
-
-//      if ((group = getgrnam ( grp.c_str() )) == NULL)
-//      {
-//        cout << "Unknown group: " << grp << endl;
-//        return -1;
-//      }
-
-//      if ( setegid( group->gr_gid ) < 0 )
-//      {
-//        cout << "Could not change Group-ID" << endl;
-//        return -1;
-//      }
-//     }
 
     if(usr != "") {
 
@@ -334,7 +320,7 @@ int CreateQueue( string usr )
         return -1;
       }
     }
-
+*/
     qid = msgget(IPC_PRIVATE, (IPC_CREAT | 00600) );
     if ( qid < 0) {
 	LogFile::ErrorMessage ("Cannot create a message queue! Error: %s\n", strerror(errno));
@@ -344,19 +330,15 @@ int CreateQueue( string usr )
     return -1;
     }
 
+/*
 //Change rights back;
-//      if ( setegid( gid ) < 0 )
-//      {
-//        cout << "Could not change Group-ID back" << endl;
-//        return -1;
-//      }
 
       if ( seteuid( uid ) < 0 )
       {
         cout << "Could not change User-ID back" << endl;
         return -1;
       }
-
+*/
 
 return qid;
 }

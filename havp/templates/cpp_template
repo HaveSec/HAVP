@@ -1,9 +1,9 @@
 /***************************************************************************
-                          helper.h  -  description
+                          |FILENAME|  -  description
                              -------------------
-    begin                : Sa M� 5 2005
-    copyright            : (C) 2005 by Christian Hilgers
-    email                : christian@hilgers.ag
+    begin                : |DATE|
+    copyright            : (C) |YEAR| by |AUTHOR|
+    email                : |EMAIL|
  ***************************************************************************/
 
 /***************************************************************************
@@ -14,26 +14,3 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-
-#ifndef HELPER_H
-#define HELPER_H
-
-#include  <errno.h>
-
-int MakeDeamon();
-
-int HardLockTest ( );
-
-bool ChangeUserAndGroup(string usr, string grp);
-
-bool WritePidFile(pid_t pid);
-
-void InstallSignal ();
-
-int CreateQueue( );
-
-//void RereadDatabase ();
-
-//void StartNewChild ();
-
-#endif

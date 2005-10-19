@@ -41,6 +41,10 @@ protected:
 
 vector <string> tokens;
 
+string Request;
+
+string Host;
+
 virtual bool AnalyseHeaderLine( string *RequestT ) = 0;
 
 public: 

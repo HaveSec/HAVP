@@ -20,7 +20,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <signal.h>
+//#include <signal.h>
 #include <errno.h>
 #include "sockethandler.h"
 #include "logfile.h"
@@ -128,10 +128,12 @@ bool SocketHandler::AcceptClient ( SocketHandler *accept_socketT )
     int addr_length = sizeof ( s_addr );
     accept_socketT->sock_fd = ::accept ( sock_fd, ( sockaddr * ) &s_addr, ( socklen_t * ) &addr_length );
 
-    close ( sock_fd );
+    // close ( sock_fd );
 
-//PSE: Trigger a new process
-	  kill(getpgrp(),SIGUSR1);
+          //PSE: Trigger a new process
+          // (Disabled until a better preforking system)
+          // Trigger should only call the first time so here is the wrong place
+	  // kill(getpgrp(),SIGUSR1);
 
     if ( accept_socketT->sock_fd == -1 ){
         return false;
@@ -149,7 +151,7 @@ bool SocketHandler::Send ( string *sock_outT )
     string send_temp;
 
 
-    select ( sock_fd+1, NULL, &checkfd, NULL, NULL);
+    //select ( sock_fd+1, NULL, &checkfd, NULL, NULL);
 
     //Timeout is changed with select
     Timeout.tv_sec = SENDTIMEOUT;

@@ -100,6 +100,7 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
         return -10;
     }
 
+
     if( ToBrowser.ReadHeader( &Header ) == false)
     {
         BrowserDropped = true;
@@ -113,6 +114,9 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
         return -30;
     }
 
+#ifdef REWRITE
+    ToBrowser.RewriteHost();
+#endif
 
     ScannerOff = Whitelist.URLFound ( ToBrowser.GetHost(), ToBrowser.GetRequest() );
 
@@ -237,7 +241,7 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
     ContentLengthReference = ToServer.GetContentLength( );
 
     //Also check if file is too large for scanning
-    if ( ( ContentLengthReference > 0 ) && ( ( ContentLengthReference < maxscansize ) || (maxscansize == 0) ) )
+    if ( (ScannerOff != true) && ( ContentLengthReference > 0 ) && ( ( ContentLengthReference < maxscansize ) || (maxscansize == 0) ) )
     {
         unlock = true;
         //Set tempfile to right size
@@ -543,6 +547,7 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT , GenericScanner *Viru
 
 ProxyHandler::ProxyHandler()
 {
+newinstance = true;
 }
 
 

@@ -31,7 +31,8 @@
 #include <deque>
 #include <stdlib.h>
 #include <errno.h>
-
+#include <sys/types.h>
+#include <signal.h>
 
 using namespace std;
 
@@ -39,6 +40,8 @@ using namespace std;
 class ProxyHandler {
 
 private:
+
+bool newinstance;
 
 bool HeaderSend;
 

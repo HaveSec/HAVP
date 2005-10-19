@@ -80,7 +80,7 @@ int FProtScanner::Scanning( )
 
  ScannerRequest += FileName;
 
- ScannerRequest += FPROTOPTIONS;
+// ScannerRequest += FPROTOPTIONS;
  ScannerRequest += " HTTP/1.0\r\n\r\n";
 
  SocketHandler FProtSocket;

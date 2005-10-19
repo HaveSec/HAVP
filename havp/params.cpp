@@ -33,6 +33,7 @@ void Params::SetDefaults()
 	SetConfig("BIND_ADDRESS",BIND_ADDRESS);
 	SetConfig("KEEPBACKBUFFER",KEEPBACKBUFFER);
  	SetConfig("TRICKLING",TRICKLING);
+ 	SetConfig("MAXSERVERS","150");
 // Parameters only setable by havp.config (whereever it is)
 #ifdef USEKASPERSKY
  	SetConfig("AVECLIENT","/usr/local/bin/aveclient");
@@ -46,7 +47,7 @@ void Params::SetDefaults()
  	SetConfig("MAXSCANSIZE","0");
  	SetConfig("WHITELIST", WHITELISTFILE );
  	SetConfig("BLACKLIST", BLACKLISTFILE );
-	SetConfig("PIDFILE","/var/run/havp.pid");
+	SetConfig("PIDFILE","/var/run/havp/havp.pid");
 	SetConfig("DAEMON","true");
 	SetConfig("TRANSPARENT","false");
 	SetConfig("LOG_OKS","true");

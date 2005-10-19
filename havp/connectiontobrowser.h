@@ -25,11 +25,12 @@
 #include "httphandler.h"
 #include "logfile.h"
 #include "params.h"
+#include "default.h"
 
 #include <iostream>
 #include <algorithm>
 #include <string>
-
+#include <map>
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -39,12 +40,9 @@ class ConnectionToBrowser : public HTTPHandler  {
 
 private:
 
-string Request;
-
-string Host;
+map <string,string> URLRewrite;
 
 int Port;
-
 
 vector <string> Methods;
 
@@ -69,7 +67,8 @@ const string GetRequestType();
 
 int GetPort();
 
-      
+bool RewriteHost();
+
 	ConnectionToBrowser();
 	~ConnectionToBrowser();
 };

@@ -84,6 +84,9 @@ bool HTTPHandler::ReadHeader( string *headerT )
 //Split header to tokens
 bool HTTPHandler::AnalyseHeader(string *linesT, const char *delimitersT )
 {
+    //Delete last Request and Host
+    Request="";
+    Host="";
 
     string tempToken;
 
