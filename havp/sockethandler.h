@@ -34,11 +34,13 @@ private:
 
 int port;
 int sock_fd;
-struct sockaddr_in s_addr;
 
 //For select
 fd_set checkfd;
 struct timeval Timeout;
+
+protected:
+struct sockaddr_in s_addr;
 
 public:
 

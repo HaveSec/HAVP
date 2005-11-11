@@ -1,9 +1,14 @@
-* HAVP 0.73 - 10/20/2005
+* HAVP 0.74 - 12/11/2005
+ - Add IP to Logfile
+ - Add Templates
+ - Improve Errorhandling
+ - Fix Bug in Serverpool
+* HAVP 0.73 - 20/10/2005
  - Move Pidfile to /var/run/havp/havp.pid
  - Add Templates
  - Improve Performance
  - Rewrite Domains (Check default.h.in)
-* HAVP 0.72 - 10/07/2005
+* HAVP 0.72 - 07/10/2005
  - Add Kaspersky and F-Prot Scanner
  - Add Templates
  - Fix some minor bugs in default.h

@@ -34,6 +34,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 using namespace std; 
 
 class ConnectionToBrowser : public HTTPHandler  {
@@ -41,6 +45,12 @@ class ConnectionToBrowser : public HTTPHandler  {
 private:
 
 map <string,string> URLRewrite;
+
+string Request;
+
+string Host;
+
+string IP;
 
 int Port;
 
@@ -58,7 +68,10 @@ public:
 
 string PrepareHeaderForServer();
 
+string GetIP ();
+
 const char *GetHost();
+
 const string GetRequest();
 
 const char *GetCompleteRequest();
@@ -68,6 +81,8 @@ const string GetRequestType();
 int GetPort();
 
 bool RewriteHost();
+
+void ClearVars();
 
 	ConnectionToBrowser();
 	~ConnectionToBrowser();

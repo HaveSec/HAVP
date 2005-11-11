@@ -51,6 +51,7 @@ void Params::SetDefaults()
 	SetConfig("DAEMON","true");
 	SetConfig("TRANSPARENT","false");
 	SetConfig("LOG_OKS","true");
+	SetConfig("FORWARDED_IP","false");
 	SetConfig("ACCESSLOG","/var/log/havp/access.log");
 	SetConfig("ERRORLOG","/var/log/havp/havp.log");
 	SetConfig("DISPLAYINITIALMESSAGES","true");

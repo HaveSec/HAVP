@@ -44,7 +44,7 @@ bool ProxyHandler::Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusSca
 
 // #ifdef LOG_OKS
     if(Params::GetConfigBool("LOG_OKS"))
-    LogFile::AccessMessage("%s %d %d %s OK\n", ToBrowser.GetCompleteRequest(), ToServer.GetResponse(), ToBrowser.GetPort(), ToBrowser.GetRequestType().c_str() );
+    LogFile::AccessMessage("%s %s %d %d %s OK\n", ToBrowser.GetIP().c_str(), ToBrowser.GetCompleteRequest(), ToServer.GetResponse(), ToBrowser.GetPort(), ToBrowser.GetRequestType().c_str() );
 // #endif
 
 //PSE: withdraw Clean-message
@@ -93,6 +93,9 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
     int TricklingTime = Params::GetConfigInt("TRICKLING");
     unsigned int KeepBackBuffer = Params::GetConfigInt("KEEPBACKBUFFER");
 
+    //Clear old session variables
+    ToBrowser.ClearVars();
+
     if( ProxyServerT->AcceptClient( &ToBrowser ) == false)
     {
         BrowserDropped = true;
@@ -112,6 +115,12 @@ int ProxyHandler::Communication( SocketHandler *ProxyServerT, GenericScanner *Vi
     {
         LogFile::ErrorMessage("Could not Analyse header\n%s\n", Header.c_str());
         return -30;
+    }
+
+    if( (ToBrowser.GetRequestType() == "") || (ToBrowser.GetHost() == NULL) )
+    {
+        LogFile::ErrorMessage("Malformed request received\n");
+        return -35;
     }
 
 #ifdef REWRITE
@@ -475,7 +484,7 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT , GenericScanner *Viru
     //PSEend
 
     if (BrowserDropped ==true ){
-     LogFile::AccessMessage("%s Browser Droped: %d\n", ToBrowser.GetCompleteRequest(), CommunicationAnswerT);
+     LogFile::AccessMessage("%s %s Browser Droped: %d\n", ToBrowser.GetIP().c_str(), ToBrowser.GetCompleteRequest(), CommunicationAnswerT);
      return false;
     }
 
@@ -483,39 +492,66 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT , GenericScanner *Viru
     {
        string errorheader = ERRORHEADER;
        if (ToBrowser.Send( &errorheader ) == false) {
-         LogFile::AccessMessage("%s Browser Droped: %d\n", ToBrowser.GetCompleteRequest(), CommunicationAnswerT);
+         LogFile::AccessMessage("%s %s Browser Droped: %d\n", ToBrowser.GetIP().c_str(), ToBrowser.GetCompleteRequest(), CommunicationAnswerT);
          return false;
        }
     }
 
-    if ( CommunicationAnswerT == -50 )
+    if ( CommunicationAnswerT == -120 )
+    {
+        //More Data than Content-Length
+        LogFile::AccessMessage("$s %s %d Data larger than Content-Length\n", ToBrowser.GetIP().c_str(), ToBrowser.GetHost(), ToBrowser.GetPort());
+        message = "Server sends more data than expected<br>";
+        message =+ ToBrowser.GetHost();
+        filename = ERROR_INVALID;
+    }
+    else if ( CommunicationAnswerT == -85 )
+    {
+        LogFile::AccessMessage("%s %s %d Invalid Server Header\n", ToBrowser.GetIP().c_str(), ToBrowser.GetHost(), ToBrowser.GetPort());
+        message = "Invalid Server Header<br>";
+        message =+ ToBrowser.GetHost();
+        filename = ERROR_INVALID;
+    }
+    else if ( ( CommunicationAnswerT == -60 ) || ( CommunicationAnswerT == -67 ) || ( CommunicationAnswerT == -75 ) || ( CommunicationAnswerT == -80 ) )
+    {
+        LogFile::AccessMessage("%s %s %d Server down\n", ToBrowser.GetIP().c_str(), ToBrowser.GetHost(), ToBrowser.GetPort());
+        message = ToBrowser.GetHost();
+        filename = ERROR_DOWN;
+    }
+    else if ( CommunicationAnswerT == -50 )
     {
         //Could not resolve DNS Name
-        LogFile::AccessMessage("%s %d DNS Failed\n", ToBrowser.GetHost(), ToBrowser.GetPort());
+        LogFile::AccessMessage("%s %s %d DNS Failed\n", ToBrowser.GetIP().c_str(), ToBrowser.GetHost(), ToBrowser.GetPort());
         message = ToBrowser.GetHost();
         filename = ERROR_DNS;
     }
     else if ( CommunicationAnswerT == -45 )
     {
-        LogFile::AccessMessage("URL %s is blacklisted\n", ToBrowser.GetCompleteRequest() );
+        LogFile::AccessMessage("$s URL %s is blacklisted\n", ToBrowser.GetIP().c_str(), ToBrowser.GetCompleteRequest() );
         message = ToBrowser.GetCompleteRequest();
         filename = ERROR_BLACKLIST;
     }
+    else if ( CommunicationAnswerT == -35 )
+    {
+        //LogFile::AccessMessage("URL %s is blacklisted\n", ToBrowser.GetCompleteRequest() );
+        message = "Only HTTP is supported";
+        filename = ERROR_REQUEST;
+    }
     else if ( CommunicationAnswerT == 2 )
     {
-        LogFile::AccessMessage("%s %d Scanner Error: %s\n", ToBrowser.GetHost(), ToBrowser.GetPort(), Answer.c_str());
+        LogFile::AccessMessage("%s %s %d Scanner Error: %s\n", ToBrowser.GetIP().c_str(), ToBrowser.GetHost(), ToBrowser.GetPort(), Answer.c_str());
         message = Answer;
         filename = ERROR_SCANNER;
     }
     else if ( CommunicationAnswerT == 1 )
     {
-        LogFile::AccessMessage("%s Virus: %s\n", ToBrowser.GetCompleteRequest(), Answer.c_str());
+        LogFile::AccessMessage("%s %s Virus: %s\n", ToBrowser.GetIP().c_str(), ToBrowser.GetCompleteRequest(), Answer.c_str());
         message = Answer;
         filename = VIRUS_FOUND;
     }
     else
     {
-        LogFile::AccessMessage("%s Error: %d - Status %d - Method %s\n", ToBrowser.GetCompleteRequest(), CommunicationAnswerT, ToServer.GetResponse(), ToBrowser.GetRequestType().c_str() );
+        LogFile::AccessMessage("%s %s Error: %d - Status %d - Method %s\n", ToBrowser.GetIP().c_str(), ToBrowser.GetCompleteRequest(), CommunicationAnswerT, ToServer.GetResponse(), ToBrowser.GetRequestType().c_str() );
         snprintf(ErrorNumber, 10, "%d", CommunicationAnswerT);
         message = ErrorNumber;
         filename = ERROR_BODY;

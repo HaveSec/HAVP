@@ -100,13 +100,20 @@ string ConnectionToBrowser::PrepareHeaderForServer()
 bool ConnectionToBrowser::AnalyseHeaderLine( string *RequestT )
 {
 
-    // #ifdef TRANSPARENT
     if(Params::GetConfigBool("TRANSPARENT")) {
-    if( RequestT->find( "Host:", 0 ) == 0 )
-    {
+      if( RequestT->find( "Host:", 0 ) == 0 )
+      {
         return GetHostAndPortOfHostLine( RequestT );
+      }
     }
-    // #endif
+
+    if (Params::GetConfigBool("FORWARDED_IP") )
+    {
+      if ( RequestT->find( "X-Forwarded-For: ", 0 ) == 0 )
+      {
+        IP = RequestT->substr( 17, RequestT->length()-17 );
+        return true;
+      }
     }
 
     //Looking for GET, POST, HEAD
@@ -228,6 +235,10 @@ bool ConnectionToBrowser::GetHostAndPortOfRequest(string *RequestT )
 
 const char *ConnectionToBrowser::GetHost()
 {
+    if ( Host == "" ){
+      return NULL;
+    }
+
     return Host.c_str();
 }
 
@@ -256,6 +267,17 @@ int ConnectionToBrowser::GetPort()
 }
 
 
+string ConnectionToBrowser::GetIP ()
+{
+
+   if (IP == "") {
+     IP = inet_ntoa( s_addr.sin_addr );
+   }
+   //else IP was set by X-Forwarded-For:
+
+   return IP;
+}
+
 bool ConnectionToBrowser::RewriteHost()
 {
 
@@ -265,6 +287,15 @@ bool ConnectionToBrowser::RewriteHost()
       return true;
     }
 return false;
+}
+
+void ConnectionToBrowser::ClearVars()
+{
+    RequestType = "";
+    Request = "";
+    Host = "";
+    Port = 0;
+    IP = "";
 }
 
 //Constructor

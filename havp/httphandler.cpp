@@ -84,9 +84,6 @@ bool HTTPHandler::ReadHeader( string *headerT )
 //Split header to tokens
 bool HTTPHandler::AnalyseHeader(string *linesT, const char *delimitersT )
 {
-    //Delete last Request and Host
-    Request="";
-    Host="";
 
     string tempToken;
 
@@ -123,7 +120,7 @@ bool HTTPHandler::AnalyseHeader(string *linesT, const char *delimitersT )
         {
             tempToken = tempToken.substr(0,lastposition+1);
 
-            if( (lastposition = tempToken.find("Content-Length: ",0) ) != string::npos)
+            if( (lastposition = tempToken.find("Content-Length: ",0) ) == 0 )
             {
                 lastposition = lastposition + 16;
                 string Length = tempToken.substr(lastposition, tempToken.length() );

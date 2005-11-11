@@ -128,6 +128,9 @@ bool SocketHandler::AcceptClient ( SocketHandler *accept_socketT )
     int addr_length = sizeof ( s_addr );
     accept_socketT->sock_fd = ::accept ( sock_fd, ( sockaddr * ) &s_addr, ( socklen_t * ) &addr_length );
 
+//Save IP ToBrowser!
+accept_socketT->s_addr = s_addr;
+
     // close ( sock_fd );
 
           //PSE: Trigger a new process

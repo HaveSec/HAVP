@@ -71,7 +71,34 @@ bool ClamLibScanner::ReloadDatabase()
    //PSE: if(cl_statchkdir(&dbstat) == 1)
     if(cl_statchkdir(&dbstat) != 0)
     {
-        cl_statfree(&dbstat);
+
+	int ret=0;
+	unsigned int no=0;
+
+	cl_free(root);
+	root = NULL;
+
+	if ((ret = cl_loaddbdir(cl_retdbdir(), &root, &no)))
+	{
+	LogFile::ErrorMessage ("Database reload error: %s\n", cl_perror(ret));
+	return false;
+	}
+	if ((ret = cl_build(root)))
+	{
+	LogFile::ErrorMessage ("Database reload initialization error: %s\n", cl_perror(ret));
+	cl_free(root);
+	return false;
+	}
+
+	LogFile::ErrorMessage ("Database reloaded with %d signatures\n", no);
+
+	cl_statfree(&dbstat);
+	memset(&dbstat, 0, sizeof(struct cl_stat));
+	cl_statinidir(cl_retdbdir(), &dbstat);
+
+/*
+//CH 
+       cl_statfree(&dbstat);
 
         LogFile::ErrorMessage ("Reload Database\n" );
         if ( InitDatabase() == false)
@@ -79,6 +106,7 @@ bool ClamLibScanner::ReloadDatabase()
             LogFile::ErrorMessage ("Reload Database - failed\n" );
             return false;
         }
+*/
     }
 
     return true;
