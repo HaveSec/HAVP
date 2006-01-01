@@ -1,3 +1,7 @@
+
+* HAVP 0.75 - 02/01/2005
+ - Improve Configfile
+ - Fix Bug in Black/Whitelists
 * HAVP 0.74 - 12/11/2005
  - Add IP to Logfile
  - Add Templates

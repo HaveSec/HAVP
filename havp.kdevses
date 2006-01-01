@@ -1,40 +1,37 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
 <!DOCTYPE KDevPrjSession>
 <KDevPrjSession>
- <DocsAndViews NumberOfDocuments="11" >
-  <Doc0 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/cvs/havp-0.74/havp/default.h.in" >
-   <View0 line="2" Type="Source" />
+ <DocsAndViews NumberOfDocuments="10" >
+  <Doc0 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/havp/params.cpp" >
+   <View0 line="111" Type="Source" />
   </Doc0>
-  <Doc1 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/cvs/havp-0.74/havp/proxyhandler.cpp" >
-   <View0 line="45" Type="Source" />
+  <Doc1 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/ChangeLog" >
+   <View0 line="3" Type="Source" />
   </Doc1>
-  <Doc2 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/cvs/havp-0.74/havp/connectiontobrowser.cpp" >
-   <View0 line="110" Type="Source" />
+  <Doc2 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/todo" >
+   <View0 line="2" Type="Source" />
   </Doc2>
-  <Doc3 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/cvs/havp-0.74/havp/httphandler.cpp" >
-   <View0 line="84" Type="Source" />
+  <Doc3 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/readme" >
+   <View0 line="0" Type="Source" />
   </Doc3>
-  <Doc4 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/cvs/havp-0.74/havp/httphandler.h" >
-   <View0 line="43" Type="Source" />
+  <Doc4 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/etc/havp/havp.config" >
+   <View0 line="183" Type="Source" />
   </Doc4>
-  <Doc5 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/cvs/havp-0.74/havp/connectiontobrowser.h" >
-   <View0 line="50" Type="Source" />
+  <Doc5 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/havp/proxyhandler.cpp" >
+   <View0 line="305" Type="Source" />
   </Doc5>
-  <Doc6 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/cvs/havp-0.74/havp/params.cpp" >
-   <View0 line="53" Type="Source" />
+  <Doc6 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/havp/havp.cpp" >
+   <View0 line="228" Type="Source" />
   </Doc6>
-  <Doc7 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/cvs/havp-0.74/etc/havp/havp.config" >
-   <View0 line="123" Type="Source" />
+  <Doc7 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/havp/whitelist.cpp" >
+   <View0 line="83" Type="Source" />
   </Doc7>
-  <Doc8 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/cvs/havp-0.74/ChangeLog" >
-   <View0 line="4" Type="Source" />
+  <Doc8 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/havp/helper.cpp" >
+   <View0 line="75" Type="Source" />
   </Doc8>
-  <Doc9 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/cvs/havp-0.74/havp/f-protscanner.cpp" >
-   <View0 line="171" Type="Source" />
+  <Doc9 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/havp/whitelist.h" >
+   <View0 line="49" Type="Source" />
   </Doc9>
-  <Doc10 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/cvs/havp-0.74/havp/default.h" >
-   <View0 line="43" Type="Source" />
-  </Doc10>
  </DocsAndViews>
  <pluginList>
   <kdevdebugger>

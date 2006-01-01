@@ -44,7 +44,8 @@ else
    else
     SCANNEROBJECT=clamlibscanner.o
     SCANNER=0
-    SCANNERLIB="-lclamav"
+    CFLAGS="$CFLAGS `clamav-config --cflags`"
+    SCANNERLIB="`clamav-config --libs ` -lclamav"
    fi
 fi
 

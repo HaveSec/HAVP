@@ -63,20 +63,65 @@ void Params::SetDefaults()
 void Params::ReadConfig(string file)
 {
  typedef string::size_type ST;
- ST i2;
  string line;
  ifstream input(file.c_str());
  if(!input) cerr << "Can not open config file " << file << '\n';
  while(input) {
  	getline(input,line);
- 	string start=line.substr(0,1);
+
 	ST i1 = line.find_first_not_of(" \t");
- 	if(start != "#" && i1 != line.npos ) {
- 		i2 = line.find_last_of(" \t");		
-		string key=line.substr(i1,i2-i1);
-		string val=line.substr(i2+1,line.size()-i2-1);
- 		Params::SetConfig(key,val);
- 	}
+
+	if (i1 != string::npos)
+		line = line.substr(i1, line.size()-i1);
+
+	if ( (i1 == string::npos) || (line.size() == 0) )
+		continue;
+
+
+	string start=line.substr(0,1);
+
+	if(start == "#")
+		continue;
+
+	//At least one \t or space is needed
+	i1 = line.find_first_of(" \t");
+
+ 		if( i1 != string::npos ) {
+	
+			string key=line.substr(0,i1);
+
+			if( line.size() < i1+1 ){
+        			cout << "Invalid Config Line: " << line << endl;
+				exit(1);
+			}
+
+			string val=line.substr(i1+1,line.size()-i1-1);
+
+			//Remove space
+			i1 = val.find_first_not_of(" \t");
+			if (i1 != string::npos) {
+				val = val.substr(i1, line.size()-i1);
+			}
+
+
+			//Remove spaces
+			i1 = val.find_first_of(" \t");
+			if (i1 != string::npos)
+				val = val.substr(0, i1);
+
+
+			if( val.size() == 0 ){
+        			cout << "Invalid Config Line: " << line << endl;
+				exit(1);
+			}
+
+ 			Params::SetConfig(key,val);
+
+		} else {
+        		cout << "Invalid Config Line: " << line << endl;
+			exit(1);
+		}
+
  }
  input.close();
 }

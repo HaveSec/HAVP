@@ -27,7 +27,6 @@ using namespace std;
 bool URLList::CreateURLList(string URLListFileT)
 {
 
-
  string::size_type i1, i2;
  ifstream Input;
  string Line;
@@ -70,18 +69,23 @@ bool URLList::CreateURLList(string URLListFileT)
 
  Input.close();
 
-
 return true;
 }
 
 
 bool URLList::ReloadURLList( string URLListFileT )
 {
-/*
-URLListDB.clear();
+
+
+map <string, vector <struct PathStruct> >::iterator  URLListsEnum;
+
+ for(URLListsEnum = URLLists.begin(); URLListsEnum != URLLists.end(); URLListsEnum++)
+{
+	(*URLListsEnum).second.clear();
+}
+URLLists.clear();
 
 return CreateURLList( URLListFileT );
-*/
 return true;
 }
 
@@ -224,7 +228,6 @@ return false;
      continue;
    }
 
-//cout << "D: " << *DomainT << " P: " << *PathT << " L: " << PathI->Path << endl;
 
    if( FindString( &PathI->Path, PathT, PathI->ExactPath ) == true) {
             return true;
@@ -248,17 +251,18 @@ if ( Search ( &DomainT, 'n', &PathT ) == true){
 
 while ( (pos = DomainT.find(".")) != string::npos){
 
-DomainT.erase(0, pos);
+	DomainT.erase(0, pos);
 
-if ( Search ( &DomainT, 'l', &PathT ) == true){
-  return true;
- }
+	if ( Search ( &DomainT, 'l', &PathT ) == true){
+  		return true;
+ 	}
 
-DomainT.erase(0, 1);
-if ( Search ( &DomainT, 'l', &PathT ) == true){
-  return true;
- }
+	DomainT.erase(0, 1);
+		if ( Search ( &DomainT, 'l', &PathT ) == true){
+ 	return true;
+ 	}
 }
+
 DomainT="";
 if ( Search ( &DomainT, 'l', &PathT ) == true){
   return true;
@@ -273,9 +277,11 @@ if ( positionT == 'l' ){
 
 //cout << LineT.rfind( SearchT ) << " " << (LineT.size() - SearchT.size()) << endl;
 
-   if ( LineT->rfind( *SearchT ) == (LineT->size() - SearchT->size()) ){
-     return true;
-   }
+   //Check if SearchT string is larger than LineT
+   if (SearchT->size() <= LineT->size() )
+   	if ( LineT->rfind( *SearchT ) == (LineT->size() - SearchT->size()) ){
+     		return true;
+   	}
 
 } else if ( positionT == 'r' ){
 

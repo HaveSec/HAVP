@@ -1,7 +1,6 @@
 ToDo
 
 - Documentation
-- Add IPs in logfiles
 - Improve make
    i.g make DESTDIR=xx install does not work
 - Include patch for FTP with parent proxy
