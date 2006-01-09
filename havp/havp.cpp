@@ -161,14 +161,6 @@ int main(int argc, char *argv[])
     }
     LogFile::ErrorMessage ("Process ID: %d\n", pid);
 
-    //create a unique message queue for all children and grandchildren
-#ifdef QUEUE
-    if ((VirusScanner->msgqid = CreateQueue()) < 0){
-       exit(-1);
-     }
-    LogFile::ErrorMessage ("Message Queue ID: %d\n", VirusScanner->msgqid);
-#endif
-
    int maxserver=Params::GetConfigInt("MAXSERVERS");
 
 
@@ -219,13 +211,27 @@ int main(int argc, char *argv[])
                         sleep(10);
         	} else if (pid == 0) {
             //Child
+
+                //Set up pipes for scanner<->proxyhandler communication
+                if (VirusScanner->CreatePipes() == false)
+                {
+                    //Pipes not created? Lets wait if condition clears
+                    sleep(10);
+                    exit(1);
+                }
+
+                VirusScanner->PrepareScanning(&ProxyServer);
+
+                //Scanner forked, close pipe ends that are not needed
+                close(VirusScanner->commin[1]);
+                close(VirusScanner->commout[0]);
+
                 int reqs = 0;
 
-                // Use child for 100 requests
-                while (reqs < 100)
+                // Use child for 500 requests
+                while (reqs < 500)
                 {
                     reqs++;
-            	    VirusScanner->PrepareScanning ( &ProxyServer );
             	    Proxy.Proxy ( &ProxyServer, VirusScanner );
                 }
             	exit (1);
@@ -246,8 +252,11 @@ int main(int argc, char *argv[])
  }
 
 	} else {
-        VirusScanner->PrepareScanning ( &ProxyServer );
-        Proxy.Proxy ( &ProxyServer, VirusScanner );
+	// PROBABLY NEED TO COPY THE PIPE STUFF HERE..
+        //VirusScanner->PrepareScanning ( &ProxyServer );
+        //Proxy.Proxy ( &ProxyServer, VirusScanner );
+        LogFile::ErrorMessage("Set SERVERNUMBER > 0\n");
+        exit(0);
 	}
     }
     return 0;

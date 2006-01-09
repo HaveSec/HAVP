@@ -1,4 +1,8 @@
-
+* HAVP 0.76 released
+ - Improve performance
+ - Fix small bug in logfile
+ - Swedish Templates <Johnny Strom>
+ - Polish Templates <Eryk L. Rathmann>
 * HAVP 0.75 - 02/01/2005
  - Improve Configfile
  - Fix Bug in Black/Whitelists

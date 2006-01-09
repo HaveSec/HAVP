@@ -127,12 +127,8 @@ int ClamLibScanner::Scanning( )
     {
         LogFile::ErrorMessage ("Could not open file to scan: %s\n", FileName );
         ScannerAnswer="Could not open file to scan";
-//PSEstart
-	//PSE: We are child but parent process wants this answer to know!
-    	WriteScannerAnswer();
-//PSEend
         close(fd);
-        exit (2);
+        return 1;
     }
 
     //Wait till file is set up for scanning
@@ -144,12 +140,8 @@ int ClamLibScanner::Scanning( )
         LogFile::ErrorMessage ("Virus %s in file %s detected!\n", virname, FileName );
 
         ScannerAnswer=virname;
-//PSEstart
-	//PSE: We are child but parent process wants this answer to know!
-    	WriteScannerAnswer();
-//PSEend
         close(fd);
-        exit (1);
+        return 1;
     }
     else
     {
@@ -157,23 +149,14 @@ int ClamLibScanner::Scanning( )
         {
             LogFile::ErrorMessage ("Error Virus scanner: %s %s\n", FileName, cl_perror(ret) );
             ScannerAnswer= cl_perror(ret);
-//PSEstart
-	//PSE: We are child but parent process wants this answer to know!
-    	WriteScannerAnswer();
-//PSEend
             close(fd);
-            exit (2);
+            return 2;
         }
     }
 
     close(fd);
     ScannerAnswer="Clean";
-//PSEstart
-    //PSE: We are child but parent process wants this answer to know!
-    WriteScannerAnswer();
-//PSEend
-
-    exit (0);
+    return 0;
 }
 
 
@@ -192,20 +175,30 @@ bool ClamLibScanner::InitSelfEngine()
 
 int ClamLibScanner::ScanningComplete()
 {
-
-    int status=0;
+    int ret;
+    char p_read[2];
+    memset(&p_read, 0, sizeof(p_read));
 
     UnlockFile();
 
-    //Wait till scanning is complete
-    waitpid( ScannerPid, &status, 0);
+    //Wait till scanner finishes with the file
+    while ((ret = read(commin[0], &p_read, 1)) < 0)
+    {
+    	if (errno == EINTR) continue;
+    	if (errno != EPIPE) LogFile::ErrorMessage("cl1 read to pipe failed: %s\n", strerror(errno));
 
-    //Delete scanned file
-    DeleteFile();
+    	DeleteFile();
+    	exit(0);
+    }
 
-    //Virus found ? 0=No ; -1=Yes; -2=Scanfail
-    return WEXITSTATUS(status);
+    //Truncate and reuse existing tempfile
+    if (ReinitFile() == false)
+    {
+    	LogFile::ErrorMessage("ReinitFile() failed\n");
+    }
 
+    //Virus found ? 0=No ; 1=Yes; 2=Scanfail
+    return (int)atoi(p_read);
 }
 
 //PSEstart

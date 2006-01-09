@@ -80,6 +80,17 @@ string ConnectionToBrowser::PrepareHeaderForServer()
             continue;
         }
 
+        if( Params::GetConfigBool("RANGE") == false )
+        {
+           if ( it->find( "Range:", 0 ) == 0 )
+           {
+             continue;
+           } else if ( it->find( "If-Range", 0 ) == 0 )
+	   {
+              continue;
+            }
+        }
+
         header += *it;
 
     }                                             //for

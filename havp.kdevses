@@ -1,37 +1,19 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
 <!DOCTYPE KDevPrjSession>
 <KDevPrjSession>
- <DocsAndViews NumberOfDocuments="10" >
-  <Doc0 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/havp/params.cpp" >
-   <View0 line="111" Type="Source" />
+ <DocsAndViews NumberOfDocuments="4" >
+  <Doc0 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.76/havp/connectiontobrowser.cpp" >
+   <View0 line="92" Type="Source" />
   </Doc0>
-  <Doc1 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/ChangeLog" >
-   <View0 line="3" Type="Source" />
+  <Doc1 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.76/havp/params.cpp" >
+   <View0 line="52" Type="Source" />
   </Doc1>
-  <Doc2 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/todo" >
-   <View0 line="2" Type="Source" />
-  </Doc2>
-  <Doc3 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/readme" >
+  <Doc2 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.76/config.h.in" >
    <View0 line="0" Type="Source" />
+  </Doc2>
+  <Doc3 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.76/havp/default.h.in" >
+   <View0 line="43" Type="Source" />
   </Doc3>
-  <Doc4 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/etc/havp/havp.config" >
-   <View0 line="183" Type="Source" />
-  </Doc4>
-  <Doc5 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/havp/proxyhandler.cpp" >
-   <View0 line="305" Type="Source" />
-  </Doc5>
-  <Doc6 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/havp/havp.cpp" >
-   <View0 line="228" Type="Source" />
-  </Doc6>
-  <Doc7 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/havp/whitelist.cpp" >
-   <View0 line="83" Type="Source" />
-  </Doc7>
-  <Doc8 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/havp/helper.cpp" >
-   <View0 line="75" Type="Source" />
-  </Doc8>
-  <Doc9 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.74/havp/whitelist.h" >
-   <View0 line="49" Type="Source" />
-  </Doc9>
  </DocsAndViews>
  <pluginList>
   <kdevdebugger>

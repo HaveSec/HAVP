@@ -95,16 +95,6 @@ static void DeleteTempfiles (int SignalNo)
 	{
 	//PSE: only parent, no scan-file to delete!!
 	killpg(pgid,SIGINT);
-#ifdef QUEUE
-    //PSE: make message queue table empty!
-    int msqid;
-    msqid = VirusScanner->msgqid;
-    if(msqid != -1) {
-    	if(msgctl(msqid,IPC_RMID,NULL) < 0) {
-    		LogFile::ErrorMessage ("Can not remove Message Queue: %d Error: %s \n", msqid , strerror(errno));
-    	}
-    }
-#endif
 
     //Delete PIDfile
     string pidfile=Params::GetConfigString("PIDFILE");

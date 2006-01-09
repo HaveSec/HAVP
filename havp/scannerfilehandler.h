@@ -55,6 +55,8 @@ bool UnlockFile();
 
 bool DeleteFile();
 
+bool ReinitFile();
+
 bool SetFileSize( unsigned long ContentLengthT );
 
 bool ExpandFile( char *DataT, int lengthT,  bool unlockT );

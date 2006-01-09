@@ -50,6 +50,7 @@ void Params::SetDefaults()
 	SetConfig("PIDFILE","/var/run/havp/havp.pid");
 	SetConfig("DAEMON","true");
 	SetConfig("TRANSPARENT","false");
+	SetConfig("RANGE","false");
 	SetConfig("LOG_OKS","true");
 	SetConfig("FORWARDED_IP","false");
 	SetConfig("ACCESSLOG","/var/log/havp/access.log");

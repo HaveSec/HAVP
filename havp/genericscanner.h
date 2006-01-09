@@ -37,18 +37,21 @@ protected:
 
 string ScannerAnswer;
 
-pid_t ScannerPid;
-
 
 public:
 
-int msgqid;
+int commin[2];
+int commout[2];
 
 void WriteScannerAnswer ();
 
 string ReadScannerAnswer ();
 
 bool PrepareScanning ( SocketHandler *ProxyServerT );
+
+bool CreatePipes ();
+
+virtual bool UnlockFile() = 0;
 
 virtual bool InitDatabase() = 0;
 
@@ -65,6 +68,8 @@ virtual bool SetFileSize( unsigned long ContentLengthT ) = 0;
 virtual bool ExpandFile( char *dataT, int lengthT , bool unlockT) = 0 ;
 
 virtual bool DeleteFile() = 0;
+
+virtual bool ReinitFile() = 0;
 
 //PSEstart
 virtual bool FreeDatabase() = 0;

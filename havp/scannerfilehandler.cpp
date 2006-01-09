@@ -75,10 +75,8 @@ bool ScannerFileHandler::UnlockFile()
     {
         LogFile::ErrorMessage ("Could not unlock Scannerfile: %s Error: %s fd=%d\n", FileName , strerror(errno), fd_scan);
 
-        close (fd_scan);
         return false;
     }
-    close (fd_scan);
     return true;
 }
 
@@ -102,6 +100,56 @@ bool ScannerFileHandler::DeleteFile()
     return true;
 }
 
+bool ScannerFileHandler::ReinitFile()
+{
+    struct flock lock;
+    struct stat fstatpuff;
+
+    if (lseek(fd_scan, 0, SEEK_SET) == -1)
+    {
+        LogFile::ErrorMessage ("Could not lseek Scannerfile: %s\n", FileName );
+        return false;
+    }
+
+    while (ftruncate(fd_scan, 0) < 0)
+    {
+        LogFile::ErrorMessage("Error truncating file: %s\n", strerror(errno));
+        return false;
+    }
+
+    while (write(fd_scan, " ", 1) < 0)
+    {
+        LogFile::ErrorMessage ("RE Could not write to Scannerfile: %s\n", strerror(errno));
+        return false;
+    }
+
+    //set-group-ID and group-execute
+    if (fstat(fd_scan, &fstatpuff) < 0)
+        LogFile::ErrorMessage ("Fstat Error\n");
+    if (fchmod(fd_scan, (fstatpuff.st_mode & ~S_IXGRP) | S_ISGID) < 0)
+        LogFile::ErrorMessage ("fchmod-Fehler\n");
+
+    FileLength = 0;
+
+    lock.l_type   = F_WRLCK;
+    lock.l_start  = 0;
+    lock.l_whence = SEEK_SET;
+    lock.l_len    = MAXFILELOCKSIZE;
+
+    if (fcntl(fd_scan, F_SETLK, &lock) < 0)
+    {
+        LogFile::ErrorMessage ("Could not lock Scannerfile: %s\n", FileName );
+        return false;
+    }
+
+    if (lseek(fd_scan, 0, SEEK_SET) == -1)
+    {
+        LogFile::ErrorMessage ("Could not lseek Scannerfile: %s\n", FileName );
+        return false;
+    }
+
+    return true;
+}
 
 bool ScannerFileHandler::SetFileSize( unsigned long ContentLengthT )
 {

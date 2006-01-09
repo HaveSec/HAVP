@@ -38,6 +38,14 @@ bool ProxyHandler::Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusSca
         ToBrowser.Close();
         ToServer.Close();
 
+        //Signal scanner to get ready for new task
+        while (write(VirusScannerT->commout[1], "z", 1) < 0)
+        {
+            if (errno == EINTR) continue;
+            if (errno != EPIPE) LogFile::ErrorMessage("ph2 write to pipe failed: %s\n", strerror(errno));
+            exit(0);
+        }
+
         return false;
     }
 
@@ -52,6 +60,14 @@ bool ProxyHandler::Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusSca
 
     ToBrowser.Close();
     ToServer.Close();
+
+    //Signal scanner to get ready for new task
+    while (write(VirusScannerT->commout[1], "z", 1) < 0)
+    {
+        if (errno == EINTR) continue;
+        if (errno != EPIPE) LogFile::ErrorMessage("ph3 write to pipe failed: %s\n", strerror(errno));
+        exit(0);
+    }
 
     return true;
 }
@@ -527,7 +543,7 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT , GenericScanner *Viru
     }
     else if ( CommunicationAnswerT == -45 )
     {
-        LogFile::AccessMessage("$s URL %s is blacklisted\n", ToBrowser.GetIP().c_str(), ToBrowser.GetCompleteRequest() );
+        LogFile::AccessMessage("%s URL %s is blacklisted\n", ToBrowser.GetIP().c_str(), ToBrowser.GetCompleteRequest() );
         message = ToBrowser.GetCompleteRequest();
         filename = ERROR_BLACKLIST;
     }
