@@ -1,6 +1,10 @@
-* HAVP 0.76 released
- - Improve performance
- - Fix small bug in logfile
+*HAVP 0.77 released
+ - Fix Security Bug - Kaspersky and F-Prot did not catch viruses
+ - Add Trophie (Trend Micro) Scanner
+ - Change some default settings
+*HAVP 0.76 released
+ - Improve performance <Henrik>
+ - Fix small bug in logfile 
  - Swedish Templates <Johnny Strom>
  - Polish Templates <Eryk L. Rathmann>
 * HAVP 0.75 - 02/01/2005

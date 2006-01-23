@@ -805,7 +805,7 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-scanner=libclamav      Virus Scanner Clamav, F-Prot or Kaspersky (libclamav, fprot or aveclient)
+  --with-scanner=libclamav      Virus Scanner Clamav, F-Prot, Trophie or Kaspersky (libclamav, fprot, trophie or aveclient)
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -1864,9 +1864,16 @@ else
     SCANNER=2
     SCANNERLIB=
    else
-    SCANNEROBJECT=clamlibscanner.o
-    SCANNER=0
-    SCANNERLIB="-lclamav"
+     if test $HAVPSCANNER_DEF = trophie ; then
+       SCANNEROBJECT=trophiescanner.o
+       SCANNER=3
+       SCANNERLIB="-lvsapi"
+     else
+       SCANNEROBJECT=clamlibscanner.o
+      SCANNER=0
+      CFLAGS="$CFLAGS `clamav-config --cflags`"
+      SCANNERLIB="`clamav-config --libs ` -lclamav"
+    fi
    fi
 fi
 

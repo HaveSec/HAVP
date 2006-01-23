@@ -1,19 +1,37 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
 <!DOCTYPE KDevPrjSession>
 <KDevPrjSession>
- <DocsAndViews NumberOfDocuments="4" >
-  <Doc0 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.76/havp/connectiontobrowser.cpp" >
-   <View0 line="92" Type="Source" />
+ <DocsAndViews NumberOfDocuments="10" >
+  <Doc0 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.77/havp/trophiescanner.cpp" >
+   <View0 line="218" Type="Source" />
   </Doc0>
-  <Doc1 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.76/havp/params.cpp" >
-   <View0 line="52" Type="Source" />
+  <Doc1 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.77/havp/clamlibscanner.cpp" >
+   <View0 line="135" Type="Source" />
   </Doc1>
-  <Doc2 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.76/config.h.in" >
-   <View0 line="0" Type="Source" />
+  <Doc2 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.77/havp/kasperskyscanner.cpp" >
+   <View0 line="61" Type="Source" />
   </Doc2>
-  <Doc3 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.76/havp/default.h.in" >
-   <View0 line="43" Type="Source" />
+  <Doc3 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.77/havp/clamlibscanner.h" >
+   <View0 line="0" Type="Source" />
   </Doc3>
+  <Doc4 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.77/havp/kasperskyscanner.h" >
+   <View0 line="0" Type="Source" />
+  </Doc4>
+  <Doc5 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.77/havp/connectiontobrowser.cpp" >
+   <View0 line="0" Type="Source" />
+  </Doc5>
+  <Doc6 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.77/havp/connectiontoserver.cpp" >
+   <View0 line="0" Type="Source" />
+  </Doc6>
+  <Doc7 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.77/havp/scannerfilehandler.cpp" >
+   <View0 line="161" Type="Source" />
+  </Doc7>
+  <Doc8 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.77/havp/f-protscanner.cpp" >
+   <View0 line="110" Type="Source" />
+  </Doc8>
+  <Doc9 NumberOfViews="1" URL="file:///home/hilgers/source/self/havp/havp-0.77/havp/genericscanner.cpp" >
+   <View0 line="112" Type="Source" />
+  </Doc9>
  </DocsAndViews>
  <pluginList>
   <kdevdebugger>

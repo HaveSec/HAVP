@@ -46,18 +46,30 @@ bool FProtScanner::InitSelfEngine()
 int FProtScanner::ScanningComplete()
 {
 
-    int status=0;
+    int ret;
+    char p_read[2];
+    memset(&p_read, 0, sizeof(p_read));
 
     UnlockFile();
 
-    //Wait till scanning is complete
-    waitpid( ScannerPid, &status, 0);
+    //Wait till scanner finishes with the file
+    while ((ret = read(commin[0], &p_read, 1)) < 0)
+    {
+    	if (errno == EINTR) continue;
+    	if (errno != EPIPE) LogFile::ErrorMessage("cl1 read to pipe failed: %s\n", strerror(errno));
 
-    //Delete scanned file
-    DeleteFile();
+    	DeleteFile();
+    	exit(0);
+    }
 
-    //Virus found ? 0=No ; -1=Yes; -2=Scanfail
-    return WEXITSTATUS(status);
+    //Truncate and reuse existing tempfile
+    if (ReinitFile() == false)
+    {
+    	LogFile::ErrorMessage("ReinitFile() failed\n");
+    }
+
+    //Virus found ? 0=No ; 1=Yes; 2=Scanfail
+    return (int)atoi(p_read);
 
 }
 
@@ -89,14 +101,14 @@ int FProtScanner::Scanning( )
  {
     LogFile::ErrorMessage ("Could not open file to scan: %s\n", FileName );
     ScannerAnswer="Could not open file to scan";
-    	WriteScannerAnswer();
         close(fd);
-        exit (2);
+        return 2;
   }
 
  //Wait till file is set up for scanning
  read(fd, Ready, 1);
-  close(fd);
+ lseek(fd, 0, SEEK_SET);
+ close(fd);
 
 
 string fprotserver = Params::GetConfigString("FPROTSERVER");
@@ -107,16 +119,14 @@ int fprotport = Params::GetConfigInt("FPROTPORT");
  if( FProtSocket.ConnectToServer( ) == false ){
    ScannerAnswer="Could not connect to F-Prot Server";
    LogFile::ErrorMessage ("%s\n", ScannerAnswer.c_str() );
-   WriteScannerAnswer();
-   exit (2);
+   return 2;
  }
 
 
  if( FProtSocket.Send ( &ScannerRequest ) == false ){
    ScannerAnswer="Could not send Request to F-Prot Server";
    LogFile::ErrorMessage ("%s\n", ScannerAnswer.c_str() );
-   WriteScannerAnswer();
-   exit (2);
+   return 2;
   }
 
   while( (AnswerStatus = FProtSocket.Recv( &FProtAnswer, true )) != 0 ){
@@ -125,8 +135,7 @@ int fprotport = Params::GetConfigInt("FPROTPORT");
     {
       ScannerAnswer="Could not receive data completly form F-Prot Server";
       LogFile::ErrorMessage ("%s\n", ScannerAnswer.c_str() );
-      WriteScannerAnswer();
-      exit (2);
+      return 2;
     }
 
   }
@@ -137,15 +146,13 @@ int fprotport = Params::GetConfigInt("FPROTPORT");
   if ( (FinderEnd =  FProtAnswer.rfind ( "</summary>" )) == string::npos ){
       ScannerAnswer="F-Prot Server delivers invalid answer";
       LogFile::ErrorMessage ("%s\n", ScannerAnswer.c_str() );
-      WriteScannerAnswer();
-      exit (2);
+      return 2;
   }
 
   if ( (FinderStart =  FProtAnswer.rfind ( ">", FinderEnd )) == string::npos ){
       ScannerAnswer="F-Prot Server delivers invalid answer";
       LogFile::ErrorMessage ("%s\n", ScannerAnswer.c_str() );
-      WriteScannerAnswer();
-      exit (2);
+      return 2;
   }
 
   SummaryCode = FProtAnswer.substr( FinderStart+1, FinderEnd - (FinderStart + 1) );
@@ -156,33 +163,28 @@ int fprotport = Params::GetConfigInt("FPROTPORT");
    if ( (FinderEnd =  FProtAnswer.rfind ( "</name>" )) == string::npos ){
       ScannerAnswer="infected by unknown";
       LogFile::ErrorMessage ("%s\n", ScannerAnswer.c_str() );
-      WriteScannerAnswer();
-      exit (1);
+      return 1;
    }
 
    if ( (FinderStart =  FProtAnswer.rfind ( ">", FinderEnd )) == string::npos ){
       ScannerAnswer="infected by unknown";
       LogFile::ErrorMessage ("%s\n", ScannerAnswer.c_str() );
-      WriteScannerAnswer();
-      exit (1);
+      return 1;
    }
 
    ScannerAnswer = FProtAnswer.substr( FinderStart+1, FinderEnd - (FinderStart + 1) );
 
    LogFile::ErrorMessage ("Virus Found: %s\n", ScannerAnswer.c_str() );
-   WriteScannerAnswer();
-   exit (1);
+   return 1;
 
   } else if ( SummaryCode == "clean" ){
     ScannerAnswer=SummaryCode;
-    WriteScannerAnswer();
-    exit (0);
+    return 0;
 
   } else {
 
    LogFile::ErrorMessage ("Unknown: %s\n", SummaryCode.c_str() );
-   WriteScannerAnswer();
-   exit (2);
+   return 2;
 
   }
 

@@ -30,7 +30,7 @@ AC_ARG_ENABLE(debug,
 
 
 
-AC_ARG_WITH(scanner, [  --with-scanner=libclamav      Virus Scanner Clamav, F-Prot or Kaspersky (libclamav, fprot or aveclient)], HAVPSCANNER_DEF="$withval", HAVPSCANNER_DEF="libclamav")
+AC_ARG_WITH(scanner, [  --with-scanner=libclamav      Virus Scanner Clamav, F-Prot, Trophie or Kaspersky (libclamav, fprot, trophie or aveclient)], HAVPSCANNER_DEF="$withval", HAVPSCANNER_DEF="libclamav")
 
 if test $HAVPSCANNER_DEF = aveclient ; then
  SCANNEROBJECT=kasperskyscanner.o
@@ -42,10 +42,16 @@ else
     SCANNER=2
     SCANNERLIB=
    else
-    SCANNEROBJECT=clamlibscanner.o
-    SCANNER=0
-    CFLAGS="$CFLAGS `clamav-config --cflags`"
-    SCANNERLIB="`clamav-config --libs ` -lclamav"
+     if test $HAVPSCANNER_DEF = trophie ; then
+       SCANNEROBJECT=trophiescanner.o
+       SCANNER=3
+       SCANNERLIB="-lvsapi"
+     else
+       SCANNEROBJECT=clamlibscanner.o
+      SCANNER=0
+      CFLAGS="$CFLAGS `clamav-config --cflags`"
+      SCANNERLIB="`clamav-config --libs ` -lclamav"
+    fi
    fi
 fi
 

@@ -133,6 +133,7 @@ int ClamLibScanner::Scanning( )
 
     //Wait till file is set up for scanning
     read(fd, Ready, 1);
+    lseek(fd, 0, SEEK_SET);
 
     if((ret = cl_scandesc(fd, &virname, &size, root, &limits, SCANOPTS)) == CL_VIRUS)
     {

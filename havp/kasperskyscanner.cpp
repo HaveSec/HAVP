@@ -53,15 +53,13 @@ int KasperskyScanner::Scanning( )
     {
         LogFile::ErrorMessage ("Could not open file to scan: %s\n", FileName );
         ScannerAnswer="Could not open file to scan";
-//PSEstart
-	//PSE: We are child but parent process wants this answer to know!
-    	WriteScannerAnswer();
-//PSEend
+
         close(fd);
-        exit (2);
+        return 2;
     }
     //Wait till file is set up for scanning
     read(fd, Ready, 1);
+    lseek(fd, 0, SEEK_SET);
     close(fd);
 
     Output = popen( ScannerCall.c_str() , "r");
@@ -72,24 +70,25 @@ int KasperskyScanner::Scanning( )
     if ( Line.rfind("OK") == (Line.size()-3) )
     {
       ScannerAnswer="Clean";
-      WriteScannerAnswer();
       pclose(Output);
-      exit (0);
+      close(fd);
+      return 0;
     } else if (Line.rfind("INFECTED") == (Line.size()-9) )
     {
       fgets( Lines, sizeof Lines, Output);
       Line = Lines;
       string::size_type start = Line.find(" ");
       ScannerAnswer= Line.substr(start,  Line.size() - start );
-      WriteScannerAnswer();
       pclose(Output);
-      exit (1);
+      LogFile::ErrorMessage ("Virus found: %s\n", ScannerAnswer.c_str() );
+      close(fd);
+      return 1;
     }
     fgets( Lines, sizeof Lines, Output);
     ScannerAnswer=Lines;
-    WriteScannerAnswer();
     pclose(Output);
-    exit (2);
+    close(fd);
+    return 2;
 
 }
 
@@ -110,18 +109,30 @@ bool KasperskyScanner::InitSelfEngine()
 int KasperskyScanner::ScanningComplete()
 {
 
-    int status=0;
+    int ret;
+    char p_read[2];
+    memset(&p_read, 0, sizeof(p_read));
 
     UnlockFile();
 
-    //Wait till scanning is complete
-    waitpid( ScannerPid, &status, 0);
+    //Wait till scanner finishes with the file
+    while ((ret = read(commin[0], &p_read, 1)) < 0)
+    {
+    	if (errno == EINTR) continue;
+    	if (errno != EPIPE) LogFile::ErrorMessage("cl1 read to pipe failed: %s\n", strerror(errno));
 
-    //Delete scanned file
-    DeleteFile();
+    	DeleteFile();
+    	exit(0);
+    }
 
-    //Virus found ? 0=No ; -1=Yes; -2=Scanfail
-    return WEXITSTATUS(status);
+    //Truncate and reuse existing tempfile
+    if (ReinitFile() == false)
+    {
+    	LogFile::ErrorMessage("ReinitFile() failed\n");
+    }
+
+    //Virus found ? 0=No ; 1=Yes; 2=Scanfail
+    return (int)atoi(p_read);
 
 }
 

@@ -543,7 +543,7 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT , GenericScanner *Viru
     }
     else if ( CommunicationAnswerT == -45 )
     {
-        LogFile::AccessMessage("%s URL %s is blacklisted\n", ToBrowser.GetIP().c_str(), ToBrowser.GetCompleteRequest() );
+        LogFile::AccessMessage("$s URL %s is blacklisted\n", ToBrowser.GetIP().c_str(), ToBrowser.GetCompleteRequest() );
         message = ToBrowser.GetCompleteRequest();
         filename = ERROR_BLACKLIST;
     }

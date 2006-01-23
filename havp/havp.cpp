@@ -48,6 +48,10 @@
 #include "kasperskyscanner.h"
 #endif
 
+#ifdef USETROPHIE
+#include "trophiescanner.h"
+#endif
+
 GenericScanner *VirusScanner;
 URLList Whitelist;
 URLList Blacklist;
@@ -80,6 +84,10 @@ int main(int argc, char *argv[])
 
 #ifdef USEKASPERSKY
     VirusScanner = new (KasperskyScanner);
+#endif
+
+#ifdef USETROPHIE
+    VirusScanner = new (TrophieScanner);
 #endif
 
     if(Params::GetConfigBool("DISPLAYINITIALMESSAGES")) {
