@@ -30,31 +30,23 @@ struct trophie_vs_type trophie_vs;
 struct pattern_info_ex_type pattern_info_ex;
 
 int trophie_scanfile(char *scan_file);
+
 static int vs_callback(char *a, struct callback_type *b, int c, char *d);
-
 static char VIR_NAME[512];
-
-
 
 int vs_addr;
 int cur_patt;
 
 public:
 
-
 bool InitDatabase();
 
 bool ReloadDatabase();
 
-bool InitSelfEngine();
-
-//PSEstart
-bool FreeDatabase();
-//PSEend
-
-int ScanningComplete();
+void FreeDatabase();
 
 int Scanning();
+
 
 	TrophieScanner();
 	~TrophieScanner();

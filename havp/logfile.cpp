@@ -16,6 +16,7 @@
  ***************************************************************************/
 
 #include "logfile.h"
+#include "params.h"
 
 int LogFile::Access_fd;
 int LogFile::Error_fd;
@@ -42,21 +43,21 @@ bool LogFile::InitLogFiles ( const char *AccessLogFileT, const char *ErrorLogFil
 void LogFile::AccessMessage( const char *formatT , ... )
 {
     va_list args;
-
-    string TimeString;
-
     char str[STRINGLENGTH+1];
+
+    string Message = GetDateAndTime() + " ";
 
     va_start(args, formatT);
 
     vsnprintf(str, STRINGLENGTH, formatT, args);
+    Message.append(str);
 
-    WriteDateAndTime(Access_fd);
+    memset(&str, 0, sizeof(str));
+    Message.copy(str, STRINGLENGTH);
 
     write(Access_fd, str, strlen(str));
 
     va_end(args);
-
 }
 
 
@@ -64,35 +65,35 @@ void LogFile::AccessMessage( const char *formatT , ... )
 void LogFile::ErrorMessage( const char *formatT , ... )
 {
     va_list args;
-
-    string TimeString;
-
     char str[STRINGLENGTH+1];
+
+    string Message = GetDateAndTime() + " ";
 
     va_start(args, formatT);
 
     vsnprintf(str, STRINGLENGTH, formatT, args);
-
-    WriteDateAndTime(Error_fd);
+    Message.append(str);
+    
+    memset(&str, 0, sizeof(str));
+    Message.copy(str, STRINGLENGTH);
 
     write(Error_fd, str, strlen(str));
 
     va_end(args);
-
 }
 
 
-void LogFile::WriteDateAndTime(int fdT)
+string LogFile::GetDateAndTime()
 {
-    char DateString[51];
+    string DateString;
+    char tmpdate[51];
     struct tm TmDate;
     time_t LogTime;
 
-    time( &LogTime );
+    time(&LogTime);
+    TmDate = *localtime(&LogTime);
+    strftime(tmpdate, 50, TIMEFORMAT, &TmDate);
+    DateString.assign(tmpdate);
 
-    TmDate = *localtime ( &LogTime );
-    strftime (DateString, 50, TIMEFORMAT, &TmDate);
-    write( fdT,  DateString , strlen(DateString) );
-    write( fdT,  " " , 1 );
-
+    return DateString;
 }

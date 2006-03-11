@@ -22,27 +22,27 @@
 #include "params.h"
 
 #include <netinet/in.h>
+#include <sys/un.h>
 #include <netdb.h>
 
 #include <iostream>
 #include <string>
+
 using namespace std;
 
 class SocketHandler {
 
 private:
 
-int port;
-int sock_fd;
-
-//For select
-fd_set checkfd;
-struct timeval Timeout;
+struct sockaddr_un my_u_addr;
 
 protected:
-struct sockaddr_in s_addr;
+
+struct sockaddr_in my_s_addr;
 
 public:
+
+int sock_fd;
 
 bool CreateServer( int portT, in_addr_t bind_addrT = INADDR_ANY );
  
@@ -50,7 +50,9 @@ bool CreateServer( int portT, string bind_addrT );
 
 bool AcceptClient ( SocketHandler *accept_socketT );
 
-bool ConnectToServer ( );
+bool ConnectToServer ();
+
+bool ConnectToSocket ( string SocketPath );
 
 bool Send ( string *sock_outT );
 
@@ -58,13 +60,15 @@ ssize_t Recv ( string *sock_inT , bool sock_delT);
 
 bool RecvLength ( string *sock_inT, ssize_t sock_lengthT );
 
-bool SetDomainAndPort(const char *domainT, int portT);
+bool SetDomainAndPort(const string domainT, int portT);
 
-bool CheckForData();
+bool CheckForData( int timeout );
 
-bool IsConnectionDropped();
+#ifdef SSLTUNNEL
+int CheckForSSLData( int sockBrowser, int sockServer );
+#endif
 
-int Close();
+void Close();
 
 	SocketHandler();
 	~SocketHandler();

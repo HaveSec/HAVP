@@ -32,16 +32,20 @@ void Params::SetDefaults()
 	SetConfig("PORT",buf);
 	SetConfig("BIND_ADDRESS",BIND_ADDRESS);
 	SetConfig("KEEPBACKBUFFER",KEEPBACKBUFFER);
+	SetConfig("KEEPBACKTIME","5");
  	SetConfig("TRICKLING",TRICKLING);
  	SetConfig("MAXSERVERS","150");
 // Parameters only setable by havp.config (whereever it is)
 #ifdef USEKASPERSKY
- 	SetConfig("AVECLIENT","/usr/local/bin/aveclient");
  	SetConfig("AVESOCKET","/var/run/aveserver");
 #endif
 #ifdef USEFPROT
  	SetConfig("FPROTPORT","10200");
  	SetConfig("FPROTSERVER","127.0.0.1");
+#endif
+#ifdef USEAVG
+        SetConfig("AVGPORT","55555");
+        SetConfig("AVGSERVER","127.0.0.1");
 #endif
 	SetConfig("SOURCE_ADDRESS","");
  	SetConfig("MAXSCANSIZE","0");
@@ -55,10 +59,14 @@ void Params::SetDefaults()
 	SetConfig("FORWARDED_IP","false");
 	SetConfig("ACCESSLOG","/var/log/havp/access.log");
 	SetConfig("ERRORLOG","/var/log/havp/havp.log");
+	SetConfig("LOGLEVEL","1");
 	SetConfig("DISPLAYINITIALMESSAGES","true");
 	SetConfig("DBRELOAD","60");
 	SetConfig("SCANTEMPFILE","/var/tmp/havp/havp-XXXXXX");
 	SetConfig("TEMPLATEPATH", TEMPLATEDIR );
+	SetConfig("TEMPDIR", TEMPDIR );
+	SetConfig("FAILSCANERROR","true");
+	SetConfig("WHITELISTFIRST","true");
 }
 
 void Params::ReadConfig(string file)
@@ -66,7 +74,13 @@ void Params::ReadConfig(string file)
  typedef string::size_type ST;
  string line;
  ifstream input(file.c_str());
- if(!input) cerr << "Can not open config file " << file << '\n';
+ if(!input)
+ {
+     cerr << "Can not open config file " << file << endl;
+     cerr << "Exiting.." << endl;
+     exit(1);
+ }
+
  while(input) {
  	getline(input,line);
 
@@ -93,6 +107,7 @@ void Params::ReadConfig(string file)
 
 			if( line.size() < i1+1 ){
         			cout << "Invalid Config Line: " << line << endl;
+                                cout << "Exiting.." << endl;
 				exit(1);
 			}
 
@@ -113,13 +128,24 @@ void Params::ReadConfig(string file)
 
 			if( val.size() == 0 ){
         			cout << "Invalid Config Line: " << line << endl;
+                                cout << "Exiting.." << endl;
 				exit(1);
+			}
+
+			if ( key == "REMOVETHISLINE" )
+			{
+			    cout << "Configuration is not edited!" << endl;
+			    cout << "You must delete REMOVETHISLINE option." << endl;
+      			    cout << "Review the configuration carefully. :)" << endl;
+			    cout << "Exiting.." << endl;
+			    exit(1);
 			}
 
  			Params::SetConfig(key,val);
 
 		} else {
         		cout << "Invalid Config Line: " << line << endl;
+                        cout << "Exiting.." << endl;
 			exit(1);
 		}
 
@@ -156,7 +182,7 @@ bool ParamFound = false;
 	  params[param]=value;
         } else {
         cout << "Unknown Config Parameter: " << param << endl;
-        LogFile::ErrorMessage ("Unknown Config Parameter: %s\n", param.c_str() );
+        LogFile::ErrorMessage("Unknown Config Parameter: %s\n", param.c_str());
         exit (-1);
         }	
 }

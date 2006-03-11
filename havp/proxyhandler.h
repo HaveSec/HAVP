@@ -18,12 +18,11 @@
 #ifndef PROXYHANDLER_H
 #define PROXYHANDLER_H
 
+#include "default.h"
 #include "connectiontobrowser.h"
-#include "connectiontoserver.h"
+#include "connectiontohttp.h"
 #include "genericscanner.h"
 #include "logfile.h"
-#include "filehandler.h"
-#include "default.h"
 #include "params.h"
 
 #include <iostream>
@@ -41,22 +40,45 @@ class ProxyHandler {
 
 private:
 
-bool newinstance;
-
 bool HeaderSend;
 
 bool BrowserDropped;
 
+bool DropBrowser;
+
+bool ScannerUsed;
+
+bool UnlockDone;
+
+bool AnswerDone;
+
+bool ReinitDone;
+
+bool ServerClosed;
+
+bool ServerConnected;
+
+bool DropServer;
+
+int alivecount;
+
+string ConnectedHost;
+
+int ConnectedPort;
+
 ConnectionToBrowser ToBrowser;
-ConnectionToServer ToServer;
+ConnectionToHTTP ToServer;
 
-//PSEstart
-//bool ProxyMessage( int CommunicationAnswerT );
-bool ProxyMessage( int CommunicationAnswerT, GenericScanner *VirusScannerT );
-//PSEend
+bool ProxyMessage( int CommunicationAnswerT, string Answer );
 
-int Communication( SocketHandler *ProxyServerT, GenericScanner *VirusScannerT );
- 
+int CommunicationHTTP( GenericScanner *VirusScannerT, bool ScannerOff );
+
+int CommunicationFTP( GenericScanner *VirusScannerT, bool ScannerOff );
+
+#ifdef SSLTUNNEL
+int CommunicationSSL();
+#endif
+
 public:
 
  bool Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusScannerT );

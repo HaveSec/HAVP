@@ -41,7 +41,7 @@ private:
 static int Error_fd;
 static int Access_fd;
 
-static void WriteDateAndTime( int fdT );
+static string GetDateAndTime();
 
 public:
 

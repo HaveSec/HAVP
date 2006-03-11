@@ -18,10 +18,9 @@
 #ifndef SCANNERFILEHANDLER_H
 #define SCANNERFILEHANDLER_H
 
-
+#include "default.h"
 #include "genericscanner.h"
 #include "logfile.h"
-#include "default.h"
 #include "params.h"
 
 //#include <stdio.h>
@@ -41,15 +40,17 @@ using namespace std;
 class ScannerFileHandler : public GenericScanner  {
 
 private:
+
 int fd_scan;
 unsigned long FileLength;
 
 protected:
+
 char FileName[MAXSCANTEMPFILELENGTH+1];
 
 public:
 
-bool OpenAndLockFile( );
+bool OpenAndLockFile();
 
 bool UnlockFile();
 
@@ -57,27 +58,21 @@ bool DeleteFile();
 
 bool ReinitFile();
 
-bool SetFileSize( unsigned long ContentLengthT );
+bool TruncateFile( long long ContentLengthT );
 
-bool ExpandFile( char *DataT, int lengthT,  bool unlockT );
+bool SetFileSize( long long ContentLengthT );
 
-
-bool InitDatabase();
-
-bool ReloadDatabase();
-
-//PSEstart
-bool FreeDatabase();
-//PSEend
-
-int Scanning ();
-
-bool InitSelfEngine();
-
-int ScanningComplete();
+bool ExpandFile( string *dataT, bool unlockT );
 
 char* GetFileName();
-                                                                                                                                                         
+
+//Not used here
+bool InitDatabase();
+bool ReloadDatabase();
+void FreeDatabase();
+int Scanning();
+
+
 	ScannerFileHandler();
 	~ScannerFileHandler();
 };

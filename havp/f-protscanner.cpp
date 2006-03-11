@@ -20,178 +20,145 @@
 
 
 //Init F-Port - it's a socket so nothing to do here
-bool FProtScanner::InitDatabase(){
-return true;
+bool FProtScanner::InitDatabase()
+{
+    return true;
 }
 
 //Reload scanner engine - it's a socket so nothing to do here
 bool  FProtScanner::ReloadDatabase()
 {
-return true;
+    return false;
 }
-
-//Init scanning engine - do filelock and so on
-bool FProtScanner::InitSelfEngine()
-{
-
-    if( OpenAndLockFile() == false)
-    {
-        return false;
-    }
-
-    return true;
-}
-
-
-int FProtScanner::ScanningComplete()
-{
-
-    int ret;
-    char p_read[2];
-    memset(&p_read, 0, sizeof(p_read));
-
-    UnlockFile();
-
-    //Wait till scanner finishes with the file
-    while ((ret = read(commin[0], &p_read, 1)) < 0)
-    {
-    	if (errno == EINTR) continue;
-    	if (errno != EPIPE) LogFile::ErrorMessage("cl1 read to pipe failed: %s\n", strerror(errno));
-
-    	DeleteFile();
-    	exit(0);
-    }
-
-    //Truncate and reuse existing tempfile
-    if (ReinitFile() == false)
-    {
-    	LogFile::ErrorMessage("ReinitFile() failed\n");
-    }
-
-    //Virus found ? 0=No ; 1=Yes; 2=Scanfail
-    return (int)atoi(p_read);
-
-}
-
 
 //Start scan
-int FProtScanner::Scanning( )
+int FProtScanner::Scanning()
 {
 
- string ScannerRequest = "GET ";
- string FProtAnswer="";
- int AnswerStatus;
- char Ready[10];
+    char Ready[2];
+    int fd;
+    ScannerAnswer = "";
 
- int fd;
+    if ( (fd = open(FileName, O_RDONLY)) < 0 )
+    {
+        LogFile::ErrorMessage("Could not open file to scan: %s\n", FileName);
+        ScannerAnswer="Could not open file to scan";
 
- string SummaryCode;
-
- string::size_type FinderStart;
- string::size_type FinderEnd;
-
- ScannerRequest += FileName;
-
-// ScannerRequest += FPROTOPTIONS;
- ScannerRequest += " HTTP/1.0\r\n\r\n";
-
- SocketHandler FProtSocket;
-
- if ( (fd = open(FileName, O_RDONLY)) < 0)
- {
-    LogFile::ErrorMessage ("Could not open file to scan: %s\n", FileName );
-    ScannerAnswer="Could not open file to scan";
         close(fd);
         return 2;
-  }
-
- //Wait till file is set up for scanning
- read(fd, Ready, 1);
- lseek(fd, 0, SEEK_SET);
- close(fd);
-
-
-string fprotserver = Params::GetConfigString("FPROTSERVER");
-int fprotport = Params::GetConfigInt("FPROTPORT");
-
- FProtSocket.SetDomainAndPort( fprotserver.c_str() , fprotport );
-
- if( FProtSocket.ConnectToServer( ) == false ){
-   ScannerAnswer="Could not connect to F-Prot Server";
-   LogFile::ErrorMessage ("%s\n", ScannerAnswer.c_str() );
-   return 2;
- }
-
-
- if( FProtSocket.Send ( &ScannerRequest ) == false ){
-   ScannerAnswer="Could not send Request to F-Prot Server";
-   LogFile::ErrorMessage ("%s\n", ScannerAnswer.c_str() );
-   return 2;
-  }
-
-  while( (AnswerStatus = FProtSocket.Recv( &FProtAnswer, true )) != 0 ){
-
-    if( AnswerStatus == -1 )
-    {
-      ScannerAnswer="Could not receive data completly form F-Prot Server";
-      LogFile::ErrorMessage ("%s\n", ScannerAnswer.c_str() );
-      return 2;
     }
 
-  }
+    //Wait till file is set up for scanning
+    while (read(fd, Ready, 1) < 0 && errno == EINTR);
+    close(fd);
 
-  //Check if there was a virus
+    string fprotserver = Params::GetConfigString("FPROTSERVER");
+    int fprotport = Params::GetConfigInt("FPROTPORT");
 
-  //Check first if we got the summary code
-  if ( (FinderEnd =  FProtAnswer.rfind ( "</summary>" )) == string::npos ){
-      ScannerAnswer="F-Prot Server delivers invalid answer";
-      LogFile::ErrorMessage ("%s\n", ScannerAnswer.c_str() );
-      return 2;
-  }
+    if ( FProtSocket.SetDomainAndPort( fprotserver, fprotport ) == false )
+    {
+        LogFile::ErrorMessage("Could not connect to scanner\n");
+        ScannerAnswer = "Could not connect to scanner";
+        return 2;
+    }
 
-  if ( (FinderStart =  FProtAnswer.rfind ( ">", FinderEnd )) == string::npos ){
-      ScannerAnswer="F-Prot Server delivers invalid answer";
-      LogFile::ErrorMessage ("%s\n", ScannerAnswer.c_str() );
-      return 2;
-  }
+    if ( FProtSocket.ConnectToServer() == false )
+    {
+        //Could not connect? Maybe F-Prot is updating, try next port
+        if ( FProtSocket.SetDomainAndPort( fprotserver, fprotport + 1 ) == false )
+        {
+            LogFile::ErrorMessage("Could not connect to scanner\n");
+            ScannerAnswer = "Could not connect to scanner";
+            return 2;
+        }
+        if ( FProtSocket.ConnectToServer() == false )
+        {
+            FProtSocket.Close();
+            LogFile::ErrorMessage("Could not connect to scanner\n");
+            ScannerAnswer = "Could not connect to scanner";
+            return 2;
+        }
+    }
 
-  SummaryCode = FProtAnswer.substr( FinderStart+1, FinderEnd - (FinderStart + 1) );
+    //Construct command for scanner
+    string ScannerCmd = "GET ";
+    ScannerCmd += FileName;
+    ScannerCmd += " HTTP/1.0\r\n\r\n";
 
+    if ( FProtSocket.Send ( &ScannerCmd ) == false )
+    {
+        FProtSocket.Close();
+        LogFile::ErrorMessage("Could not call scanner\n");
+        ScannerAnswer = "Could not call scanner";
+        return 2;
+    }
 
-  if ( SummaryCode == "infected" ){
+    string Response;
+    int ret;
 
-   if ( (FinderEnd =  FProtAnswer.rfind ( "</name>" )) == string::npos ){
-      ScannerAnswer="infected by unknown";
-      LogFile::ErrorMessage ("%s\n", ScannerAnswer.c_str() );
-      return 1;
-   }
+    while ( (ret = FProtSocket.Recv( &Response, true )) != 0 )
+    {
+        if ( ret < 0 )
+        {
+            FProtSocket.Close();
+            LogFile::ErrorMessage("Could not read scanner response\n");
+            ScannerAnswer = "Could not read scanner response";
+            return 2;
+        }
+    }
 
-   if ( (FinderStart =  FProtAnswer.rfind ( ">", FinderEnd )) == string::npos ){
-      ScannerAnswer="infected by unknown";
-      LogFile::ErrorMessage ("%s\n", ScannerAnswer.c_str() );
-      return 1;
-   }
+    FProtSocket.Close();
 
-   ScannerAnswer = FProtAnswer.substr( FinderStart+1, FinderEnd - (FinderStart + 1) );
+    string::size_type PositionEnd;
 
-   LogFile::ErrorMessage ("Virus Found: %s\n", ScannerAnswer.c_str() );
-   return 1;
+    if ( (PositionEnd = Response.rfind( "</summary>", string::npos )) == string::npos )
+    {
+        LogFile::ErrorMessage("Invalid response from scanner\n");
+        ScannerAnswer = "Invalid response from scanner";
+        return 2;
+    }
 
-  } else if ( SummaryCode == "clean" ){
-    ScannerAnswer=SummaryCode;
-    return 0;
+    string::size_type Position;
 
-  } else {
+    if ( (Position = Response.rfind( ">", PositionEnd )) == string::npos )
+    {
+        LogFile::ErrorMessage("Invalid response from scanner\n");
+        ScannerAnswer = "Invalid response from scanner";
+        return 2;
+    }
 
-   LogFile::ErrorMessage ("Unknown: %s\n", SummaryCode.c_str() );
-   return 2;
+    string SummaryCode = Response.substr( Position + 1, PositionEnd - (Position + 1) );
 
-  }
+    if ( SummaryCode == "clean" )
+    {
+        ScannerAnswer = "Clean";
+        return 0;
+    }
+    else if ( SummaryCode == "infected" )
+    {
+        if ( (PositionEnd = Response.rfind( "</name>" )) == string::npos )
+        {
+            ScannerAnswer="unknown";
+            return 1;
+        }
 
+        if ( (Position = Response.rfind( ">", PositionEnd )) == string::npos )
+        {
+            ScannerAnswer="unknown";
+            return 1;
+        }
 
-return 0;
+        ScannerAnswer = Response.substr( Position+1, PositionEnd - (Position + 1) );
+        return 1;
+    }
+
+    ScannerAnswer = "Unknown response from scanner";
+    return 2;
 }
 
+void FProtScanner::FreeDatabase()
+{
+}
 
 FProtScanner::FProtScanner(){
 }

@@ -27,33 +27,29 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-//#include <stdlib.h>
-
 using namespace std;
 
-class HTTPHandler : public SocketHandler  {
-
-private:
-
-unsigned long ContentLength;
+class HTTPHandler : public SocketHandler {
 
 protected:
 
+bool ProxyConnection;
+
 vector <string> tokens;
 
-virtual bool AnalyseHeaderLine( string *RequestT ) = 0;
+virtual int AnalyseFirstHeaderLine( string *RequestT ) = 0;
+
+virtual int AnalyseHeaderLine( string *RequestT ) = 0;
 
 public: 
 
 bool ReadHeader( string *headerT );
 
-bool AnalyseHeader(string *linesT, const char *delimitersT );
-
-unsigned long GetContentLength( );
+int AnalyseHeader( string *linesT );
 
 ssize_t ReadBodyPart( string* bodyT );
 
-bool SendHeader( string* headerT );
+bool SendHeader( string header, bool ConnectionClose );
 
   HTTPHandler();
 virtual ~HTTPHandler();

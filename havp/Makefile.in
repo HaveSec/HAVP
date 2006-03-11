@@ -1,36 +1,38 @@
-CFLAGS = @CFLAGS@
+CFLAGS=@CFLAGS@
+LDFLAGS=@LDFLAGS@ @SCANNERLIB@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 sbindir=@sbindir@
 etcdir=@sysconfdir@
+INSTALL=../install-sh
 
-lan_fils :=$(wildcard ../etc/havp/templates/[a-z]*/*.html)
-
-OBJECTS = filehandler.o helper.o logfile.o scannerfilehandler.o connectiontobrowser.o \
-          genericscanner.o httphandler.o params.o sockethandler.o connectiontoserver.o havp.o \
-          proxyhandler.o whitelist.o @SCANNEROBJECT@
+OBJECTS = helper.o logfile.o scannerfilehandler.o connectiontobrowser.o genericscanner.o \
+          httphandler.o params.o sockethandler.o connectiontohttp.o havp.o proxyhandler.o \
+          utils.o whitelist.o @SCANNEROBJECT@
 all: 	havp
 
 havp: $(OBJECTS)
-	$(CXX) -DHAVE_CONFIG_H -I. -I. -I.. $(CFLAGS) -o havp $(OBJECTS) @SCANNERLIB@
+	$(CXX) -DHAVE_CONFIG_H -I. -I. -I.. $(CFLAGS) -o havp $(OBJECTS) $(LDFLAGS)
 
 install: all
-	install -d $(sbindir)
-	install -m 755 havp $(sbindir)/havp
-	install -d /var/log/havp/
-	install -d /var/tmp/havp/
-	install -d /var/run/havp/
-	chmod a+rw /var/run/havp/
-	install -d /etc/init.d/
-	install -m 755 ../etc/init.d/havp /etc/init.d/
-	install -m 644 -D ../etc/havp/havp.config $(etcdir)/havp/havp.config
-	install -m 644 -D ../etc/havp/whitelist $(etcdir)/havp/whitelist
-	install -m 644 -D ../etc/havp/blacklist $(etcdir)/havp/blacklist
-	@list='${lan_fils}'; for fil in $$list;do \
-	install -m 755 -D $$fil $(etcdir)/$${fil#../etc*}; \
-	done
-
-
+	$(INSTALL) -d $(sbindir)
+	$(INSTALL) -m 755 havp $(sbindir)/havp
+	$(INSTALL) -d -m 755 /var/log/havp/
+	$(INSTALL) -d -m 755 /var/tmp/havp/
+	$(INSTALL) -d -m 755 /var/run/havp/
+	$(INSTALL) -d /etc/init.d
+	$(INSTALL) -m 755 ../etc/init.d/havp /etc/init.d/
+	$(INSTALL) -m 644 ../etc/havp/havp.config $(etcdir)/havp/havp.config
+	$(INSTALL) -m 644 ../etc/havp/whitelist $(etcdir)/havp/whitelist
+	$(INSTALL) -m 644 ../etc/havp/blacklist $(etcdir)/havp/blacklist
+	cp -r ../etc/havp/templates $(etcdir)/havp
+	chmod -R a+rX $(etcdir)/havp/templates
+	@echo ""
+	@echo "Remember to give correct permissions:"
+	@echo " chown <havpuser> /var/tmp/havp (after mounting if needed)"
+	@echo " chown <havpuser> /var/log/havp"
+	@echo " chown <havpuser> /var/run/havp"
+	@echo ""
 
 %.o:	%.cpp %.h
 	$(CXX) -DHAVE_CONFIG_H -I. -I. -I.. $(CFLAGS) -c $< -o $@

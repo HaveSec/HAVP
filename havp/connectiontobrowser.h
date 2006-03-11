@@ -18,14 +18,8 @@
 #ifndef CONNECTIONTOBROWSER_H
 #define CONNECTIONTOBROWSER_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "httphandler.h"
-#include "logfile.h"
-#include "params.h"
 #include "default.h"
+#include "httphandler.h"
 
 #include <iostream>
 #include <algorithm>
@@ -33,6 +27,7 @@
 #include <map>
 #include <stdarg.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -44,7 +39,11 @@ class ConnectionToBrowser : public HTTPHandler  {
 
 private:
 
+#ifdef REWRITE
 map <string,string> URLRewrite;
+#endif
+
+vector <string> Methods;
 
 string Request;
 
@@ -54,33 +53,53 @@ string IP;
 
 int Port;
 
-vector <string> Methods;
+string CompleteRequest;
 
 string RequestType;
 
-bool AnalyseHeaderLine( string *RequestT );
+string RequestProtocol;
 
-bool GetHostAndPortOfRequest(string *RequestT);
+string FtpUser;
 
-bool GetHostAndPortOfHostLine( string *HostLineT );
+string FtpPass;
+
+long long ContentLength;
+
+bool KeepAlive;
+
+int AnalyseFirstHeaderLine( string *RequestT );
+
+int AnalyseHeaderLine( string *RequestT );
+
+int GetHostAndPortOfRequest( string *RequestT, string::size_type StartPos );
+
+int GetHostAndPortOfHostLine( string *HostLineT );
 
 public:
 
 string PrepareHeaderForServer();
 
-string GetIP ();
+string GetIP();
 
-const char *GetHost();
+const string GetHost();
 
 const string GetRequest();
 
-const char *GetCompleteRequest();
+const string GetCompleteRequest();
+
+const string GetRequestProtocol();
 
 const string GetRequestType();
 
+bool KeepItAlive();
+
+long long GetContentLength();
+
 int GetPort();
 
+#ifdef REWRITE
 bool RewriteHost();
+#endif
 
 void ClearVars();
 

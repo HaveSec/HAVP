@@ -18,9 +18,9 @@
 #ifndef HELPER_H
 #define HELPER_H
 
-#include  <errno.h>
+#include <errno.h>
 
-int MakeDeamon();
+int MakeDaemon();
 
 int HardLockTest ( );
 
@@ -28,12 +28,10 @@ bool ChangeUserAndGroup(string usr, string grp);
 
 bool WritePidFile(pid_t pid);
 
-void InstallSignal ();
+int InstallSignal ();
 
-int CreateQueue( );
+int InstallChildSignal ();
 
 //void RereadDatabase ();
-
-//void StartNewChild ();
 
 #endif

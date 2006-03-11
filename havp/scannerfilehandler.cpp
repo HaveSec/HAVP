@@ -18,7 +18,7 @@
 #include "scannerfilehandler.h"
 
 //Open and lock file which will be scanned
-bool ScannerFileHandler::OpenAndLockFile( )
+bool ScannerFileHandler::OpenAndLockFile()
 {
 
     struct flock lock;
@@ -31,70 +31,86 @@ bool ScannerFileHandler::OpenAndLockFile( )
     lock.l_whence = SEEK_SET;                     // SEEK_SET, SEEK_CUR oder SEEK_END
     lock.l_len    = MAXFILELOCKSIZE;              // number of bytes; 0 = EOF
 
-    string scantempfile=Params::GetConfigString("SCANTEMPFILE");
-    strncpy( FileName, scantempfile.c_str(), MAXSCANTEMPFILELENGTH);
+    string scantempfile = Params::GetConfigString("SCANTEMPFILE");
+    strncpy(FileName, scantempfile.c_str(), MAXSCANTEMPFILELENGTH);
 
-    if ( (fd_scan = mkstemp( FileName )) < 0 )
+    if ((fd_scan = mkstemp(FileName)) < 0)
     {
-        LogFile::ErrorMessage ("Invalid Scanner-Tempfile: %s Error: %s\n", FileName ,strerror(errno));
+        LogFile::ErrorMessage("Invalid Scannerfile: %s Error: %s\n", FileName, strerror(errno));
         return false;
     }
 
-    write(fd_scan, " ", 1);
-
-    //set-group-ID and group-execute
-    if (fstat(fd_scan, &fstatpuff) < 0)
-        LogFile::ErrorMessage ("Fstat Error\n");
-    if (fchmod(fd_scan, (fstatpuff.st_mode & ~S_IXGRP) | S_ISGID) < 0)
-        LogFile::ErrorMessage ("fchmod-Fehler\n");
-
-    if ( fcntl(fd_scan, F_SETLK, &lock) < 0)
+    while (write(fd_scan, " ", 1) < 0 && errno == EINTR)
     {
-        LogFile::ErrorMessage ("Could not lock Scannerfile: %s\n", FileName );
-        return -1;
+        LogFile::ErrorMessage("Could not write to Scannerfile: %s\n", FileName );
+        return false;
     }
 
-    if (lseek(fd_scan, 0, SEEK_SET) == -1)
-        LogFile::ErrorMessage ("Could not lseek Scannerfile: %s\n", FileName );
+    //set-group-ID and group-execute
+    while (fstat(fd_scan, &fstatpuff) < 0 && errno == EINTR)
+    {
+        LogFile::ErrorMessage("fstat error\n");
+        return false;
+    }
+    while (fchmod(fd_scan, (fstatpuff.st_mode & ~S_IXGRP) | S_ISGID) < 0 && errno == EINTR)
+    {
+        LogFile::ErrorMessage("fchmod error\n");
+        return false;
+    }
 
-    return fd_scan;
+    if (fcntl(fd_scan, F_SETLK, &lock) < 0)
+    {
+        LogFile::ErrorMessage("Could not lock Scannerfile: %s\n", FileName);
+        return false;
+    }
+
+    if (lseek(fd_scan, 0, SEEK_SET) < 0)
+    {
+        LogFile::ErrorMessage("Could not lseek Scannerfile: %s\n", FileName);
+        return false;
+    }
+
+    return true;
 }
 
 
 //Unlock file
 bool ScannerFileHandler::UnlockFile()
 {
-    struct flock    lock;
+    struct flock lock;
     lock.l_type   = F_UNLCK;
-    lock.l_start  = 0;                            // byte-offset (abhaengig von wie)
+    lock.l_start  = 0;
     lock.l_whence = SEEK_SET;
-    lock.l_len    = 0;                            // number of bytes; 0 = EOF
+    lock.l_len    = 0;
 
     //Partial unlock file
-    if ( fcntl(fd_scan, F_SETLK, &lock) < 0)
+    if (fcntl(fd_scan, F_SETLK, &lock) < 0)
     {
-        LogFile::ErrorMessage ("Could not unlock Scannerfile: %s Error: %s fd=%d\n", FileName , strerror(errno), fd_scan);
-
-        return false;
+        LogFile::ErrorMessage("Could not unlock Scannerfile: %s\n", strerror(errno));
+        exit(0);
     }
+
     return true;
 }
 
 
 bool ScannerFileHandler::DeleteFile()
 {
-
-    close(fd_scan);
-
-    if ( unlink(FileName) < 0 )
+    while (close(fd_scan) < 0 && errno == EINTR)
     {
-
-//PSE: two processes want to delete this file => errno=2 is quite normal
-    if(errno != 2) {
-	LogFile::ErrorMessage ("Could not unlink: %s Error: %s \n", FileName ,strerror(errno));
-        return false;
+        LogFile::ErrorMessage("Could not close() Scannerfile: %s\n", strerror(errno));
+        exit(0);
     }
 
+    while (unlink(FileName) < 0)
+    {
+        //File already deleted
+        if (errno == ENOENT) break;
+        //Retry if signal received or file busy
+        if (errno == EINTR || errno == EBUSY) continue;
+
+	LogFile::ErrorMessage("Could not delete Scannerfile: %s\n", strerror(errno));
+	exit(0);
     }
 
     return true;
@@ -104,30 +120,37 @@ bool ScannerFileHandler::ReinitFile()
 {
     struct flock lock;
     struct stat fstatpuff;
+    int ret;
 
-    if (lseek(fd_scan, 0, SEEK_SET) == -1)
+    if (lseek(fd_scan, 0, SEEK_SET) < 0)
     {
-        LogFile::ErrorMessage ("Could not lseek Scannerfile: %s\n", FileName );
-        return false;
+        LogFile::ErrorMessage("Could not lseek Scannerfile: %s\n", strerror(errno));
+        exit(0);
     }
 
-    while (ftruncate(fd_scan, 0) < 0)
+    while (ftruncate(fd_scan, 0) < 0 && errno == EINTR)
     {
-        LogFile::ErrorMessage("Error truncating file: %s\n", strerror(errno));
-        return false;
+        LogFile::ErrorMessage("Could not truncate file: %s\n", strerror(errno));
+        exit(0);
     }
 
-    while (write(fd_scan, " ", 1) < 0)
+    while (write(fd_scan, " ", 1) < 0 && errno == EINTR)
     {
-        LogFile::ErrorMessage ("RE Could not write to Scannerfile: %s\n", strerror(errno));
-        return false;
+        LogFile::ErrorMessage("Could not write file: %s\n", strerror(errno));
+        exit(0);
     }
 
     //set-group-ID and group-execute
-    if (fstat(fd_scan, &fstatpuff) < 0)
-        LogFile::ErrorMessage ("Fstat Error\n");
-    if (fchmod(fd_scan, (fstatpuff.st_mode & ~S_IXGRP) | S_ISGID) < 0)
-        LogFile::ErrorMessage ("fchmod-Fehler\n");
+    while (fstat(fd_scan, &fstatpuff) < 0 && errno == EINTR)
+    {
+        LogFile::ErrorMessage("Could not fstat Scannerfile: %s\n", strerror(errno));
+        exit(0);
+    }
+    while (fchmod(fd_scan, (fstatpuff.st_mode & ~S_IXGRP) | S_ISGID) < 0 && errno == EINTR)
+    {
+        LogFile::ErrorMessage("Could not fchmod Scannerfile: %s\n", strerror(errno));
+        exit(0);
+    }
 
     FileLength = 0;
 
@@ -138,60 +161,87 @@ bool ScannerFileHandler::ReinitFile()
 
     if (fcntl(fd_scan, F_SETLK, &lock) < 0)
     {
-        LogFile::ErrorMessage ("Could not lock Scannerfile: %s\n", FileName );
+        LogFile::ErrorMessage("Could not lock Scannerfile: %s\n", strerror(errno));
+        exit(0);
+    }
+
+    if (lseek(fd_scan, 0, SEEK_SET) < 0)
+    {
+        LogFile::ErrorMessage("Could not lseek Scannerfile: %s\n", strerror(errno));
+        exit(0);
+    }
+
+    return true;
+}
+
+bool ScannerFileHandler::SetFileSize( long long ContentLengthT )
+{
+    if (lseek(fd_scan, (off_t)ContentLengthT-1, SEEK_SET) < 0)
+    {
+        LogFile::ErrorMessage("Could not lseek Scannerfile: %s\n", strerror(errno));
         return false;
     }
 
-    if (lseek(fd_scan, 0, SEEK_SET) == -1)
+    while (write(fd_scan, "1", 1) < 0 && errno == EINTR)
     {
-        LogFile::ErrorMessage ("Could not lseek Scannerfile: %s\n", FileName );
+        LogFile::ErrorMessage("Could not write to Scannerfile: %s\n", strerror(errno));
+        return false;
+    }
+
+    if (lseek(fd_scan, 0, SEEK_SET) < 0)
+    {
+        LogFile::ErrorMessage("Could not lseek Scannerfile: %s\n", strerror(errno));
         return false;
     }
 
     return true;
 }
 
-bool ScannerFileHandler::SetFileSize( unsigned long ContentLengthT )
+bool ScannerFileHandler::TruncateFile( long long ContentLengthT )
 {
-
-    if ( lseek (fd_scan, ContentLengthT-1 , SEEK_SET ) < 0 )
-        { return false; }
-        if (  write ( fd_scan, "1", 1 ) < 0 )
-            { return false; }
-
-            if (lseek(fd_scan, 0, SEEK_SET) < 0)
-                LogFile::ErrorMessage ("Could not lseek Scannerfile: %s\n", FileName );
-
-    return true;
-
-}
-
-
-bool ScannerFileHandler::ExpandFile( char *dataT, int lengthT , bool unlockT)
-{
-
-    struct flock lock;
-
-    FileLength = FileLength + lengthT;
-
-    if ( write(fd_scan, dataT, lengthT) < 0 )
+    while (ftruncate(fd_scan, (off_t)ContentLengthT) < 0 && errno == EINTR)
     {
-        LogFile::ErrorMessage ("Could not write: %s\n", FileName );
-        return false;
+        LogFile::ErrorMessage("Could not truncate Scannerfile: %s\n", strerror(errno));
+        exit(0);
     }
 
-    if(unlockT == true )
-    {
+    return true;
+}
 
+bool ScannerFileHandler::ExpandFile( string *dataT, bool unlockT )
+{
+    int total_written = 0;
+    int len = dataT->length();
+    int ret;
+
+    FileLength += len;
+
+    //Handle partial write if interrupted by signal!
+    while (total_written < len)
+    {
+        while ((ret = write(fd_scan, dataT->substr(total_written).c_str(), len - total_written)) < 0)
+        {
+            if (errno == EINTR) continue;
+
+            LogFile::ErrorMessage("ExpandFile Could not write: %s %s\n", FileName, strerror(errno));
+            return false;
+        }
+
+        total_written += ret;
+    }
+
+    if (unlockT == true)
+    {
+        struct flock lock;
         lock.l_type   = F_UNLCK;
         lock.l_start  = 0;                        // byte-offset
         lock.l_whence = SEEK_SET;
         lock.l_len    = FileLength;               // number of bytes; 0 = EOF
 
-         //partly unlock
-        if ( fcntl(fd_scan, F_SETLK, &lock) < 0)
+        //partly unlock
+        if (fcntl(fd_scan, F_SETLK, &lock) < 0)
         {
-            LogFile::ErrorMessage ("Could not lock: %s\n", FileName );
+            LogFile::ErrorMessage("Could not unlock file: %s\n", FileName);
             return false;
         }
     }
@@ -199,54 +249,26 @@ bool ScannerFileHandler::ExpandFile( char *dataT, int lengthT , bool unlockT)
     return true;
 }
 
-
-char * ScannerFileHandler::GetFileName()
+char* ScannerFileHandler::GetFileName()
 {
     return FileName;
 }
 
-
 bool ScannerFileHandler::InitDatabase()
 {
-    LogFile::ErrorMessage ("Programm Error: InitDatabase\n");
     return false;
 }
-
-
 bool ScannerFileHandler::ReloadDatabase()
 {
-    LogFile::ErrorMessage ("Programm Error: ReloadDatabase\n");
     return false;
 }
-
-//PSEstart
-bool ScannerFileHandler::FreeDatabase()
+void ScannerFileHandler::FreeDatabase()
 {
-    LogFile::ErrorMessage ("Programm Error: FreeDatabase\n");
+}
+int ScannerFileHandler::Scanning()
+{
     return -1;
 }
-//PSEend
-
-int ScannerFileHandler::Scanning ()
-{
-    LogFile::ErrorMessage ("Programm Error: Scanning\n");
-    return -1;
-}
-
-
-bool ScannerFileHandler::InitSelfEngine()
-{
-    LogFile::ErrorMessage ("Programm Error: InitSelfEngine\n");
-    return false;
-}
-
-
-int ScannerFileHandler::ScanningComplete()
-{
-    LogFile::ErrorMessage ("Programm Error: ScanningComplete\n");
-    return false;
-}
-
 
 //Constructor
 ScannerFileHandler::ScannerFileHandler()

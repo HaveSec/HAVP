@@ -1,9 +1,9 @@
 /***************************************************************************
-                          |FILENAME|  -  description
+                          utils.cpp  -  description
                              -------------------
-    begin                : |DATE|
-    copyright            : (C) |YEAR| by |AUTHOR|
-    email                : |EMAIL|
+    begin                : Sa M� 5 2005
+    copyright            : (C) 2005 by Christian Hilgers
+    email                : christian@hilgers.ag
  ***************************************************************************/
 
 /***************************************************************************
@@ -14,3 +14,27 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
+
+#include "utils.h"
+
+string UpperCase( string CaseString )
+{
+    string::const_iterator si = CaseString.begin();
+    string::size_type j = 0;
+    string::size_type e = CaseString.size();
+    while ( j < e ) { CaseString[j++] = toupper(*si++); }
+
+    return CaseString;
+}
+
+
+void SearchReplace( string *source, string search, string replace )
+{
+    string::size_type position = source->find(search);
+
+    while (position != string::npos)
+    {
+        source->replace(position, search.size(), replace);
+        position = source->find(search);
+    }
+}

@@ -1,9 +1,9 @@
 /***************************************************************************
-                          |FILENAME|  -  description
+                          utils.h  -  description
                              -------------------
-    begin                : |DATE|
-    copyright            : (C) |YEAR| by |AUTHOR|
-    email                : |EMAIL|
+    begin                : Sa M� 5 2005
+    copyright            : (C) 2005 by Christian Hilgers
+    email                : christian@hilgers.ag
  ***************************************************************************/
 
 /***************************************************************************
@@ -14,3 +14,16 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
+
+#ifndef UTILS_H
+#define UTILS_H
+
+#include <string>
+
+using namespace std;
+
+string UpperCase( string CaseString );
+
+void SearchReplace( string *source, string search, string replace );
+
+#endif

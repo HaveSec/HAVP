@@ -1,7 +1,7 @@
 /***************************************************************************
-                          FProtScanner.h  -  description
+                          connectiontohttp.h  -  description
                              -------------------
-    begin                : Mit Jun 29 2005
+    begin                : Sa Feb 12 2005
     copyright            : (C) 2005 by Christian Hilgers
     email                : christian@hilgers.ag
  ***************************************************************************/
@@ -15,33 +15,40 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef FPROTSCANNER_H
-#define FPROTSCANNER_H
+#ifndef CONNECTIONTOHTTP_H
+#define CONNECTIONTOHTTP_H
 
-#include "scannerfilehandler.h"
-#include "sockethandler.h"
+#include "httphandler.h"
+#include "logfile.h"
 
-using namespace std;
-
-class FProtScanner : public ScannerFileHandler  {
+class ConnectionToHTTP : public HTTPHandler {
 
 private:
 
-SocketHandler FProtSocket;
+int AnalyseFirstHeaderLine( string *RequestT );
 
-public:
+int AnalyseHeaderLine( string *RequestT );
 
-bool InitDatabase();
+int HTMLResponse;
 
-bool ReloadDatabase();
+long long ContentLength;
 
-void FreeDatabase();
+bool KeepAlive;
 
-int Scanning();
+public: 
 
+string PrepareHeaderForBrowser();
 
-	FProtScanner();
-	~FProtScanner();
+int GetResponse();
+
+long long GetContentLength();
+
+bool KeepItAlive();
+
+void ClearVars();
+
+  ConnectionToHTTP();
+	~ConnectionToHTTP();
 };
 
 #endif

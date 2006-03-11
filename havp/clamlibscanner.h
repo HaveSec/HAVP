@@ -37,15 +37,10 @@ bool InitDatabase();
 
 bool ReloadDatabase();
 
-bool InitSelfEngine();
+void FreeDatabase();
 
-//PSEstart
-bool FreeDatabase();
-//PSEend
+int Scanning();
 
-int ScanningComplete();
-
-int Scanning( );
 
 	ClamLibScanner();
 	~ClamLibScanner();

@@ -47,33 +47,37 @@ void WriteScannerAnswer ();
 
 string ReadScannerAnswer ();
 
+int CheckScanner ( bool blocking );
+
 bool PrepareScanning ( SocketHandler *ProxyServerT );
 
 bool CreatePipes ();
 
-virtual bool UnlockFile() = 0;
+// Scannerfilehandler
 
 virtual bool InitDatabase() = 0;
 
 virtual bool ReloadDatabase() = 0;
 
-virtual int Scanning () = 0;
+virtual void FreeDatabase() = 0;
 
-virtual bool InitSelfEngine() = 0;
+virtual int Scanning() = 0;
 
-virtual int ScanningComplete() = 0;
+virtual bool SetFileSize( long long ContentLengthT ) = 0;
 
-virtual bool SetFileSize( unsigned long ContentLengthT ) = 0;
+virtual bool ExpandFile( string *dataT, bool unlockT ) = 0;
 
-virtual bool ExpandFile( char *dataT, int lengthT , bool unlockT) = 0 ;
+// Scanner
+
+virtual bool OpenAndLockFile() = 0;
+
+virtual bool UnlockFile() = 0;
 
 virtual bool DeleteFile() = 0;
 
 virtual bool ReinitFile() = 0;
 
-//PSEstart
-virtual bool FreeDatabase() = 0;
-//PSEend
+virtual bool TruncateFile( long long ContentLengthT ) = 0;
 
 virtual ~GenericScanner ();
 

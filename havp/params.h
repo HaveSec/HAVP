@@ -18,8 +18,8 @@
 
 #ifndef PARAMS_H
 #define PARAMS_H
+
 #include "default.h"
-#include <config.h>
 #include <iostream>
 #include <string>
 #include <cstdlib>

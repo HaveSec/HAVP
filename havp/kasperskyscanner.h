@@ -19,10 +19,16 @@
 #define KASPERSKYSCANNER_H
 
 #include "scannerfilehandler.h"
+#include <sys/socket.h>
+#include <sys/un.h>
 
 class KasperskyScanner : public ScannerFileHandler  {
 
 private:
+
+SocketHandler AVESocket;
+
+bool Connected;
 
 public:
 
@@ -30,13 +36,9 @@ bool InitDatabase();
 
 bool ReloadDatabase();
 
-bool InitSelfEngine();
+void FreeDatabase();
 
-bool FreeDatabase();
-
-int ScanningComplete();
-
-int Scanning( );
+int Scanning();
 
 	KasperskyScanner();
 	~KasperskyScanner();

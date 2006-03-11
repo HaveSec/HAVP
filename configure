@@ -800,12 +800,13 @@ if test -n "$ac_init_help"; then
 Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-debug         Output debuggging info
+  --enable-debug          Output debuggging info
+  --enable-ssl-tunnel     HTTPS proxy support (note: https-traffic is not scanned)
 
 Optional Packages:
-  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
-  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-scanner=libclamav      Virus Scanner Clamav, F-Prot, Trophie or Kaspersky (libclamav, fprot, trophie or aveclient)
+  --with-PACKAGE[=ARG]      use PACKAGE [ARG=yes]
+  --without-PACKAGE         do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-scanner=libclamav  Choose used scanner: libclamav (default), fprot, trophie, aveserver, avg
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -1846,6 +1847,36 @@ fi;
 
 
 
+case "`uname`" in
+SunOS*)
+     LDFLAGS="$LDFLAGS -lsocket -lresolv -lnsl"
+    ;;
+esac
+
+
+
+
+
+# Check whether --enable-ssl-tunnel or --disable-ssl-tunnel was given.
+if test "${enable_ssl_tunnel+set}" = set; then
+  enableval="$enable_ssl_tunnel"
+  want_ssltunnel=$enableval
+else
+  want_ssltunnel="no"
+fi;
+
+if test "$want_ssltunnel" = "yes"
+then
+
+cat >>confdefs.h <<\_ACEOF
+#define SSLTUNNEL "1"
+_ACEOF
+
+fi
+
+
+
+
 # Check whether --with-scanner or --without-scanner was given.
 if test "${with_scanner+set}" = set; then
   withval="$with_scanner"
@@ -1854,7 +1885,7 @@ else
   HAVPSCANNER_DEF="libclamav"
 fi;
 
-if test $HAVPSCANNER_DEF = aveclient ; then
+if test $HAVPSCANNER_DEF = aveserver ; then
  SCANNEROBJECT=kasperskyscanner.o
  SCANNER=1
  SCANNERLIB=
@@ -1867,13 +1898,19 @@ else
      if test $HAVPSCANNER_DEF = trophie ; then
        SCANNEROBJECT=trophiescanner.o
        SCANNER=3
-       SCANNERLIB="-lvsapi"
+       SCANNERLIB="-L/etc/iscan -lvsapi"
      else
-       SCANNEROBJECT=clamlibscanner.o
-      SCANNER=0
-      CFLAGS="$CFLAGS `clamav-config --cflags`"
-      SCANNERLIB="`clamav-config --libs ` -lclamav"
-    fi
+       if test $HAVPSCANNER_DEF = avg ; then
+         SCANNEROBJECT=avgscanner.o
+         SCANNER=4
+         SCANNERLIB=
+       else
+         SCANNEROBJECT=clamlibscanner.o
+         SCANNER=0
+         CFLAGS="$CFLAGS `clamav-config --cflags`"
+         SCANNERLIB="`clamav-config --libs ` -lclamav"
+       fi
+     fi
    fi
 fi
 

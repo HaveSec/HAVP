@@ -30,18 +30,21 @@ bool ClamLibScanner::InitDatabase()
 
     root = NULL;
 
+    string tempdir = Params::GetConfigString("TEMPDIR");
+    cl_settempdir(tempdir.c_str(), 0);
+
     if((ret = cl_loaddbdir(cl_retdbdir(), &root, &no)))
     {
-        LogFile::ErrorMessage ("Clamav Error: %s\n", cl_perror(ret) );
+        LogFile::ErrorMessage("Clamav Error: %s\n", cl_strerror(ret));
         return false;
     }
 
-    LogFile::ErrorMessage ("Loaded %d signatures\n", no );
+    LogFile::ErrorMessage("Loaded %d signatures\n", no);
 
     //Build engine
     if((ret = cl_build(root)))
     {
-        LogFile::ErrorMessage ("Database initialization error: %s\n", cl_strerror(ret) );
+        LogFile::ErrorMessage("Database initialization error: %s\n", cl_strerror(ret));
         cl_free(root);
         return false;
     }
@@ -55,6 +58,7 @@ bool ClamLibScanner::InitDatabase()
     limits.maxratio = MAXRATIO;                   /* maximal compression ratio */
     limits.archivememlim = ARCHIVEMEMLIM;         /* disable memory limit for bzip2 scanner */
 
+    memset(&dbstat, 0, sizeof(struct cl_stat));
     cl_statinidir(cl_retdbdir(), &dbstat);
 
     return true;
@@ -62,14 +66,12 @@ bool ClamLibScanner::InitDatabase()
 
 
 //Reload scanner engine
+//Return true only if database reloaded, thus childs need to be restarted
 bool ClamLibScanner::ReloadDatabase()
 {
+    int ret_cl = cl_statchkdir(&dbstat);
 
-    //reload_database ?
-   //PSE: cl_statchkdir has more exit-codes than 1 and 0 !!!
-   //PSE: Error code now catched by InitDatabase (hopefully)
-   //PSE: if(cl_statchkdir(&dbstat) == 1)
-    if(cl_statchkdir(&dbstat) != 0)
+    if (ret_cl == 1)
     {
 
 	int ret=0;
@@ -78,38 +80,35 @@ bool ClamLibScanner::ReloadDatabase()
 	cl_free(root);
 	root = NULL;
 
+	string tempdir = Params::GetConfigString("TEMPDIR");
+	cl_settempdir(tempdir.c_str(), 0);
+
 	if ((ret = cl_loaddbdir(cl_retdbdir(), &root, &no)))
 	{
-	LogFile::ErrorMessage ("Database reload error: %s\n", cl_perror(ret));
+	LogFile::ErrorMessage("Database reload error: %s\n", cl_strerror(ret));
 	return false;
 	}
 	if ((ret = cl_build(root)))
 	{
-	LogFile::ErrorMessage ("Database reload initialization error: %s\n", cl_perror(ret));
+	LogFile::ErrorMessage("Database reload initialization error: %s\n", cl_strerror(ret));
 	cl_free(root);
 	return false;
 	}
 
-	LogFile::ErrorMessage ("Database reloaded with %d signatures\n", no);
+	LogFile::ErrorMessage("Database reloaded with %d signatures\n", no);
 
 	cl_statfree(&dbstat);
 	memset(&dbstat, 0, sizeof(struct cl_stat));
 	cl_statinidir(cl_retdbdir(), &dbstat);
 
-/*
-//CH 
-       cl_statfree(&dbstat);
-
-        LogFile::ErrorMessage ("Reload Database\n" );
-        if ( InitDatabase() == false)
-        {
-            LogFile::ErrorMessage ("Reload Database - failed\n" );
-            return false;
-        }
-*/
+	return true;
+    }
+    else if (ret_cl != 0)
+    {
+    	LogFile::ErrorMessage("Database reload error: %s\n", cl_strerror(ret_cl));
     }
 
-    return true;
+    return false;
 }
 
 
@@ -119,103 +118,48 @@ int ClamLibScanner::Scanning( )
     int ret, fd;
     unsigned long int size = 0;
     char Ready[2];
-    ScannerAnswer="";
+    ScannerAnswer = "";
 
     const char *virname;
 
     if ( (fd = open(FileName, O_RDONLY)) < 0)
     {
-        LogFile::ErrorMessage ("Could not open file to scan: %s\n", FileName );
-        ScannerAnswer="Could not open file to scan";
+        LogFile::ErrorMessage("Could not open file to scan: %s\n", FileName);
+        ScannerAnswer = "Could not open file to scan";
         close(fd);
-        return 1;
+        return 2;
     }
 
     //Wait till file is set up for scanning
-    read(fd, Ready, 1);
+    while (read(fd, Ready, 1) < 0 && errno == EINTR);
     lseek(fd, 0, SEEK_SET);
 
     if((ret = cl_scandesc(fd, &virname, &size, root, &limits, SCANOPTS)) == CL_VIRUS)
     {
-
-        LogFile::ErrorMessage ("Virus %s in file %s detected!\n", virname, FileName );
-
-        ScannerAnswer=virname;
+        ScannerAnswer = virname;
         close(fd);
         return 1;
     }
-    else
+    else if (ret != CL_CLEAN)
     {
-        if(ret != CL_CLEAN)
-        {
-            LogFile::ErrorMessage ("Error Virus scanner: %s %s\n", FileName, cl_perror(ret) );
-            ScannerAnswer= cl_perror(ret);
-            close(fd);
-            return 2;
-        }
+        ScannerAnswer = cl_strerror(ret);
+        close(fd);
+        return 2;
     }
 
+    ScannerAnswer = "Clean";
     close(fd);
-    ScannerAnswer="Clean";
     return 0;
 }
 
-
-//Init scanning engine - do filelock and so on
-bool ClamLibScanner::InitSelfEngine()
-{
-
-    if( OpenAndLockFile() == false)
-    {
-        return false;
-    }
-
-    return true;
-}
-
-
-int ClamLibScanner::ScanningComplete()
-{
-    int ret;
-    char p_read[2];
-    memset(&p_read, 0, sizeof(p_read));
-
-    UnlockFile();
-
-    //Wait till scanner finishes with the file
-    while ((ret = read(commin[0], &p_read, 1)) < 0)
-    {
-    	if (errno == EINTR) continue;
-    	if (errno != EPIPE) LogFile::ErrorMessage("cl1 read to pipe failed: %s\n", strerror(errno));
-
-    	DeleteFile();
-    	exit(0);
-    }
-
-    //Truncate and reuse existing tempfile
-    if (ReinitFile() == false)
-    {
-    	LogFile::ErrorMessage("ReinitFile() failed\n");
-    }
-
-    //Virus found ? 0=No ; 1=Yes; 2=Scanfail
-    return (int)atoi(p_read);
-}
-
-//PSEstart
-bool ClamLibScanner::FreeDatabase()
+void ClamLibScanner::FreeDatabase()
 {
 	cl_free(root);
-	return true;
 }
-//PSEend
 
 //Constructor
 ClamLibScanner::ClamLibScanner()
 {
-
-    memset(&dbstat, 0, sizeof(struct cl_stat));
-
 }
 
 

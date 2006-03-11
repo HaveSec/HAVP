@@ -1,27 +1,47 @@
+
+*HAVP 0.78 released
+ - Solaris is now supported too
+ - AVG scanner support
+ - Kaspersky aveserver socket support (faster)
+ - Added TEMPDIR, LOGLEVEL, FAILSCANERROR and WHITELISTFIRST config
+ - KEEPBACKTIME config added to complement KEEPBACKBUFFER setting
+ - Basic HTTP Keep-Alive support, improves network performance
+ - HTTPS/SSL tunneling support (requires configure --enable-ssl-tunnel)
+ - FTP is supported when FTP supporting parent proxy is used
+ - Default user and group changed to havp
+ - Logging improved
+ - Many important and not so important fixes/optimizations
+
 *HAVP 0.77 released
  - Fix Security Bug - Kaspersky and F-Prot did not catch viruses
  - Add Trophie (Trend Micro) Scanner
+ - Added RANGE config for improved security
  - Change some default settings
+
 *HAVP 0.76 released
- - Improve performance <Henrik>
+ - Improve performance
  - Fix small bug in logfile 
  - Swedish Templates <Johnny Strom>
  - Polish Templates <Eryk L. Rathmann>
-* HAVP 0.75 - 02/01/2005
+
+*HAVP 0.75 - 02/01/2005
  - Improve Configfile
  - Fix Bug in Black/Whitelists
-* HAVP 0.74 - 12/11/2005
+
+*HAVP 0.74 - 12/11/2005
  - Add IP to Logfile
  - Add Templates
  - Improve Errorhandling
  - Fix Bug in Serverpool
-* HAVP 0.73 - 20/10/2005
+
+*HAVP 0.73 - 20/10/2005
  - Move Pidfile to /var/run/havp/havp.pid
  - Add Templates
  - Improve Performance
  - Rewrite Domains (Check default.h.in)
-* HAVP 0.72 - 07/10/2005
+
+*HAVP 0.72 - 07/10/2005
  - Add Kaspersky and F-Prot Scanner
  - Add Templates
  - Fix some minor bugs in default.h
- 
+

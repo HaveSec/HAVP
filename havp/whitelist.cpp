@@ -41,7 +41,7 @@ bool URLList::CreateURLList(string URLListFileT)
 
  if(!Input)
  {
-   LogFile::ErrorMessage ("Cannot open URLList: %s\n", URLListFileT.c_str());
+   LogFile::ErrorMessage("Cannot open URLList: %s\n", URLListFileT.c_str());
    return false;
  }
 
@@ -104,7 +104,7 @@ string::size_type i1;
     } else {
      *DomainT = UrlT;
      if( UrlT == "") {
-       LogFile::ErrorMessage ("Invalid Domain\n");
+       LogFile::ErrorMessage("URLList invalid Domain\n");
       }
      *PathT = "";
     }
@@ -112,13 +112,13 @@ string::size_type i1;
 
 *ExactDomainT = CheckItem( DomainT );
 if ( (*ExactDomainT != 'l') && (*ExactDomainT != 'n') ) {
-  LogFile::ErrorMessage ("URLList invalid Domain: %s\n", DomainT->c_str() );
+  LogFile::ErrorMessage("URLList invalid Domain: %s\n", DomainT->c_str() );
   return false;
 } 
 
 *ExactPathT = CheckItem( PathT );
 if  (*ExactPathT == 'e') {
-  LogFile::ErrorMessage ("URLList invalid Path: %s\n", PathT->c_str() );
+  LogFile::ErrorMessage("URLList invalid Path: %s\n", PathT->c_str() );
   return false;
 } 
 
@@ -155,7 +155,7 @@ if( character == "*" ){
 }
 
 if (ItemT->find("*") != string::npos ){
-LogFile::ErrorMessage ("URLList - To many wildcards in %s\n", ItemT->c_str());
+LogFile::ErrorMessage("URLList - Too many wildcards in %s\n", ItemT->c_str());
 position = 'e';
 }
 

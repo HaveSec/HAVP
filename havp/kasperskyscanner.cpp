@@ -16,8 +16,6 @@
  ***************************************************************************/
 
 #include "kasperskyscanner.h"
-#include <sys/types.h>
-#include <sys/wait.h>
 
 //Init scanner engine
 bool KasperskyScanner::InitDatabase()
@@ -29,122 +27,179 @@ bool KasperskyScanner::InitDatabase()
 //Reload scanner engine
 bool KasperskyScanner::ReloadDatabase()
 {
-    return true;
+    return false;
 }
 
 
 //Start scan
-int KasperskyScanner::Scanning( )
+int KasperskyScanner::Scanning()
 {
 
-//    string user=Params::GetConfigString("AVECLIENT");
-//    string group=Params::GetConfigString("AVEOPTION");
+    char buffer[STRINGLENGTH+1];
+    char Ready[2];
+    int fd, ret;
+    ScannerAnswer = "";
 
-    string ScannerCall = Params::GetConfigString("AVECLIENT") + KASPERSKYOPTION + Params::GetConfigString("AVESOCKET") + " " + FileName;
-
-    ScannerAnswer="";
-    FILE *Output;
-    char Lines[500];
-    string Line;
-    char Ready[1];
-    int fd;
-
-    if ( ( fd = open(FileName, O_RDONLY)) < 0)
+    if ( (fd = open(FileName, O_RDONLY)) < 0 )
     {
-        LogFile::ErrorMessage ("Could not open file to scan: %s\n", FileName );
-        ScannerAnswer="Could not open file to scan";
-
+        LogFile::ErrorMessage("Could not open file to scan: %s\n", FileName);
+        ScannerAnswer = "Could not open file to scan";
         close(fd);
         return 2;
     }
+
     //Wait till file is set up for scanning
-    read(fd, Ready, 1);
-    lseek(fd, 0, SEEK_SET);
+    while (read(fd, Ready, 1) < 0 && errno == EINTR);
     close(fd);
 
-    Output = popen( ScannerCall.c_str() , "r");
+    string::size_type Position;
+    string Response;
 
-    //Read lines
-    fgets( Lines, sizeof Lines, Output);
-    Line = Lines;
-    if ( Line.rfind("OK") == (Line.size()-3) )
+    if ( Connected == false )
     {
-      ScannerAnswer="Clean";
-      pclose(Output);
-      close(fd);
-      return 0;
-    } else if (Line.rfind("INFECTED") == (Line.size()-9) )
-    {
-      fgets( Lines, sizeof Lines, Output);
-      Line = Lines;
-      string::size_type start = Line.find(" ");
-      ScannerAnswer= Line.substr(start,  Line.size() - start );
-      pclose(Output);
-      LogFile::ErrorMessage ("Virus found: %s\n", ScannerAnswer.c_str() );
-      close(fd);
-      return 1;
+        //Connect
+        if ( AVESocket.ConnectToSocket( Params::GetConfigString("AVESOCKET") ) == false )
+        {
+            AVESocket.Close();
+            ScannerAnswer = "Could not connect to scanner socket";
+            return 2;
+        }
+
+        //Get initial response
+        do
+        {
+            if ( AVESocket.Recv( &Response, false ) == false )
+            {
+                AVESocket.Close();
+                ScannerAnswer = "Could not read from scanner socket";
+                return 2;
+            }
+        }
+        while ( (Position = Response.find("\r\n")) == string::npos );
+
+        Response = "";
+        if ( AVESocket.RecvLength( &Response, Position + 2 ) == false )
+        {
+            AVESocket.Close();
+            ScannerAnswer = "Could not read from scanner socket";
+            return 2;
+        }
+
+        //Check greeting
+        if ( Response.substr(0, 3) != "201" )
+        {
+            AVESocket.Close();
+            LogFile::ErrorMessage("Invalid greeting from scanner\n");
+            ScannerAnswer = "Invalid greeting from scanner";
+            return 2;
+        }
+
+        Connected = true;
     }
-    fgets( Lines, sizeof Lines, Output);
-    ScannerAnswer=Lines;
-    pclose(Output);
-    close(fd);
+
+    //Construct command for scanner
+    string ScannerCmd = "SCAN xmQPRSTUWabcdefghi ";
+    ScannerCmd += FileName;
+    ScannerCmd += "\r\n";
+
+    //Send command
+    if ( AVESocket.Send( &ScannerCmd ) == false )
+    {
+        AVESocket.Close();
+        Connected = false;
+        LogFile::ErrorMessage("Could not write command to scanner\n");
+        ScannerAnswer = "Scanner connection failed";
+        return 2;
+    }
+
+    //Parse response lines
+    do
+    {
+        Response = "";
+        do
+        {
+            if ( AVESocket.Recv( &Response, false ) == false )
+            {
+                AVESocket.Close();
+                Connected = false;
+                ScannerAnswer = "Could not read from scanner socket";
+                return 2;
+            }
+
+        }
+        while ( (Position = Response.find("\r\n")) == string::npos );
+
+        Response = "";
+        if ( AVESocket.RecvLength( &Response, Position + 2 ) == false )
+        {
+            AVESocket.Close();
+            Connected = false;
+            ScannerAnswer = "Could not read from scanner socket";
+            return 2;
+        }
+
+        //Virus name found
+        if ( Response.substr(0, 4) == "322-" )
+        {
+           if ( (Position = Response.find("/", 4)) != string::npos )
+           {
+               ScannerAnswer = Response.substr( 4, Position - 5 );
+           }
+        }
+    }
+    while ( Response.substr(0, 1) == "3" );
+
+    //Clean
+    if ( Response.substr(0, 3) == "220" )
+    {
+        ScannerAnswer = "Clean";
+        return 0;
+    }
+    //Infected
+    else if ( Response.substr(0, 3) == "230" )
+    {
+        if (ScannerAnswer == "") ScannerAnswer = "unknown";
+        return 1;
+    }
+    //Suspicious
+    else if ( Response.substr(0, 3) == "232" )
+    {
+        if (ScannerAnswer == "") ScannerAnswer = "Suspicious";
+        return 1;
+    }
+    //Scan Error
+    else if ( Response.substr(0, 3) == "241" )
+    {
+        ScannerAnswer = Response;
+        return 2;
+    }
+    //Other Error
+    else if ( Response.substr(0, 1) == "5" )
+    {
+        ScannerAnswer = Response;
+        return 2;
+    }
+    //Other non-fatal responses
+    else if ( Response.substr(0, 1) == "2" )
+    {
+        ScannerAnswer = "Clean";
+        return 0;
+    }
+
+    LogFile::ErrorMessage("Unknown response from scanner: %s\n", Response.c_str());
+    ScannerAnswer = "Unknown scanner response";
     return 2;
-
 }
 
 
-//Init scanning engine - do filelock and so on
-bool KasperskyScanner::InitSelfEngine()
+void KasperskyScanner::FreeDatabase()
 {
-
-    if( OpenAndLockFile() == false)
-    {
-        return false;
-    }
-
-    return true;
-}
-
-
-int KasperskyScanner::ScanningComplete()
-{
-
-    int ret;
-    char p_read[2];
-    memset(&p_read, 0, sizeof(p_read));
-
-    UnlockFile();
-
-    //Wait till scanner finishes with the file
-    while ((ret = read(commin[0], &p_read, 1)) < 0)
-    {
-    	if (errno == EINTR) continue;
-    	if (errno != EPIPE) LogFile::ErrorMessage("cl1 read to pipe failed: %s\n", strerror(errno));
-
-    	DeleteFile();
-    	exit(0);
-    }
-
-    //Truncate and reuse existing tempfile
-    if (ReinitFile() == false)
-    {
-    	LogFile::ErrorMessage("ReinitFile() failed\n");
-    }
-
-    //Virus found ? 0=No ; 1=Yes; 2=Scanfail
-    return (int)atoi(p_read);
-
-}
-
-bool KasperskyScanner::FreeDatabase()
-{
-	return true;
 }
 
 //Constructor
 KasperskyScanner::KasperskyScanner()
 {
-
+    Connected = false;
 }
 
 

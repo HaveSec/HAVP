@@ -20,39 +20,49 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <fcntl.h>
-//#include <signal.h>
 #include <errno.h>
+
 #include "sockethandler.h"
 #include "logfile.h"
+
+//Not defined on solaris
+#ifndef INADDR_NONE
+#define INADDR_NONE ((unsigned long) -1)
+#endif
+#ifndef AF_LOCAL
+#define AF_LOCAL AF_UNIX
+#endif
 
 //Create Server Socket
 bool SocketHandler::CreateServer( int portT, in_addr_t bind_addrT )
 {
     int i = 1;
 
-    s_addr.sin_family = AF_INET;
-    s_addr.sin_addr.s_addr = bind_addrT;
-    s_addr.sin_port = htons ( portT );
+    my_s_addr.sin_addr.s_addr = bind_addrT;
+    my_s_addr.sin_port = htons ( portT );
 
-    sock_fd = socket ( AF_INET, SOCK_STREAM, 0 );
-    if ( sock_fd == -1 ) {
-        LogFile::ErrorMessage("%s\n", strerror(errno));
+    if ( (sock_fd = socket( AF_INET, SOCK_STREAM, 0 )) < 0 )
+    {
+        LogFile::ErrorMessage("socket() failed: %s\n", strerror(errno));
         return false;
     }
 
     // Enable re-use Socket
-    if ( setsockopt ( sock_fd, SOL_SOCKET, SO_REUSEADDR, &i, sizeof (i) ) == -1 ){
-        LogFile::ErrorMessage("%s\n", strerror(errno));
+    if ( setsockopt( sock_fd, SOL_SOCKET, SO_REUSEADDR, &i, sizeof(i) ) < 0 )
+    {
+        LogFile::ErrorMessage("setsockopt() failed: %s\n", strerror(errno));
         return false;
-     }
+    }
 
-    if ( ::bind ( sock_fd, (struct sockaddr *) &s_addr, sizeof ( s_addr ) ) == -1 ) {
-        LogFile::ErrorMessage("%s\n", strerror(errno));
+    if ( ::bind( sock_fd, (struct sockaddr *) &my_s_addr, sizeof(my_s_addr) ) < 0 )
+    {
+        LogFile::ErrorMessage("bind() failed: %s\n", strerror(errno));
         return false;
-     }
+    }
 
-    if ( ::listen ( sock_fd, MAXCONNECTIONS ) == -1) {
-       LogFile::ErrorMessage("%s\n", strerror(errno));
+    if ( ::listen( sock_fd, MAXCONNECTIONS ) < 0 )
+    {
+        LogFile::ErrorMessage("listen() failed: %s\n", strerror(errno));
         return false;
     }
 
@@ -63,240 +73,364 @@ bool SocketHandler::CreateServer( int portT, in_addr_t bind_addrT )
 //Create Server Socket, convert ASCII address representation into binary one
 bool SocketHandler::CreateServer( int portT, string bind_addrT )
 {
-in_addr_t BindAddress;
+    in_addr_t BindAddress;
 
-  if( bind_addrT == "NULL" ){
-    return CreateServer( portT,  INADDR_ANY );
-  } else {
-    if ((BindAddress = inet_addr(bind_addrT.c_str() )) == INADDR_NONE)
+    if ( bind_addrT == "NULL" )
     {
-      LogFile::ErrorMessage("Invalid BIND_ADRESSE: %s\n", bind_addrT.c_str());
-      return false;
+        return CreateServer( portT, INADDR_ANY );
     }
-    return CreateServer( portT,  BindAddress );
-  } 
+    else
+    {
+        if ( (BindAddress = inet_addr(bind_addrT.c_str() )) == INADDR_NONE )
+        {
+            LogFile::ErrorMessage("Invalid BIND_ADRESS: %s\n", bind_addrT.c_str());
+            return false;
+        }
 
-
+        return CreateServer( portT,  BindAddress );
+    } 
 }
 
 
 //Connect to Server
-bool SocketHandler::ConnectToServer (  )
+bool SocketHandler::ConnectToServer()
 {
-    s_addr.sin_family = AF_INET;
 
-    if ( (sock_fd = socket(s_addr.sin_family, SOCK_STREAM, 0)) == -1 ) {
-        LogFile::ErrorMessage("%s\n", strerror(errno));
-        return false;
-    }
-
-    string source_address=Params::GetConfigString("SOURCE_ADDRESS");
-    if(source_address != "") {
-    struct sockaddr_in l_addr;
-    l_addr.sin_family = AF_INET;
-    l_addr.sin_port = 0;	//System takes care about local Port
-
-
-    if ((l_addr.sin_addr.s_addr = inet_addr(source_address.c_str() )) == INADDR_NONE)
+    if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-      LogFile::ErrorMessage("Invalid SOURCE_ADRESSE: %s\n", source_address.c_str());
-      return false;
-    }
-    if ( ::bind ( sock_fd, (struct sockaddr *) &l_addr, sizeof ( l_addr ) ) == -1 ) {
-        LogFile::ErrorMessage("%s\n", strerror(errno));
+        LogFile::ErrorMessage("ConnectToServer socket() failed: %s\n", strerror(errno));
         return false;
-      }
     }
-    // #endif
 
-    if ( ::connect(sock_fd, (struct sockaddr *) &s_addr, sizeof( s_addr ) ) == -1) {
-        LogFile::ErrorMessage("%s\n", strerror(errno));
+    string source_address = Params::GetConfigString("SOURCE_ADDRESS");
+    if (source_address != "")
+    {
+        struct sockaddr_in l_addr;
+        l_addr.sin_family = AF_INET;
+        l_addr.sin_port = htons(0);
+        
+        if ((l_addr.sin_addr.s_addr = inet_addr(source_address.c_str())) == INADDR_NONE)
+        {
+            LogFile::ErrorMessage("Invalid SOURCE_ADDRESS: %s\n", source_address.c_str());
+            return false;
+        }
+        if (::bind(sock_fd, (struct sockaddr *) &l_addr, sizeof(l_addr)) < 0)
+        {
+            LogFile::ErrorMessage("ConnectoToServer bind() failed: %s\n", strerror(errno));
+            return false;
+        }
+    }
+
+    int flags, ret;
+
+    //Nonblocking connect to get a proper timeout
+    if ( flags = fcntl(sock_fd, F_GETFL, 0) < 0 )
+    {
+        LogFile::ErrorMessage("ConnectToServer fcntl() get failed: %s\n", strerror(errno));
         return false;
-      }
+    }
+    if ( fcntl(sock_fd, F_SETFL, flags | O_NONBLOCK) < 0 )
+    {
+        LogFile::ErrorMessage("ConnectToServer fcntl() O_NONBLOCK failed: %s\n", strerror(errno));
+        return false;
+    }
 
-    FD_ZERO(&checkfd);
-    FD_SET(sock_fd,&checkfd);
+    if (ret = ::connect(sock_fd, (struct sockaddr *) &my_s_addr, sizeof(my_s_addr)) < 0)
+    {
+        if (errno != EINPROGRESS)
+        {
+            if (errno != EINVAL) LogFile::ErrorMessage("connect() failed: %s\n", strerror(errno));
+            return false;
+        }
+    }
 
+    if (ret != 0)
+    {
+        fd_set rset, wset;
+        struct timeval Timeout;
+        struct sockaddr_in addr;
+
+        FD_ZERO(&rset);
+        FD_SET(sock_fd, &rset);
+        wset = rset;
+        Timeout.tv_sec = CONNTIMEOUT;
+        Timeout.tv_usec = 0;
+
+#ifndef __linux__
+        time_t start = time(NULL);
+        time_t now;
+#endif
+        while ((ret = select(sock_fd+1, &rset, &wset, NULL, &Timeout)) < 0 && errno == EINTR)
+        {
+#ifndef __linux__
+            now = time(NULL);
+            if ((now - start) < CONNTIMEOUT)
+            {
+                Timeout.tv_sec = CONNTIMEOUT - (now - start);
+                Timeout.tv_usec = 0;
+            }
+#endif
+        }
+        if (ret <= 0)
+        {
+            return false;
+        }
+
+        socklen_t len = sizeof(addr);
+        if (getpeername(sock_fd, (struct sockaddr *) &addr, &len) < 0)
+        {
+            return false;
+        }
+    }
+
+    if ( fcntl(sock_fd, F_SETFL, flags) < 0 )
+    {
+        LogFile::ErrorMessage("ConnectToServer fcntl() set failed: %s\n", strerror(errno));
+        return false;
+    }
 
     return true;
 }
 
+bool SocketHandler::ConnectToSocket ( string SocketPath )
+{
+    strncpy(my_u_addr.sun_path, SocketPath.c_str(), sizeof(my_u_addr.sun_path)-1);
+
+    if ( (sock_fd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0 )
+    {
+        LogFile::ErrorMessage("ConnectToSocket socket() failed: %s\n", strerror(errno));
+        return false;
+    }
+
+    if ( ::connect(sock_fd, (struct sockaddr *) &my_u_addr, sizeof(my_u_addr)) < 0 )
+    {
+        LogFile::ErrorMessage("ConnectToSocket connect() failed: %s\n", strerror(errno));
+        return false;
+    }
+
+    return true;
+}
 
 //Accept Client
 bool SocketHandler::AcceptClient ( SocketHandler *accept_socketT )
 {
-    int addr_length = sizeof ( s_addr );
-    accept_socketT->sock_fd = ::accept ( sock_fd, ( sockaddr * ) &s_addr, ( socklen_t * ) &addr_length );
+    int addr_length = sizeof(my_s_addr);
+    while ((accept_socketT->sock_fd = ::accept(sock_fd, (sockaddr *) &my_s_addr, (socklen_t *) &addr_length)) < 0)
+    {
+        if (errno == EINTR) continue;
 
-//Save IP ToBrowser!
-accept_socketT->s_addr = s_addr;
+        LogFile::ErrorMessage("accept() failed: %s\n", strerror(errno));
 
-    // close ( sock_fd );
-
-          //PSE: Trigger a new process
-          // (Disabled until a better preforking system)
-          // Trigger should only call the first time so here is the wrong place
-	  // kill(getpgrp(),SIGUSR1);
-
-    if ( accept_socketT->sock_fd == -1 ){
         return false;
-    } else {
-        return true;
     }
+
+    //Save IP to ToBrowser
+    accept_socketT->my_s_addr = my_s_addr;    
+
+    return true;
 }
 
 
 //Send String
 bool SocketHandler::Send ( string *sock_outT )
 {
+    struct timeval Timeout;
+    int total_sent = 0;
+    int len = sock_outT->size();
+    int ret, buffer_count;
+    fd_set checkfd;
 
-    int buffer_count;
-    string send_temp;
+#ifndef __linux__
+    time_t start, now;
+#endif
 
-
-    //select ( sock_fd+1, NULL, &checkfd, NULL, NULL);
-
-    //Timeout is changed with select
-    Timeout.tv_sec = SENDTIMEOUT;
-    Timeout.tv_usec = 0;
-    FD_ZERO(&checkfd);
-    FD_SET(sock_fd,&checkfd);
-    if (select( sock_fd+1, NULL, &checkfd, NULL, &Timeout) == 0)
+    while (total_sent < len)
     {
-     return false;
+        Timeout.tv_sec = SENDTIMEOUT;
+        Timeout.tv_usec = 0;
+        FD_ZERO(&checkfd);
+        FD_SET(sock_fd,&checkfd);
+
+#ifndef __linux__
+        start = time(NULL);
+#endif
+        while ((ret = select(sock_fd+1, NULL, &checkfd, NULL, &Timeout)) < 0 && errno == EINTR)
+        {
+#ifndef __linux__
+            now = time(NULL);
+            if ((now - start) < SENDTIMEOUT)
+            {
+                Timeout.tv_sec = SENDTIMEOUT - (now - start);
+                Timeout.tv_usec = 0;
+            }
+#endif
+        }
+        if (ret <= 0)
+        {
+            return false;
+        }
+
+        while ((buffer_count = ::send(sock_fd, sock_outT->substr(total_sent).c_str(), len - total_sent, 0)) < 0)
+        {
+            if (errno == EINTR) continue;
+            return false;
+        }
+        if (buffer_count == 0)
+        {
+            return false;
+        }
+
+        total_sent += buffer_count;
     }
-
-    buffer_count = ::send ( sock_fd, sock_outT->c_str(), sock_outT->size(), MSG_NOSIGNAL );
-
-    if ( buffer_count == (int) sock_outT->size() )
-    {
-       return true;
-    } else if ( buffer_count <= 0 ) {
-      return false;
-    }
-
-     send_temp = sock_outT->substr( buffer_count, sock_outT->size() - buffer_count);
-
-     return Send( sock_outT );
-     return Send( &send_temp );
-
+        
+    return true;
 }
 
 
 //Receive String - Maximal MAXRECV
 //sock_del = false : Do not delete Data from Socket
-ssize_t SocketHandler::Recv ( string *sock_inT , bool sock_delT)
+ssize_t SocketHandler::Recv ( string *sock_inT , bool sock_delT )
 {
-
-    char buffer [ MAXRECV + 1 ];
+    struct timeval Timeout;
+    char buffer[MAXRECV+1];
     ssize_t buffer_count;
+    int ret;
+    fd_set checkfd;
 
-    //Timeout is changed with select
     Timeout.tv_sec = RECVTIMEOUT;
     Timeout.tv_usec = 0;
     FD_ZERO(&checkfd);
     FD_SET(sock_fd,&checkfd);
-    if (select( sock_fd+1 ,&checkfd, NULL, NULL, &Timeout) == 0)
-    {
-      return false;
-    }
 
-    if ( sock_delT == true )
+#ifndef __linux__
+    time_t start = time(NULL);
+    time_t now;
+#endif
+    while ((ret = select(sock_fd+1, &checkfd, NULL, NULL, &Timeout)) < 0 && errno == EINTR)
     {
-        buffer_count = ::recv ( sock_fd, buffer, MAXRECV, 0 );
+#ifndef __linux__
+        start = time(NULL);
+        if ((now - start) < RECVTIMEOUT)
+        {
+           Timeout.tv_sec = RECVTIMEOUT - (now - start);
+           Timeout.tv_usec = 0;
+        }
+#endif
     }
-    else
-    {
-                                                  //No delete from socket
-        buffer_count = ::recv ( sock_fd, buffer, MAXRECV, MSG_PEEK );
-    }
-
-    if ( buffer_count <= -1 )
+    if (ret <= 0)
     {
         return -1;
     }
-    else if ( buffer_count == 0 )
+
+    if (sock_delT == true)
     {
-        return 0;
+        while ((buffer_count = ::recv(sock_fd, buffer, MAXRECV, 0)) < 0)
+        {
+            if (errno == EINTR) continue;
+            return -1;
+        }
     }
     else
     {
-        sock_inT->append(buffer, buffer_count);
-        return buffer_count;
+        //No delete from socket
+        while ((buffer_count = ::recv(sock_fd, buffer, MAXRECV, MSG_PEEK)) < 0)
+        {
+            if (errno == EINTR) continue;
+            return -1;
+        }
     }
+
+    if (buffer_count == 0)
+    {
+        return 0;
+    }
+
+    sock_inT->append(buffer, buffer_count);
+    return buffer_count;
 }
 
 
 //Receive String of length  sock_length
-bool SocketHandler::RecvLength ( string *sock_inT , ssize_t sock_lengthT )
+bool SocketHandler::RecvLength ( string *sock_inT, ssize_t sock_lengthT )
 {
-
-    char buffer [ MAXRECV + 1 ];
+    struct timeval Timeout;
+    char buffer[MAXRECV+1];
     ssize_t buffer_count;
-    int rest = MAXRECV;
+    int received = 0;
+    int ret;
+    fd_set checkfd;
 
-    if (  sock_lengthT <  rest )
-    {
-        rest =  sock_lengthT;
-    }
+#ifndef __linux__
+    time_t start, now;
+#endif
 
-    while ( sock_lengthT > 0 )
+    while (received < sock_lengthT)
     {
-        //Timeout is changed with select
         Timeout.tv_sec = RECVTIMEOUT;
         Timeout.tv_usec = 0;
         FD_ZERO(&checkfd);
         FD_SET(sock_fd,&checkfd);
-        if (select( sock_fd+1 ,&checkfd, NULL, NULL, &Timeout) == 0)
+
+#ifndef __linux__
+        start = time(NULL);
+#endif
+        while ((ret = select(sock_fd+1, &checkfd, NULL, NULL, &Timeout)) < 0 && errno == EINTR)
         {
-          return false;
+#ifndef __linux__
+            now = time(NULL);
+            if ((now - start) < RECVTIMEOUT)
+            {
+                Timeout.tv_sec = RECVTIMEOUT - (now - start);
+                Timeout.tv_usec = 0;
+            }
+#endif
         }
 
-        buffer_count = ::recv ( sock_fd, buffer, rest, 0 );
+        if (ret <= 0) 
+        {
+            return false;
+        }
 
-        if ( buffer_count <= 0 )
+        while ((buffer_count = ::recv(sock_fd, buffer, sock_lengthT - received, 0)) < 0)
+        {
+            if (errno == EINTR) continue;
+            return false;
+        }
+
+        if (buffer_count == 0)
         {
             return false;
         }
 
         sock_inT->append(buffer, buffer_count);
-        sock_lengthT -= buffer_count;
-
-        if (  sock_lengthT <  rest )
-        {
-            rest =  sock_lengthT;
-        }
+        received += buffer_count;
 
     }
 
     return true;
-
 }
 
 
 //Set Server Domain and Port for Client
-bool SocketHandler::SetDomainAndPort(const char *domainT, int portT)
+bool SocketHandler::SetDomainAndPort(const string domainT, int portT)
 {
-    struct hostent* server;
     struct in_addr ip_adr;
 
-    s_addr.sin_port = htons( portT );
+    my_s_addr.sin_port = htons( portT );
 
-    if ((domainT == NULL) || (*domainT == '\0'))
-        return false;
+    if (domainT == "") return false;
 
-    if( inet_aton(domainT, &ip_adr) != 0)
+    if( inet_aton(domainT.c_str(), &ip_adr) != 0)
     {
-        //server = gethostbyaddr((char*)&ip_adr,sizeof(ip_adr),AF_INET);   //Ask DNS
-        s_addr.sin_addr =  ip_adr;
+        my_s_addr.sin_addr = ip_adr;
         return true;
     }
     else
     {
-        server = gethostbyname(domainT);
+        struct hostent* server = gethostbyname(domainT.c_str());
         if (server)
         {
-            memcpy(&s_addr.sin_addr, server->h_addr_list[0], server->h_length);
+            memcpy(&my_s_addr.sin_addr, server->h_addr_list[0], server->h_length);
             return true;
         }
     }
@@ -305,16 +439,24 @@ bool SocketHandler::SetDomainAndPort(const char *domainT, int portT)
 }
 
 
-bool SocketHandler::CheckForData( )
+bool SocketHandler::CheckForData( int timeout )
 {
+    struct timeval Timeout;
     fd_set checkfd;
+    int ret;
 
-
-    Timeout.tv_sec = 0;
+    Timeout.tv_sec = timeout;
     Timeout.tv_usec = 0;
     FD_ZERO(&checkfd);
     FD_SET(sock_fd,&checkfd);
-    if (select( sock_fd+1 ,&checkfd, NULL, NULL, &Timeout) == 0)
+
+    while ((ret = select(sock_fd+1, &checkfd, NULL, NULL, &Timeout)) < 0)
+    {
+        if (errno == EINTR) continue;
+        return false;
+    }
+
+    if (ret <= 0)
     {
         return false;
     }
@@ -322,36 +464,71 @@ bool SocketHandler::CheckForData( )
     return true;
 }
 
-
-bool SocketHandler::IsConnectionDropped()
+#ifdef SSLTUNNEL
+int SocketHandler::CheckForSSLData( int sockBrowser, int sockServer )
 {
-    char buffer[1];
-    int dropped;
+    fd_set readfd;
+    int ret, fds;
 
-    if( CheckForData() == true)
+    FD_ZERO(&readfd);
+    FD_SET(sockBrowser,&readfd);
+    FD_SET(sockServer,&readfd);
+
+    if ( sockBrowser > sockServer )
     {
-        dropped = ::recv ( sock_fd, buffer, 1, MSG_PEEK );
-        if (( dropped == 0) || ( dropped == -1))
-        {
-            return true;
-        }
+        fds = sockBrowser;
+    }
+    else
+    {
+        fds = sockServer;
     }
 
-    return false;
+    struct timeval Timeout;
+    Timeout.tv_sec = 20;
+    Timeout.tv_usec = 0;
+
+    while ( (ret = select(fds+1, &readfd, NULL, NULL, &Timeout)) < 0 )
+    {
+        if (errno == EINTR) continue;
+        return 0;
+    }
+    if (ret == 0) return 0;
+
+    if (FD_ISSET(sockBrowser,&readfd)) return 1;
+
+    return 2;
 }
+#endif
 
-
-int SocketHandler::Close()
+void SocketHandler::Close()
 {
-    ::close(sock_fd);
-    return 1;
+    //Check that we have a real fd
+    if (sock_fd >= 0)
+    {
+        while (::close(sock_fd) < 0 && errno == EINTR)
+        {
+            //Error should never happen, but lets be safe if it does
+            LogFile::ErrorMessage("close() failed: %s\n", strerror(errno));
+            exit(0);
+        }
+
+        //Mark socket unused
+        sock_fd = -1;
+    }
 }
 
 
 //Constructor
 SocketHandler::SocketHandler()
 {
-    memset ( &s_addr,  0,  sizeof ( s_addr ) );
+    memset(&my_s_addr, 0, sizeof(my_s_addr));
+    my_s_addr.sin_family = AF_INET;
+
+    memset(&my_u_addr, 0, sizeof(my_u_addr));
+    my_u_addr.sun_family = AF_LOCAL;
+
+    //No socket exists yet
+    sock_fd = -1;
 }
 
 

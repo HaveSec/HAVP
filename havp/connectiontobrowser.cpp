@@ -15,242 +15,511 @@
  *                                                                         *
  ***************************************************************************/
 
+#include "default.h"
 #include "connectiontobrowser.h"
+#include "params.h"
+#include "utils.h"
 
 //Prepare Header for Server
 string ConnectionToBrowser::PrepareHeaderForServer()
 {
 
-    string header;
-    bool found= false;
-
-    // #if defined (PARENTPROXY) && defined (PARENTPORT)
-    string parentproxy=Params::GetConfigString("PARENTPROXY");
-    int parentport=Params::GetConfigInt("PARENTPORT");
-    if( parentproxy != "" && parentport != 0 ) {
     string PortString = "";
-    if ( Port != 80 )
+
+    if ( Port != 80 && Port != 21 )
     {
-        char PortTemp[21];
-        snprintf(PortTemp, 20, ":%d", Port);
-        PortString = PortTemp;
+        char porttemp[21];
+        snprintf(porttemp, 20, ":%d", Port);
+        PortString = porttemp;
     }
 
-    header = RequestType + "http://" + Host + PortString + Request + " HTTP/1.0\r\n";
-    // #else
-    } else {
-    header = RequestType + Request + " HTTP/1.0\r\n";
-    }
-    // #endif
+    string parentproxy = Params::GetConfigString("PARENTPROXY");
+    int parentport = Params::GetConfigInt("PARENTPORT");
+    string header;
 
-    vector<string>::iterator it;
-
-    for (it = tokens.begin(); it != tokens.end(); ++it)
+    if ( parentproxy != "" && parentport > 0 )
     {
-        found = false;
-
-        //Skip GET POST HEAD ... Methods line
-        for(unsigned int i=0;i < Methods.size(); i++)
+        //HTTP
+        if ( RequestProtocol == "http" )
         {
-            if(  it->find( Methods[i], 0) == 0)
+            header = RequestType + " http://" + Host + PortString + Request + " HTTP/1.0\r\n";
+            CompleteRequest = "http://" + Host + PortString + Request;
+        }
+        //FTP
+        else if ( RequestProtocol == "ftp" )
+        {
+            string AuthString = "";
+
+            if ( FtpUser != "" )
             {
-                found = true;
-                break;
+                SearchReplace( &FtpUser, ":", "%3A" );
+                SearchReplace( &FtpUser, "@", "%40" );
+
+                if ( FtpPass != "" )
+                {
+                    SearchReplace( &FtpPass, ":", "%3A" );
+                    SearchReplace( &FtpPass, "@", "%40" );
+
+                    AuthString = FtpUser + ":" + FtpPass + "@";
+                }
+                else
+                {
+                    AuthString = FtpUser + "@";
+                }
             }
+
+            header = RequestType + " ftp://" + AuthString + Host + PortString + Request + " HTTP/1.0\r\n";
+            CompleteRequest = "ftp://" + Host + PortString + Request;
+        }
+#ifdef SSLTUNNEL
+        //CONNECT
+        else if ( RequestProtocol == "connect" )
+        {
+            header = "CONNECT " + Request + " HTTP/1.0\r\n";
+            CompleteRequest = "connect://" + Request;
+        }
+#endif
+    }
+    else
+    {
+        header = RequestType + " " + Request + " HTTP/1.0\r\n";
+        CompleteRequest = RequestProtocol + "://" + Host + PortString + Request;
+    }
+
+    //Strip long URLs
+    if (CompleteRequest.length() > 500)
+    {
+        CompleteRequest = CompleteRequest.substr(0,500);
+        CompleteRequest += "...";
+    }
+
+    vector<string>::iterator itvec;
+    string it;
+
+    //Skip first token
+    for (itvec = tokens.begin() + 1; itvec != tokens.end(); ++itvec)
+    {
+
+        //Uppercase for matching
+        it = UpperCase(*itvec);
+
+        if ( it.find( "PROXY", 0 ) == 0 )
+        {
+            continue;
+        }
+        else if ( it.find( "KEEP-ALIVE", 0 ) == 0 )
+        {
+            continue;
+        }
+        else if (( it.find( "ACCEPT-ENCODING", 0 ) && NOENCODING ) == 0 )
+        {
+            continue;
+        }
+        else if ( it.find( "VIA", 0 ) == 0 )
+        {
+            continue;
+        }
+        else if ( it.find( "CONNECTION", 0 ) == 0 )
+        {
+            continue;
         }
 
-        if( found == true )
+        if ( Params::GetConfigBool("RANGE") == false )
         {
-            continue;
-        }
-        else if( it->find( "Proxy", 0 ) == 0 )
-        {
-            continue;
-        } else if ( it->find( "Keep-Alive", 0 ) == 0 )
-        {
-            continue;
-        } else if (( it->find( "Accept-Encoding", 0 ) && NOENCODING ) == 0 )
-        {
-            continue;
-        } else if ( it->find( "Via", 0 ) == 0 )
-        {
-            continue;
-        } else if( it->find( "Connection", 0) == 0 )
-        {
-            continue;
-        }
-
-        if( Params::GetConfigBool("RANGE") == false )
-        {
-           if ( it->find( "Range:", 0 ) == 0 )
+           if ( it.find( "RANGE:", 0 ) == 0 )
            {
-             continue;
-           } else if ( it->find( "If-Range", 0 ) == 0 )
+              continue;
+           }
+           else if ( it.find( "IF-RANGE", 0 ) == 0 )
 	   {
               continue;
-            }
+           }
         }
 
-        header += *it;
+        header += *itvec;
 
     }                                             //for
-
-    header += "Connection: close\r\n";
 
     header += "Via: ";
     header += VERSION;
     header += " Havp\r\n";
-
-    header += "\r\n";
 
     return header;
 
 }
 
 
-bool ConnectionToBrowser::AnalyseHeaderLine( string *RequestT )
+int ConnectionToBrowser::AnalyseFirstHeaderLine( string *RequestT )
 {
 
-    if(Params::GetConfigBool("TRANSPARENT")) {
-      if( RequestT->find( "Host:", 0 ) == 0 )
-      {
-        return GetHostAndPortOfHostLine( RequestT );
-      }
-    }
+    //Uppercase for matching
+    string RequestU = UpperCase(*RequestT);
 
-    if (Params::GetConfigBool("FORWARDED_IP") )
-    {
-      if ( RequestT->find( "X-Forwarded-For: ", 0 ) == 0 )
-      {
-        IP = RequestT->substr( 17, RequestT->length()-17 );
-        return true;
-      }
-    }
-
-    //Looking for GET, POST, HEAD
+    //Looking for GET, POST, HEAD, CONNECT etc.
     for(unsigned int i=0;i < Methods.size(); i++)
     {
-        if(  RequestT->find( Methods[i], 0) == 0)
+        if( RequestU.find( Methods[i] + " ", 0 ) == 0 )
         {
-            RequestType = Methods[i] + " ";
-            return GetHostAndPortOfRequest( RequestT );
+            RequestType = Methods[i];
+            return GetHostAndPortOfRequest( RequestT, Methods[i].size() + 1 );
         }
     }
 
-    return true;
+    return -202;
+}
+
+
+int ConnectionToBrowser::AnalyseHeaderLine( string *RequestT )
+{
+    //Optimize checks.. no need to match if header line not long enough
+
+    //"Content-Length: x" needs atleast 17 chars
+    //"Connection: keep-alive" and
+    //"Connection: close" needs atleast 17 chars
+    //"Proxy-Connection:" needs atleast 17 chars
+    //"X-Forwarded-For: x" needs atleast 18 chars
+
+    if ( RequestT->length() > 16 )
+    {
+        //Uppercase for matching
+        string RequestU = UpperCase(*RequestT);
+
+        if (RequestU.find("CONTENT-LENGTH: ", 0) == 0)
+        {
+            //Length check >16 done already
+
+            if ( RequestU.find_first_not_of("0123456789", 16) != string::npos )
+            {
+                //Invalid Content-Length
+                return 0;
+            }
+
+            string LengthToken = RequestT->substr( 16 );
+
+            //Sanity check for invalid huge Content-Length
+            if ( LengthToken.length() > 18 ) return 0;
+
+            if ( sscanf(LengthToken.c_str(), "%lld", &ContentLength) != 1 )
+            {
+                ContentLength = -1;
+            }
+
+            return 0;
+        }
+
+        if (ProxyConnection == false)
+        {
+            if (RequestU.find("CONNECTION: KEEP-ALIVE", 0) == 0)
+            {
+                KeepAlive = true;
+
+                return 0;
+            }
+
+            if (RequestU.find("PROXY-CONNECTION: ", 0) == 0)
+            {
+                ProxyConnection = true;
+
+                if (RequestU.find("KEEP-ALIVE", 18) != string::npos)
+                {
+                    KeepAlive = true;
+                }
+                else
+                {
+                    KeepAlive = false;
+                }
+
+                return 0;
+            }
+        }
+
+        if (Params::GetConfigBool("FORWARDED_IP") == true)
+        {
+            if (RequestU.find( "X-FORWARDED-FOR: ", 0 ) == 0)
+            {
+                //Make sure there is something to read
+                if (RequestT->length() > 17)
+                {
+                    IP = RequestT->substr(17);
+                }
+
+                return 0;
+            }
+        }
+    } //End >16 check
+
+    //Checks for TRANSPARENT
+    if (Params::GetConfigBool("TRANSPARENT") == true)
+    {
+        //Uppercase for matching
+        string RequestU = UpperCase(*RequestT);
+
+        if (RequestU.find( "HOST: ", 0 ) == 0)
+        {
+            //Make sure there is something to read
+            if (RequestT->length() > 6)
+            {
+                return GetHostAndPortOfHostLine( RequestT );
+            }
+            else
+            {
+                return -220;
+            }
+
+            return 0;
+        }
+    }
+
+    return 0;
 }
 
 
 //Get host and port
-bool ConnectionToBrowser::GetHostAndPortOfHostLine( string *HostLineT )
+int ConnectionToBrowser::GetHostAndPortOfHostLine( string *HostLineT )
 {
 
+    string HostwithPort = HostLineT->substr( 6 );
+
     string::size_type PositionPort;
-    string PortString;
-    string HostwithPort;
 
-    HostwithPort = HostLineT->substr(6, HostLineT->length()-6);
-
-    if( ( PositionPort = HostwithPort.rfind( ":", string::npos )) != string::npos )
+    if ( ( PositionPort = HostwithPort.find( ":", 1 )) != string::npos )
     {
-        Host = HostwithPort.substr(0, PositionPort );
-        PortString = HostwithPort.substr( PositionPort+1, HostwithPort.length()-PositionPort );
-        if (sscanf( PortString.c_str(), "%d", &Port) != 1)
-        {
-            return false;
-        }
-        return true;
-    }
-    Port = 80;
-    Host = HostwithPort;
+        Host = HostwithPort.substr( 0, PositionPort );
 
-    return true;
+        if ( Host.length() > 67 )
+        {
+            return -210;
+        }
+
+        string PortString = HostwithPort.substr( PositionPort );
+
+        if ( PortString.length() > 6 )
+        {
+            return -212;
+        }
+
+        if ( sscanf(PortString.c_str(), ":%d", &Port) != 1 )
+        {
+            return -212;
+        }
+
+        if ( Port < 1 || Port > 65535 )
+        {
+            return -212;
+        }
+
+        return 0;
+    }
+
+    Host = HostwithPort;
+    Port = 80;
+
+    return 0;
 }
 
 
-bool ConnectionToBrowser::GetHostAndPortOfRequest(string *RequestT )
+int ConnectionToBrowser::GetHostAndPortOfRequest( string *RequestT, string::size_type StartPos )
 {
 
-    string::size_type Begin;
-    string::size_type lastposition;
+    string::size_type Begin, LastPosition;
 
-    string PortString;
-
-    // #ifndef TRANSPARENT
-    if(! Params::GetConfigBool("TRANSPARENT")) {
-
-    string HostwithPort;
-    string::size_type End;
-    string::size_type PositionPort;
-    int Length;
-
-    if  ((Begin = RequestT->find("http://", 0)) == string::npos )
+#ifdef SSLTUNNEL
+    //Handle SSL
+    if (RequestType == "CONNECT")
     {
-        return false;
-    }
+        RequestProtocol = "connect";
 
-    End = RequestT->find("/", Begin+7);
-
-    if ( (End == string::npos ) || ( (Length = End-Begin-7) < 0 ) )
-    {
-        return false;
-    }
-
-    HostwithPort = RequestT->substr(Begin+7, Length);
-
-    if( ( PositionPort = HostwithPort.rfind( ":", string::npos )) != string::npos )
-    {
-        Host = HostwithPort.substr(0, PositionPort );
-        PortString = HostwithPort.substr( PositionPort+1, HostwithPort.length()-PositionPort );
-        if (sscanf( PortString.c_str(), "%d", &Port) != 1)
+        if ( (Begin = RequestT->find_first_not_of( " ", 8 )) != string::npos )
         {
-            return false;
+            if ( (LastPosition = RequestT->find( " ", Begin )) != string::npos )
+            {
+                string HostwithPort = RequestT->substr( Begin, LastPosition - Begin );
+
+                if ( (Begin = HostwithPort.find( ":", 1 )) != string::npos )
+                {
+                    Host = HostwithPort.substr( 0, Begin );
+
+                    if (Host.length() > 67)
+                    {
+                        return -210;
+                    }
+
+                    string PortString = HostwithPort.substr( Begin );
+
+                    //Normally only 443 and 563 are allowed ports
+                    if ( PortString != ":443" && PortString != ":563" )
+                    {
+                        return -211;
+                    }
+
+                    if ( sscanf(PortString.c_str(), ":%d", &Port) == 1 )
+                    {
+                        Request = HostwithPort;
+
+                        return 0;
+                    }
+                }
+            }
         }
+
+        return -201;
+    }
+#endif
+
+    //Check for other protocols..
+
+    //Transparent proxying?
+    if ( Params::GetConfigBool("TRANSPARENT") == true )
+    {
+        if ( RequestT->find( "/", StartPos ) == StartPos )
+        {
+            if ( (LastPosition = RequestT->find( " ", StartPos )) != string::npos )
+            {
+                if ( LastPosition > 4096 ) return -201;
+
+                RequestProtocol = "http";
+                Request = RequestT->substr( StartPos, LastPosition - StartPos );
+
+                return 0;
+            }
+        }
+
+        return -201;
+    }
+
+    //Uppercase for matching
+    string RequestU = UpperCase(*RequestT);
+
+    //HTTP
+    if ( (Begin = RequestU.find( "HTTP://", StartPos )) == StartPos )
+    {
+        RequestProtocol = "http";
+        Begin += 7;
+    }
+    //FTP
+    else if ( (Begin = RequestU.find( "FTP://", StartPos )) == StartPos )
+    {
+        RequestProtocol = "ftp";
+        Begin += 6;
+    }
+    //No supported protocol found
+    else
+    {
+        return -201;
+    }
+
+    //Start parsing request..
+
+    if ( (LastPosition = RequestT->find( " ", Begin )) == string::npos )
+    {
+        return -201;
+    }
+    if ( LastPosition == Begin || LastPosition > 4096 )
+    {
+        return -201;
+    }
+
+    //Split domain and path
+    string RequestDomain = RequestT->substr( Begin, LastPosition - Begin );
+
+    if ( (LastPosition = RequestDomain.find( "/", 0 )) != string::npos )
+    {
+        Request = RequestDomain.substr( LastPosition );
+        RequestDomain = RequestDomain.substr( 0, LastPosition );
     }
     else
     {
-        Port = 80;
-        Host = HostwithPort;
+        Request = "/";
     }
 
-    Request = RequestT->substr(End, RequestT->length()-Begin);
-
-    // #else
-    } else {
-
-    if  ((Begin = RequestT->find("/", 0)) == string::npos )
+    //Check for login info
+    if ( (LastPosition = RequestDomain.rfind( "@", string::npos )) != string::npos )
     {
-        return false;
-    }
-    Request = RequestT->substr(Begin, RequestT->length()-Begin);
-    // #endif
+        if ( RequestProtocol == "ftp" )
+        {
+            string UserPass = RequestDomain.substr( Begin, LastPosition + 1 );
+
+            string::size_type Position;
+
+            if ( (Position = UserPass.find( ":", 0 )) != string::npos )
+            {
+                FtpUser = UserPass.substr( 0, Position );
+                FtpPass = UserPass.replace( 0, Position + 1, "" );
+            }
+            else
+            {
+                FtpUser = UserPass;
+                FtpPass = "";
+            }
+        }
+
+        //Strip login info.. also from HTTP because IE does it anyway
+        RequestDomain.replace( 0, LastPosition + 1, "" );
+        RequestT->replace( Begin, LastPosition + 1, "" );
+
+        if ( !RequestDomain.length() )
+        {
+            return -201;
+        }
     }
 
-    //Get rid of HTTP (1.0)
-    if ((Begin = Request.rfind(" HTTP",string::npos)) == string::npos )
+    //Check for Port and Host
+    if ( (LastPosition = RequestDomain.rfind( ":", string::npos )) != string::npos )
     {
-        return false;
+        string PortString = RequestDomain.substr( LastPosition );
+
+        if ( PortString.length() > 6 )
+        {
+            return -212;
+        }
+
+        if ( sscanf(PortString.c_str(), ":%d", &Port) != 1 )
+        {
+            return -212;
+        }
+
+        if ( Port < 1 || Port > 65535 )
+        {
+            return -212;
+        }
+
+        Host = RequestDomain.substr( 0, LastPosition );
     }
-
-    Request.replace( Begin, Request.length()-Begin, "" );
-
-    //Delete space or tab at end
-    if ( (lastposition = Request.find_last_not_of("\t ")) != string::npos )
+    else
     {
-        Request = Request.substr(0,lastposition+1);
+        if ( RequestProtocol == "http" )
+        {
+            Port = 80;
+        }
+        else if ( RequestProtocol == "ftp" )
+        {
+            Port = 21;
+        }
+        else
+        {
+            return -215;
+        }
+
+        Host = RequestDomain;
     }
 
-    return true;
+    //Sanity check - TODO: Config variable for allowed ports?
+    if ( Host.length() > 73 )
+    {
+        return -210;
+    }
+    //if ( RequestProtocol == "http" && Port < 80 )
+    //{
+    //    return -211;
+    //}
+
+    return 0;
 }
 
 
-const char *ConnectionToBrowser::GetHost()
+const string ConnectionToBrowser::GetHost()
 {
-    if ( Host == "" ){
-      return NULL;
-    }
-
-    return Host.c_str();
+    return Host;
 }
 
 const string ConnectionToBrowser::GetRequest()
@@ -258,56 +527,67 @@ const string ConnectionToBrowser::GetRequest()
     return Request;
 }
 
-
-const char *ConnectionToBrowser::GetCompleteRequest()
+const string ConnectionToBrowser::GetCompleteRequest()
 {
-    string CompleteRequest = "http://" + Host + Request;
-    return CompleteRequest.c_str();
+    return CompleteRequest;
 }
 
+const string ConnectionToBrowser::GetRequestProtocol()
+{
+    return RequestProtocol;
+}
 
 const string ConnectionToBrowser::GetRequestType()
 {
     return RequestType;
 }
 
+long long ConnectionToBrowser::GetContentLength()
+{
+    return ContentLength;
+}
 
 int ConnectionToBrowser::GetPort()
 {
     return Port;
 }
 
-
-string ConnectionToBrowser::GetIP ()
+string ConnectionToBrowser::GetIP()
 {
-
-   if (IP == "") {
-     IP = inet_ntoa( s_addr.sin_addr );
+   if (IP == "")
+   {
+       IP = inet_ntoa( my_s_addr.sin_addr );
    }
-   //else IP was set by X-Forwarded-For:
 
+   //Else IP was set by X-Forwarded-For:
    return IP;
 }
 
+bool ConnectionToBrowser::KeepItAlive()
+{
+    return KeepAlive;
+}
+
+#ifdef REWRITE
 bool ConnectionToBrowser::RewriteHost()
 {
-
     if(URLRewrite[Host] != "" )
     {
-      Host = URLRewrite[Host];
-      return true;
+        Host = URLRewrite[Host];
+        return true;
     }
-return false;
+
+    return false;
 }
+#endif
 
 void ConnectionToBrowser::ClearVars()
 {
-    RequestType = "";
-    Request = "";
-    Host = "";
-    Port = 0;
-    IP = "";
+    RequestProtocol = RequestType = Request = Host = IP = FtpUser = FtpPass = "";
+    Port = ContentLength = -1;
+    KeepAlive = ProxyConnection = false;
 }
+
 
 //Constructor
 ConnectionToBrowser::ConnectionToBrowser()

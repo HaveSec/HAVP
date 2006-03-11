@@ -1,0 +1,126 @@
+
+BASIC INSTALLATION
+==================
+
+This software is GPL2!
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+more details.
+
+You MUST check your antivirus licence for the use with HAVP. Maybe you are
+not allowed to use it with HAVP. We don't take ANY WARRANTY!!
+
+
+Installation:
+
+./configure
+make
+make install
+
+You can define the virus scanner by the configure --with-scanner= option:
+ - libclamav = Clamav Library [this is default]
+ - fprot = F-Prot server (f-protd)
+ - aveserver = Kaspersky aveserver (from Mail/File scanner package)
+ - trophie = Trend Micro library (libvsapi.so)
+
+It is recommended to create a havp user: 
+
+# groupadd havp 
+# useradd havp
+
+Check the configfile: /usr/local/etc/havp/havp.config
+
+If Linux is used, you need to mount a filesystem for mandatory locking.
+(There may be problems if tmpfs/ramdisk is used. At your own risk.)
+No mounting is needed on Solaris, as ufs supports it directly.
+
+# mount /dev/hdxx /var/tmp/havp -o mand
+
+If you do not have a partition free, you can create a loopback file:
+
+# dd if=/dev/zero of=/var/havp.fs bs=1MB count=1000
+# mkfs.ext3 /var/havp.fs
+# mount /var/havp.fs /var/tmp/havp -o loop,mand
+
+Make sure directories have correct permissions for havp user: 
+
+# chown havp /var/log/havp 
+# chown havp /var/tmp/havp
+
+Start havp:
+
+# /etc/init.d/havp start
+
+If you don't want to use the rc-script you can start havp directly:
+
+# /usr/local/sbin/havp -c /path/to/config
+
+If you have problems check the logfiles:
+
+/var/log/havp/havp.log
+/var/log/havp/access.log
+
+More information and help can be found at HAVP forum: http://havp.hege.li/
+
+
+SCANNER SPECIFIC INSTRUCTIONS
+=============================
+
+ClamAV 
+------
+
+Scanning limits can be set from default.h before compiling HAVP.
+
+Library is used directly, so there is no need for clamd running. Freshclam
+should be naturally used.
+
+
+Kaspersky 
+---------
+
+Tested with aveserver daemon found in Linux File Server and Linux Mail
+Server package.
+
+You should set ReportLevel=1 at [aveserver.report] section, so log will not
+fill disk.
+
+
+Trend Micro (Trophie)
+---------------------
+
+/etc/iscan must point to the directory where libvsapi.so and virus patterns
+/are located. Create link if necessary.
+
+Trend library is used directly, so it is not needed for daemon to be
+running. You should naturally run some pattern update script, if Trend
+itself is not running.
+
+
+AVG 
+---
+
+Recommended changes to avg.conf: 
+
+ [AvgCommon] 
+
+ heuristicAnalysis = 1 
+ processesArchives = 1 
+
+ [AvgDaemon] 
+
+ # Raise number of daemons equal to SERVERNUMBER 
+ numOfDaemons = xx 
+
+Daemon is required to be running. 
+
+
+F-Prot 
+------
+
+Remove "-disinf" from FPROT_SCANDEFAULTS at f-prot.conf. 
+
+Daemon is required to be running.
+
+

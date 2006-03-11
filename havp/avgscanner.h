@@ -1,5 +1,5 @@
 /***************************************************************************
-                          connectiontoserver.h  -  description
+                          avgscanner.h  -  description
                              -------------------
     begin                : Sa Feb 12 2005
     copyright            : (C) 2005 by Christian Hilgers
@@ -15,27 +15,31 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef CONNECTIONTOSERVER_H
-#define CONNECTIONTOSERVER_H
+#ifndef AVGSCANNER_H
+#define AVGSCANNER_H
 
-#include "httphandler.h"
-#include "logfile.h"
+#include "scannerfilehandler.h"
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
-class ConnectionToServer : public HTTPHandler  {
+class AVGScanner : public ScannerFileHandler  {
 
 private:
 
- bool AnalyseHeaderLine( string *RequestT );
- int HTMLResponse;
+SocketHandler AVGSocket;
 
+public:
 
-public: 
+bool InitDatabase();
 
-string PrepareHeaderForBrowser();
-int GetResponse( );
+bool ReloadDatabase();
 
-  ConnectionToServer();
-	~ConnectionToServer();
+void FreeDatabase();
+
+int Scanning();
+
+	AVGScanner();
+	~AVGScanner();
 };
 
 #endif

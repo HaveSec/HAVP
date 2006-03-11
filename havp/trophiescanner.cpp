@@ -16,21 +16,23 @@
  ***************************************************************************/
 
 
+/*************************************************
+ * Some code taken from Trophie by Vanja Hrustic *
+ *      http://www.vanja.com/tools/trophie/      *
+ *          Thanks for the engineering!          *
+ *************************************************/
+
 
 #include "default.h"
 #include "trophiescanner.h"
-#include <sys/types.h>
-#include <sys/wait.h>
 
-#ifdef USETROPHIE
 
 char TrophieScanner::VIR_NAME[512];
 
 int TrophieScanner::trophie_scanfile(char *scan_file)
 {
-	int vs_ret;
-	
-	vs_ret = VSVirusScanFileWithoutFNFilter(vs_addr, scan_file, -1);
+
+	int vs_ret = VSVirusScanFileWithoutFNFilter(vs_addr, scan_file, -1);
 	
 	/* Lame. Hopefully just a temporary thing */
 	/* Returned for .bz2 archives, and some MPEG files - not sure why it's -89, but we're not missing viruses */
@@ -43,7 +45,6 @@ int TrophieScanner::trophie_scanfile(char *scan_file)
 int TrophieScanner::vs_callback(char *a, struct callback_type *b, int c, char *d)
 {
 	/* Only c == 1 needs to be processed = no idea what for 2nd run is used for (and don't want to know) */
-
 
 	if ( (c == 1) && (b->flag_infected > 0) )
 	{
@@ -61,7 +62,6 @@ bool TrophieScanner::InitDatabase()
 {
 	int vs_ret;
 	int vs_ptr = 0;
-	int new_patt = 0;
 
 	vs_addr = 0;
 
@@ -100,19 +100,16 @@ bool TrophieScanner::InitDatabase()
 		LogFile::ErrorMessage("Trophie VSGetVirusPatternInfoEx() failed: %d\n", vs_ret);
 		return false;
 	}
-	new_patt = pattern_info_ex.info;
 
 	//Only show if it changed
-	if (new_patt != cur_patt)
+	if (pattern_info_ex.info != cur_patt)
 	{
-		int major, number, version;
-
-		cur_patt = new_patt;
+		cur_patt = pattern_info_ex.info;
 
 		//Calculate nicer looking version
-		major = pattern_info_ex.info / 100000;
-		number = pattern_info_ex.info / 100 - major * 1000;
-		version = pattern_info_ex.info - major * 100000 - number * 100;
+		int major = pattern_info_ex.info / 100000;
+		int number = pattern_info_ex.info / 100 - major * 1000;
+		int version = pattern_info_ex.info - major * 100000 - number * 100;
 
 		//Get signature count
 		vs_ret = VSGetDetectableVirusNumber(vs_addr);
@@ -142,7 +139,7 @@ bool TrophieScanner::ReloadDatabase()
 
 	if (InitDatabase() == false)
 	{
-		LogFile::ErrorMessage("Trophie database reload failed");
+		LogFile::ErrorMessage("Trophie database reload failed\n");
 		return false;
 	}
 
@@ -166,75 +163,25 @@ int TrophieScanner::Scanning()
 	}
 
 	//Wait till file is set up for scanning
-	while (read(fd, Ready, 1) < 0)
-	{
-		if (errno == EINTR) continue;
-		LogFile::ErrorMessage("Read failed while waiting %s: %s\n", FileName, strerror(errno));
-	}
-	lseek(fd, 0, SEEK_SET);
+	while (read(fd, Ready, 1) < 0 && errno == EINTR);
+	close(fd);
 
 	ret = trophie_scanfile(FileName);
 
 	if (ret)
 	{
-		LogFile::ErrorMessage("Virus in file %s detected!\n", FileName);
 		ScannerAnswer = VIR_NAME;
-		close(fd);
 		return 1;
 	}
 
-	close(fd);
 	ScannerAnswer = "Clean";
 	return 0;
 }
 
-
-//Init scanning engine - do filelock and so on
-bool TrophieScanner::InitSelfEngine()
+void TrophieScanner::FreeDatabase()
 {
-    if (OpenAndLockFile() == false)
-    {
-        return false;
-    }
-
-    return true;
+	VSQuit(vs_addr);
 }
-
-
-int TrophieScanner::ScanningComplete()
-{
-    int ret;
-    char p_read[2];
-    memset(&p_read, 0, sizeof(p_read));
-
-    UnlockFile();
-
-    //Wait till scanner finishes with the file
-    while ((ret = read(commin[0], &p_read, 1)) < 0)
-    {
-    	if (errno == EINTR) continue;
-    	if (errno != EPIPE) LogFile::ErrorMessage("cl1 read to pipe failed: %s\n", strerror(errno));
-
-    	DeleteFile();
-    	exit(0);
-    }
-
-    //Truncate and reuse existing tempfile
-    if (ReinitFile() == false)
-    {
-    	LogFile::ErrorMessage("ReinitFile() failed\n");
-    }
-
-    //Virus found ? 0=No ; 1=Yes; 2=Scanfail
-    return (int)atoi(p_read);
-}
-
-//PSEstart
-bool TrophieScanner::FreeDatabase()
-{
-	return true;
-}
-//PSEend
 
 //Constructor
 TrophieScanner::TrophieScanner()
@@ -247,5 +194,3 @@ TrophieScanner::TrophieScanner()
 TrophieScanner::~TrophieScanner()
 {
 }
-
-#endif
