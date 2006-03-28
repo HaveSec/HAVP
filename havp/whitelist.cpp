@@ -18,7 +18,6 @@
 #include "whitelist.h"
 #include "logfile.h"
 
-#include <stdio.h>
 #include <iostream>
 #include <fstream>
 

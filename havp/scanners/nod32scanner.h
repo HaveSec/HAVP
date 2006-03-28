@@ -1,5 +1,5 @@
 /***************************************************************************
-                          trophiescanner.h  -  description
+                          nod32scanner.h  -  description
                              -------------------
     begin                : Sa Feb 12 2005
     copyright            : (C) 2005 by Christian Hilgers
@@ -15,41 +15,35 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef TROPHIESCANNER_H
-#define TROPHIESCANNER_H
+#ifndef NOD32SCANNER_H
+#define NOD32SCANNER_H
 
-#include <trophie.h>
+#include "../genericscanner.h"
 
-#include "scannerfilehandler.h"
-
-class TrophieScanner : public ScannerFileHandler  {
+class NOD32Scanner : public GenericScanner {
 
 private:
 
-struct trophie_vs_type trophie_vs;
-struct pattern_info_ex_type pattern_info_ex;
+string Agent;
 
-int trophie_scanfile(char *scan_file);
+string ScannerCmd;
 
-static int vs_callback(char *a, struct callback_type *b, int c, char *d);
-static char VIR_NAME[512];
+SocketHandler NOD32Socket;
+time_t LastError;
 
-int vs_addr;
-int cur_patt;
+string ScannerAnswer;
+char Ready[2];
 
 public:
 
 bool InitDatabase();
-
 bool ReloadDatabase();
-
 void FreeDatabase();
+string Scan( const char *FileName );
 
-int Scanning();
+NOD32Scanner();
+~NOD32Scanner();
 
-
-	TrophieScanner();
-	~TrophieScanner();
 };
 
 #endif

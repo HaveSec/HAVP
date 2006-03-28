@@ -15,296 +15,326 @@
  *                                                                         *
  ***************************************************************************/
 
+#include "default.h"
 #include "params.h"
-#include "logfile.h"
+#include "utils.h"
+
+#include <iostream>
+#include <fstream>
 
 map <string,string> Params::params;
 
 void Params::SetDefaults()
 {
-	char buf[7];
-// Parameters set during config taken from default.h
-	SetConfig("USER",USER);
-	SetConfig("GROUP",GROUP);
-	snprintf(buf,6,"%d",SERVERNUMBER);
-	SetConfig("SERVERNUMBER",buf);
-	snprintf(buf,6,"%d",PORT);
-	SetConfig("PORT",buf);
-	SetConfig("BIND_ADDRESS",BIND_ADDRESS);
-	SetConfig("KEEPBACKBUFFER",KEEPBACKBUFFER);
-	SetConfig("KEEPBACKTIME","5");
- 	SetConfig("TRICKLING",TRICKLING);
- 	SetConfig("MAXSERVERS","150");
-// Parameters only setable by havp.config (whereever it is)
-#ifdef USEKASPERSKY
- 	SetConfig("AVESOCKET","/var/run/aveserver");
-#endif
-#ifdef USEFPROT
- 	SetConfig("FPROTPORT","10200");
- 	SetConfig("FPROTSERVER","127.0.0.1");
-#endif
-#ifdef USEAVG
-        SetConfig("AVGPORT","55555");
+    SetConfig("DISPLAYINITIALMESSAGES", "true");
+    SetConfig("USER",		"havp");
+    SetConfig("GROUP",		"havp");
+    SetConfig("DAEMON",		"true");
+    SetConfig("SERVERNUMBER",	"8");
+    SetConfig("MAXSERVERS",	"150");
+    SetConfig("PORT",		"8080");
+    SetConfig("BIND_ADDRESS",	"");
+    SetConfig("SOURCE_ADDRESS",	"");
+    SetConfig("PARENTPROXY",	"");
+    SetConfig("PARENTPORT",	"0");
+    SetConfig("ACCESSLOG",	"/var/log/havp/access.log");
+    SetConfig("ERRORLOG",	"/var/log/havp/havp.log");
+    SetConfig("LOG_OKS",	"true");
+    SetConfig("LOGLEVEL",	"1");
+    SetConfig("MAXSCANSIZE",	"0");
+    SetConfig("KEEPBACKBUFFER",	"200000");
+    SetConfig("KEEPBACKTIME",	"5");
+    SetConfig("TRICKLING",	"30");
+    SetConfig("WHITELISTFIRST",	"true");
+    SetConfig("WHITELIST",	"/usr/local/etc/havp/whitelist");
+    SetConfig("BLACKLIST",	"/usr/local/etc/havp/blacklist");
+    SetConfig("TEMPLATEPATH",	"/usr/local/etc/havp/templates/en");
+    SetConfig("TEMPDIR",	"/var/tmp");
+    SetConfig("SCANTEMPFILE",	"/var/tmp/havp/havp-XXXXXX");
+    SetConfig("PIDFILE",	"/var/run/havp/havp.pid");
+    SetConfig("TRANSPARENT",	"false");
+    SetConfig("RANGE",		"false");
+    SetConfig("FORWARDED_IP",	"false");
+    SetConfig("STREAMUSERAGENT","");
+    SetConfig("STREAMSCANSIZE",	"20000");
+    SetConfig("DBRELOAD",	"60");
+    SetConfig("FAILSCANERROR",	"true");
+    SetConfig("SCANNERTIMEOUT",	"10");
+//SCANNERS
+    SetConfig("ENABLECLAMLIB","false");
+        SetConfig("CLAMDBDIR","");
+        SetConfig("CLAMBLOCKMAX","true");
+        SetConfig("CLAMBLOCKENCRYPTED","false");
+        SetConfig("CLAMMAXFILES","1000");
+        SetConfig("CLAMMAXFILESIZE","10");
+        SetConfig("CLAMMAXRECURSION","8");
+        SetConfig("CLAMMAXRATIO","250");
+    SetConfig("ENABLECLAMD","false");
+	SetConfig("CLAMDSOCKET", "/tmp/clamd");
+    SetConfig("ENABLEAVG","false");
         SetConfig("AVGSERVER","127.0.0.1");
-#endif
-	SetConfig("SOURCE_ADDRESS","");
- 	SetConfig("MAXSCANSIZE","0");
- 	SetConfig("WHITELIST", WHITELISTFILE );
- 	SetConfig("BLACKLIST", BLACKLISTFILE );
-	SetConfig("PIDFILE","/var/run/havp/havp.pid");
-	SetConfig("DAEMON","true");
-	SetConfig("TRANSPARENT","false");
-	SetConfig("RANGE","false");
-	SetConfig("LOG_OKS","true");
-	SetConfig("FORWARDED_IP","false");
-	SetConfig("ACCESSLOG","/var/log/havp/access.log");
-	SetConfig("ERRORLOG","/var/log/havp/havp.log");
-	SetConfig("LOGLEVEL","1");
-	SetConfig("DISPLAYINITIALMESSAGES","true");
-	SetConfig("DBRELOAD","60");
-	SetConfig("SCANTEMPFILE","/var/tmp/havp/havp-XXXXXX");
-	SetConfig("TEMPLATEPATH", TEMPLATEDIR );
-	SetConfig("TEMPDIR", TEMPDIR );
-	SetConfig("FAILSCANERROR","true");
-	SetConfig("WHITELISTFIRST","true");
+        SetConfig("AVGPORT","55555");
+    SetConfig("ENABLEAVESERVER","false");
+        SetConfig("AVESOCKET","/var/run/aveserver");
+    SetConfig("ENABLEFPROT","false");
+        SetConfig("FPROTPORT","10200");
+        SetConfig("FPROTSERVER","127.0.0.1");
+    SetConfig("ENABLENOD32","false");
+        SetConfig("NOD32SOCKET","/tmp/nod32d.sock");
+    SetConfig("ENABLETROPHIE","false");
+    SetConfig("ENABLESOPHIE","false");
+	SetConfig("SOPHIESOCKET", "/var/run/sophie");
 }
 
-void Params::ReadConfig(string file)
+void Params::ReadConfig( string file )
 {
- typedef string::size_type ST;
- string line;
- ifstream input(file.c_str());
- if(!input)
- {
-     cerr << "Can not open config file " << file << endl;
-     cerr << "Exiting.." << endl;
-     exit(1);
- }
+    ifstream input( file.c_str() );
 
- while(input) {
- 	getline(input,line);
+    if ( !input )
+    {
+        cerr << "Could not open config file: " << file << endl;
+        cerr << "Exiting.." << endl;
+        exit(1);
+    }
 
-	ST i1 = line.find_first_not_of(" \t");
+    string::size_type Position;
+    string line, key, val;
 
-	if (i1 != string::npos)
-		line = line.substr(i1, line.size()-i1);
+    while ( input )
+    {
+        getline( input, line );
 
-	if ( (i1 == string::npos) || (line.size() == 0) )
-		continue;
-
-
-	string start=line.substr(0,1);
-
-	if(start == "#")
-		continue;
-
-	//At least one \t or space is needed
-	i1 = line.find_first_of(" \t");
-
- 		if( i1 != string::npos ) {
-	
-			string key=line.substr(0,i1);
-
-			if( line.size() < i1+1 ){
-        			cout << "Invalid Config Line: " << line << endl;
-                                cout << "Exiting.." << endl;
-				exit(1);
-			}
-
-			string val=line.substr(i1+1,line.size()-i1-1);
-
-			//Remove space
-			i1 = val.find_first_not_of(" \t");
-			if (i1 != string::npos) {
-				val = val.substr(i1, line.size()-i1);
-			}
-
-
-			//Remove spaces
-			i1 = val.find_first_of(" \t");
-			if (i1 != string::npos)
-				val = val.substr(0, i1);
-
-
-			if( val.size() == 0 ){
-        			cout << "Invalid Config Line: " << line << endl;
-                                cout << "Exiting.." << endl;
-				exit(1);
-			}
-
-			if ( key == "REMOVETHISLINE" )
-			{
-			    cout << "Configuration is not edited!" << endl;
-			    cout << "You must delete REMOVETHISLINE option." << endl;
-      			    cout << "Review the configuration carefully. :)" << endl;
-			    cout << "Exiting.." << endl;
-			    exit(1);
-			}
-
- 			Params::SetConfig(key,val);
-
-		} else {
-        		cout << "Invalid Config Line: " << line << endl;
-                        cout << "Exiting.." << endl;
-			exit(1);
-		}
-
- }
- input.close();
-}
-void Params::SetConfig(string param, string value)
-{ 
-
-string TempParams[] =  {CONFIGPARAMS};
-bool ParamFound = false;
-
-	string::const_iterator i = param.begin();
- 	string::size_type e = param.find_first_of(" \t");
-	if(e == param.npos) {
-		e = param.size();
-	} else {
-		param.erase(e,param.size());
-	}
-	string::size_type j=0;
-	while( j < e ) { 
-		param[j++] = toupper(*i++);
-	}
-
-        for(unsigned int i = 0; i < sizeof(TempParams)/sizeof(string); i++)
+        //Strip whitespace from beginning and end
+        if ( (Position = line.find_first_not_of(" \t")) != string::npos )
         {
-           if ( param == TempParams[i] )
-           {
-              ParamFound = true;
-           }
+            line = line.substr(Position, (line.find_last_not_of(" \t", string::npos) - Position) + 1);
         }
-        
-        if (ParamFound == true ) {
-	  params[param]=value;
-        } else {
+
+        //Read next if nothing found
+        if ( (Position == string::npos) || (line.size() == 0) ) continue;
+
+        //Read next if commented
+        if ( line.substr(0, 1) == "#" ) continue;
+
+        //Find key and value
+        if ( (Position = line.find_first_of(" \t")) != string::npos )
+        {
+            key = line.substr(0, Position);
+
+            if ( key == "REMOVETHISLINE" )
+            {
+                cout << "Configuration is not edited!" << endl;
+                cout << "You must delete REMOVETHISLINE option." << endl;
+                cout << "Review the configuration carefully. :)" << endl;
+                cout << "Exiting.." << endl;
+                exit(1);
+            }
+
+            if ( (Position = line.find_first_not_of(" \t", Position + 1)) == string::npos )
+            {
+                cout << "Invalid Config Line: " << line << endl;
+                cout << "Exiting.." << endl;
+                exit(1);
+            }
+
+            val = line.substr( Position );
+
+            Params::SetConfig( key, val );
+        }
+        else
+        {
+            cout << "Invalid Config Line: " << line << endl;
+            cout << "Exiting.." << endl;
+            exit(1);
+        }
+    }
+
+    input.close();
+}
+
+void Params::SetConfig( string param, string value )
+{
+    string TempParams[] = {CONFIGPARAMS};
+    bool ParamFound = false;
+
+    param = UpperCase(param);
+
+    for ( unsigned int i = 0; i < sizeof(TempParams)/sizeof(string); i++ )
+    {
+        if ( param == TempParams[i] )
+        {
+            ParamFound = true;
+        }
+    }
+
+    if ( ParamFound )
+    {
+        if ( UpperCase(value) == "TRUE" || UpperCase(value) == "FALSE" )
+        {
+            value = UpperCase(value);
+        }
+
+        params[param] = value;
+    }
+    else
+    {
         cout << "Unknown Config Parameter: " << param << endl;
-        LogFile::ErrorMessage("Unknown Config Parameter: %s\n", param.c_str());
-        exit (-1);
-        }	
+        cout << "Exiting.." << endl;
+        exit(1);
+    }
 }
 
-int Params::GetConfigInt(string param)
+int Params::GetConfigInt( string param )
 {
-	string value = params[param];
-	return atoi(value.c_str());
+    return atoi( params[param].c_str() );
 }
 
-bool Params::GetConfigBool(string param)
+bool Params::GetConfigBool( string param )
 {
-	string value = params[param];
-	if( value == "true") {
-		return true;
-	} else {
-		return false;
-	}
+    if ( params[param] == "TRUE" )
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
-string Params::GetConfigString(string param)
+string Params::GetConfigString( string param )
 {
-	string value = params[param];
-	return value;
+    return params[param];
 }
 
-void Params::ShowConfig()
+void Params::ShowConfig( string cfgfile )
 {
- params.erase("");
- cout << "# HAVP uses these configuration parameters:\n\n";
- typedef map<string,string>::const_iterator CI;
- for(CI p = params.begin(); p != params.end(); ++p)
-	cout << p->first << "=" << p->second << '\n';
+    cout << endl << "# Using HAVP config: " << cfgfile << endl << endl;
+    typedef map<string,string>::const_iterator CI;
+    for(CI p = params.begin(); p != params.end(); ++p)
+    {
+        cout << p->first << "=" << p->second << '\n';
+    }
+    cout << endl;
 }
 
 void Params::Usage()
 {
- cout << "Usage: havp [Options] \n\n";
- cout << "HAVP Version " << VERSION << "\n\n";
- cout << "Possible options are:\n";
- cout << "--help | -h                         This pamphlet\n";
-// cout << "--pid-file=FileName | -p Filename   Path to PID-File\n";
- cout << "--conf-file=FileName | -c Filename  Use this Config-File\n";
- cout << "--show-config | -s                  Show configuration HAVP is using\n";
+    cout << endl << "Usage: havp [Options]" << endl << endl;
+    cout << "HAVP Version " << VERSION << endl << endl;
+    cout << "Possible options are:" << endl;
+    cout << "--help | -h                         This pamphlet" << endl;
+    cout << "--conf-file=FileName | -c Filename  Use this Config-File" << endl;
+    cout << "--show-config | -s                  Show configuration HAVP is using" << endl << endl;
 }
 
-bool Params::SetParams(int argvT, char* argcT[])
+bool Params::SetParams( int argvT, char* argcT[] )
 {
- char ch;
- bool showconf = false;
- string option,value;
- string cfgfile=CONFIGFILE;
- typedef string::size_type ST;
+    string option, value;
+    string::size_type i1, i2;
 
- SetDefaults();
+    string cfgfile = CONFIGFILE;
+    bool showconf = false;
 
- while(--argvT) {
-	value = *++argcT;
-	ST i1 = value.find_first_not_of("-");
-//none GNU options
-	if( i1 == 1 ) {
-		option = value.substr(i1,1);
-		strncpy(&ch,option.c_str(),1);
-		switch ( ch ) {
-			case 'c':
-//			case 'p':
-				{
-				--argvT;
-				if( argvT == 0 ) {
-					Usage();
-					return false;
-				}
-				value = *++argcT;
-				break;
-				}
-			case 's':
-				showconf = true;
-                                break;
-			case 'h':
-		default:
-			{
-			Usage();
-			return false;
-			}
-		}
-//GNU options
-	} else if( i1 == 2 ) {
-		ST i2 = value.find("=");
-		if(i2 < value.npos) {
-			option = value.substr(i1,i2-2);
-			value = value.substr(i2+1,value.size());
-		} else {
-			option = value.substr(i1,value.size());
-		}
-	} else {
-		Usage();
-		return false;
-	}
-//do the job
-	if( option == "help" ) {
-		Usage();
-		return false;
-	} else if( option == "show-config") {
-		showconf = true;
-//	} else if( option == "pid-file" || option == "p" ) {
-//		SetConfig("PIDFILE",value);
-	} else if( option == "conf-file" || option == "c" ) {
-		cfgfile = value;
-        } else if(showconf == true) {
-                //Nothing: prevent Usage
-	} else {
-		Usage();
-		return false;
-	}
- }
+    SetDefaults();
 
-ReadConfig( cfgfile ); 
+    while ( --argvT )
+    {
+        value = *++argcT;
+        i1 = value.find_first_not_of("-");
 
-if(showconf == true) {
- ShowConfig();
- return false;
+        //No GNU options
+        if ( i1 == 1 )
+        {
+            option = value.substr(i1, 1);
+
+            if ( option == "c" )
+            {
+                --argvT;
+
+                if ( argvT == 0 )
+                {
+                    Usage();
+                    return false;
+                }
+                value = *++argcT;
+            }
+            else if ( option == "s" )
+            {
+                showconf = true;
+            }
+            else
+            {
+                Usage();
+                return false;
+            }
+        }
+        //GNU options
+        else if ( i1 == 2 )
+        {
+            if ( (i2 = value.find("=")) != string::npos )
+            {
+                option = value.substr(i1, i2 - i1);
+
+                if ( value.size() > i2 + 1 )
+                {
+                    value = value.substr(i2 + 1);
+                }
+                else
+                {
+                    Usage();
+                    return false;
+                }
+            }
+            else
+            {
+                option = value.substr(i1);
+                value = "";
+            }
+        }
+        else
+        {
+            Usage();
+            return false;
+        }
+
+        if ( option == "help" )
+        {
+            Usage();
+            return false;
+        }
+        else if ( option == "show-config" )
+        {
+            showconf = true;
+        }
+        else if ( option == "conf-file" || option == "c" )
+        {
+            if (value == "")
+            {
+                Usage();
+                return false;
+            }
+
+            cfgfile = value;
+        }
+        else if ( showconf == true )
+        {
+            //Nothing: prevent Usage
+        } 
+        else
+        {
+            Usage();
+            return false;
+        }
+    }
+
+    ReadConfig( cfgfile );
+
+    if ( showconf == true )
+    {
+       ShowConfig( cfgfile );
+       return false;
+    }
+
+    return true;
 }
 
- return true;
-}

@@ -16,6 +16,7 @@
  ***************************************************************************/
 
 #include "connectiontohttp.h"
+#include "logfile.h"
 #include "utils.h"
 
 extern int LL; //LogLevel
@@ -23,11 +24,14 @@ extern int LL; //LogLevel
 //Prepare Header for Browser
 string ConnectionToHTTP::PrepareHeaderForBrowser()
 {
-
-    string header = "";
+    string header;
+    header.reserve(1000);
+    header = "";
 
     vector<string>::iterator itvec;
+
     string it;
+    it.reserve(100);
 
     //Strip unwanted headers to browser
     for (itvec = tokens.begin(); itvec != tokens.end(); ++itvec)
@@ -58,7 +62,7 @@ string ConnectionToHTTP::PrepareHeaderForBrowser()
             continue;
         }
 
-        header += *itvec;
+        header += *itvec + "\r\n";
 
     }
 
@@ -82,15 +86,7 @@ int ConnectionToHTTP::AnalyseFirstHeaderLine( string *RequestT )
 
             if ( sscanf(Response.c_str(), "%d", &HTMLResponse) == 1 )
             {
-                //Is Range allowed?
-                if ( (HTMLResponse == 206) && Params::GetConfigBool("RANGE") == false )
-                {
-                    return -231;
-                }
-                else
-                {
-                    return 0;
-                }
+                return 0;
             }
             else
             {
@@ -117,8 +113,6 @@ int ConnectionToHTTP::AnalyseHeaderLine( string *RequestT )
 
         if ( RequestU.find("CONTENT-LENGTH: ", 0) == 0 )
         {
-            //Length check >16 done already
-
             if ( RequestU.find_first_not_of("0123456789", 16) != string::npos )
             {
                 //Invalid Content-Length

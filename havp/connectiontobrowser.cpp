@@ -20,8 +20,10 @@
 #include "params.h"
 #include "utils.h"
 
+#include <arpa/inet.h>
+
 //Prepare Header for Server
-string ConnectionToBrowser::PrepareHeaderForServer()
+string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, bool UseParentProxy )
 {
 
     string PortString = "";
@@ -33,11 +35,10 @@ string ConnectionToBrowser::PrepareHeaderForServer()
         PortString = porttemp;
     }
 
-    string parentproxy = Params::GetConfigString("PARENTPROXY");
-    int parentport = Params::GetConfigInt("PARENTPORT");
     string header;
+    header.reserve(1000);
 
-    if ( parentproxy != "" && parentport > 0 )
+    if ( UseParentProxy )
     {
         //HTTP
         if ( RequestProtocol == "http" )
@@ -93,8 +94,12 @@ string ConnectionToBrowser::PrepareHeaderForServer()
         CompleteRequest += "...";
     }
 
+    string via = "";
+
     vector<string>::iterator itvec;
+
     string it;
+    it.reserve(200);
 
     //Skip first token
     for (itvec = tokens.begin() + 1; itvec != tokens.end(); ++itvec)
@@ -117,6 +122,12 @@ string ConnectionToBrowser::PrepareHeaderForServer()
         }
         else if ( it.find( "VIA", 0 ) == 0 )
         {
+            string line = *itvec;
+            string::size_type Position = line.find_first_not_of(" ", 4);
+            if ( Position != string::npos )
+            {
+                via = ", " + line.substr(Position);
+            }
             continue;
         }
         else if ( it.find( "CONNECTION", 0 ) == 0 )
@@ -124,7 +135,7 @@ string ConnectionToBrowser::PrepareHeaderForServer()
             continue;
         }
 
-        if ( Params::GetConfigBool("RANGE") == false )
+        if ( (Params::GetConfigBool("RANGE") == false) && (ScannerOff == false) && (StreamAgent == false) )
         {
            if ( it.find( "RANGE:", 0 ) == 0 )
            {
@@ -136,13 +147,10 @@ string ConnectionToBrowser::PrepareHeaderForServer()
            }
         }
 
-        header += *itvec;
-
+        header += *itvec + "\r\n";
     }                                             //for
 
-    header += "Via: ";
-    header += VERSION;
-    header += " Havp\r\n";
+    header += "Via: 1.0 HAVP" + via + "\r\n";
 
     return header;
 
@@ -171,103 +179,89 @@ int ConnectionToBrowser::AnalyseFirstHeaderLine( string *RequestT )
 
 int ConnectionToBrowser::AnalyseHeaderLine( string *RequestT )
 {
-    //Optimize checks.. no need to match if header line not long enough
+    //Uppercase for matching
+    string RequestU = UpperCase(*RequestT);
 
-    //"Content-Length: x" needs atleast 17 chars
-    //"Connection: keep-alive" and
-    //"Connection: close" needs atleast 17 chars
-    //"Proxy-Connection:" needs atleast 17 chars
-    //"X-Forwarded-For: x" needs atleast 18 chars
-
-    if ( RequestT->length() > 16 )
+    if (RequestU.find("CONTENT-LENGTH: ", 0) == 0)
     {
-        //Uppercase for matching
-        string RequestU = UpperCase(*RequestT);
-
-        if (RequestU.find("CONTENT-LENGTH: ", 0) == 0)
+        if ( RequestU.find_first_not_of("0123456789", 16) != string::npos )
         {
-            //Length check >16 done already
+            //Invalid Content-Length
+            return 0;
+        }
 
-            if ( RequestU.find_first_not_of("0123456789", 16) != string::npos )
-            {
-                //Invalid Content-Length
-                return 0;
-            }
+        string LengthToken = RequestT->substr( 16 );
 
-            string LengthToken = RequestT->substr( 16 );
+        //Sanity check for invalid huge Content-Length
+        if ( LengthToken.length() > 18 ) return 0;
 
-            //Sanity check for invalid huge Content-Length
-            if ( LengthToken.length() > 18 ) return 0;
+        if ( sscanf(LengthToken.c_str(), "%lld", &ContentLength) != 1 )
+        {
+            ContentLength = -1;
+        }
 
-            if ( sscanf(LengthToken.c_str(), "%lld", &ContentLength) != 1 )
-            {
-                ContentLength = -1;
-            }
+        return 0;
+    }
+
+    if (ProxyConnection == false)
+    {
+        if (RequestU.find("CONNECTION: KEEP-ALIVE", 0) == 0)
+        {
+            KeepAlive = true;
 
             return 0;
         }
 
-        if (ProxyConnection == false)
+        if (RequestU.find("PROXY-CONNECTION: ", 0) == 0)
         {
-            if (RequestU.find("CONNECTION: KEEP-ALIVE", 0) == 0)
+            ProxyConnection = true;
+
+            if (RequestU.find("KEEP-ALIVE", 18) != string::npos)
             {
                 KeepAlive = true;
-
-                return 0;
-            }
-
-            if (RequestU.find("PROXY-CONNECTION: ", 0) == 0)
-            {
-                ProxyConnection = true;
-
-                if (RequestU.find("KEEP-ALIVE", 18) != string::npos)
-                {
-                    KeepAlive = true;
-                }
-                else
-                {
-                    KeepAlive = false;
-                }
-
-                return 0;
-            }
-        }
-
-        if (Params::GetConfigBool("FORWARDED_IP") == true)
-        {
-            if (RequestU.find( "X-FORWARDED-FOR: ", 0 ) == 0)
-            {
-                //Make sure there is something to read
-                if (RequestT->length() > 17)
-                {
-                    IP = RequestT->substr(17);
-                }
-
-                return 0;
-            }
-        }
-    } //End >16 check
-
-    //Checks for TRANSPARENT
-    if (Params::GetConfigBool("TRANSPARENT") == true)
-    {
-        //Uppercase for matching
-        string RequestU = UpperCase(*RequestT);
-
-        if (RequestU.find( "HOST: ", 0 ) == 0)
-        {
-            //Make sure there is something to read
-            if (RequestT->length() > 6)
-            {
-                return GetHostAndPortOfHostLine( RequestT );
             }
             else
             {
-                return -220;
+                KeepAlive = false;
             }
 
             return 0;
         }
+    }
+
+    if (Params::GetConfigBool("FORWARDED_IP") == true)
+    {
+        if (RequestU.find( "X-FORWARDED-FOR: ", 0 ) == 0)
+        {
+            IP = RequestT->substr(17);
+            return 0;
+        }
+    }
+
+    if (RequestU.find("USER-AGENT: ", 0) == 0)
+    {
+        UserAgent = RequestT->substr(12);
+
+        if (Params::GetConfigString("STREAMUSERAGENT") != "")
+        {
+            vector<string>::iterator UAi;
+
+            for (UAi = StreamUA.begin(); UAi != StreamUA.end(); ++UAi)
+            {
+                if (RequestU.find(*UAi, 12) != string::npos)
+                {
+                    StreamAgent = true;
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    //Checks for TRANSPARENT
+    if (Transparent && RequestU.find( "HOST: ", 0 ) == 0)
+    {
+        return GetHostAndPortOfHostLine( RequestT );
     }
 
     return 0;
@@ -542,6 +536,11 @@ const string ConnectionToBrowser::GetRequestType()
     return RequestType;
 }
 
+const string ConnectionToBrowser::GetUserAgent()
+{
+    return UserAgent;
+}
+
 long long ConnectionToBrowser::GetContentLength()
 {
     return ContentLength;
@@ -568,6 +567,12 @@ bool ConnectionToBrowser::KeepItAlive()
     return KeepAlive;
 }
 
+
+bool ConnectionToBrowser::StreamingAgent()
+{
+    return StreamAgent;
+}
+
 #ifdef REWRITE
 bool ConnectionToBrowser::RewriteHost()
 {
@@ -583,9 +588,9 @@ bool ConnectionToBrowser::RewriteHost()
 
 void ConnectionToBrowser::ClearVars()
 {
-    RequestProtocol = RequestType = Request = Host = IP = FtpUser = FtpPass = "";
+    RequestProtocol = RequestType = Request = Host = IP = FtpUser = FtpPass = UserAgent = "";
     Port = ContentLength = -1;
-    KeepAlive = ProxyConnection = false;
+    KeepAlive = ProxyConnection = StreamAgent = false;
 }
 
 
@@ -594,18 +599,37 @@ ConnectionToBrowser::ConnectionToBrowser()
 {
 
 #ifdef REWRITE
-REWRITE
+    REWRITE
 #endif
 
-    string TempMethods[] =  {METHODS};
+    string TempMethods[] = {METHODS};
 
     for(unsigned int i = 0; i < sizeof(TempMethods)/sizeof(string); i++)
     {
         Methods.push_back( TempMethods[i] );
     }
 
-    RequestType="";
+    if (Params::GetConfigString("STREAMUSERAGENT") != "")
+    {
+        string Tokens = UpperCase(Params::GetConfigString("STREAMUSERAGENT"));
+        string::size_type Position;
+        
+        while ((Position = Tokens.find(" ")) != string::npos)
+        {
+            if (Position == 0)
+            {
+                Tokens.erase(0, 1);
+                continue;
+            }
+                                    
+            StreamUA.push_back(Tokens.substr(0, Position));
+            Tokens.erase(0, Position + 1);
+        }
 
+        StreamUA.push_back(Tokens);
+    }
+
+    Transparent = Params::GetConfigBool("TRANSPARENT");
 }
 
 

@@ -1,7 +1,7 @@
 /***************************************************************************
-                          FProtScanner.h  -  description
+                          avgscanner.h  -  description
                              -------------------
-    begin                : Mit Jun 29 2005
+    begin                : Sa Feb 12 2005
     copyright            : (C) 2005 by Christian Hilgers
     email                : christian@hilgers.ag
  ***************************************************************************/
@@ -15,33 +15,36 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef FPROTSCANNER_H
-#define FPROTSCANNER_H
+#ifndef AVGSCANNER_H
+#define AVGSCANNER_H
 
-#include "scannerfilehandler.h"
-#include "sockethandler.h"
+#include "../genericscanner.h"
 
-using namespace std;
-
-class FProtScanner : public ScannerFileHandler  {
+class AVGScanner : public GenericScanner {
 
 private:
 
-SocketHandler FProtSocket;
+string ScannerCmd;
+
+string ServerHost;
+int ServerPort;
+
+SocketHandler AVGSocket;
+time_t LastError;
+
+string ScannerAnswer;
+char Ready[2];
 
 public:
 
 bool InitDatabase();
-
 bool ReloadDatabase();
-
 void FreeDatabase();
+string Scan( const char *FileName );
 
-int Scanning();
+AVGScanner();
+~AVGScanner();
 
-
-	FProtScanner();
-	~FProtScanner();
 };
 
 #endif

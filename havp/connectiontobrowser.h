@@ -21,17 +21,7 @@
 #include "default.h"
 #include "httphandler.h"
 
-#include <iostream>
-#include <algorithm>
-#include <string>
 #include <map>
-#include <stdarg.h>
-#include <stdio.h>
-#include <ctype.h>
-
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 
 using namespace std; 
 
@@ -39,72 +29,56 @@ class ConnectionToBrowser : public HTTPHandler  {
 
 private:
 
+string Request;
+string Host;
+int Port;
+string IP;
+string CompleteRequest;
+string RequestType;
+string RequestProtocol;
+string FtpUser;
+string FtpPass;
+string UserAgent;
+long long ContentLength;
+bool KeepAlive;
+bool StreamAgent;
+vector<string> Methods;
+vector<string> StreamUA;
+
+bool Transparent;
+
+int AnalyseFirstHeaderLine( string *RequestT );
+int AnalyseHeaderLine( string *RequestT );
+int GetHostAndPortOfRequest( string *RequestT, string::size_type StartPos );
+int GetHostAndPortOfHostLine( string *HostLineT );
+
 #ifdef REWRITE
 map <string,string> URLRewrite;
 #endif
 
-vector <string> Methods;
-
-string Request;
-
-string Host;
-
-string IP;
-
-int Port;
-
-string CompleteRequest;
-
-string RequestType;
-
-string RequestProtocol;
-
-string FtpUser;
-
-string FtpPass;
-
-long long ContentLength;
-
-bool KeepAlive;
-
-int AnalyseFirstHeaderLine( string *RequestT );
-
-int AnalyseHeaderLine( string *RequestT );
-
-int GetHostAndPortOfRequest( string *RequestT, string::size_type StartPos );
-
-int GetHostAndPortOfHostLine( string *HostLineT );
-
 public:
 
-string PrepareHeaderForServer();
-
+string PrepareHeaderForServer( bool ScannerOff, bool UseParentProxy );
 string GetIP();
-
 const string GetHost();
-
 const string GetRequest();
-
 const string GetCompleteRequest();
-
 const string GetRequestProtocol();
-
 const string GetRequestType();
-
+const string GetUserAgent();
 bool KeepItAlive();
-
+bool StreamingAgent();
 long long GetContentLength();
-
 int GetPort();
+void ClearVars();
 
 #ifdef REWRITE
 bool RewriteHost();
 #endif
 
-void ClearVars();
+ConnectionToBrowser();
+~ConnectionToBrowser();
 
-	ConnectionToBrowser();
-	~ConnectionToBrowser();
 };
 
 #endif

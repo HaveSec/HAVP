@@ -1,13 +1,28 @@
+/***************************************************************************
+                          trophiescanner.h  -  description
+                             -------------------
+    begin                : Sa Feb 12 2005
+    copyright            : (C) 2005 by Christian Hilgers
+    email                : christian@hilgers.ag
+ ***************************************************************************/
 
-#include <sys/wait.h>
-#include <memory.h>
-#include <string.h>
-#include <string>
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ ***************************************************************************/
+
+#ifndef TROPHIESCANNER_H
+#define TROPHIESCANNER_H
+
+#include "../genericscanner.h"
 
 #define TROPHIE_VERSION "1.12"
-
 #define VS_PROCESS_ALL_FILES_IN_ARCHIVE 1
-#define VS_PROCESS_ALL_FILES		1
+#define VS_PROCESS_ALL_FILES 1
 
 extern "C"
 {
@@ -69,3 +84,35 @@ extern int VSQuit(int);
 extern int VSVirusScanFileWithoutFNFilter(int, char *, int);
 
 };
+
+class TrophieScanner : public GenericScanner {
+
+private:
+
+string ScannerAnswer;
+char Ready[2];
+
+struct trophie_vs_type trophie_vs;
+struct pattern_info_ex_type pattern_info_ex;
+
+int trophie_scanfile( char *scan_file );
+
+static int vs_callback( char *a, struct callback_type *b, int c, char *d );
+static char VIR_NAME[512];
+
+int vs_addr;
+unsigned int cur_patt;
+
+public:
+
+bool InitDatabase();
+bool ReloadDatabase();
+void FreeDatabase();
+string Scan( const char *FileName );
+
+TrophieScanner();
+~TrophieScanner();
+
+};
+
+#endif

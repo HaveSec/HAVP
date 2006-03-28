@@ -1,5 +1,5 @@
 /***************************************************************************
-                          scannerfilehandler.h  -  description
+                          clamlibscanner.h  -  description
                              -------------------
     begin                : Sa Feb 12 2005
     copyright            : (C) 2005 by Christian Hilgers
@@ -15,66 +15,41 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef SCANNERFILEHANDLER_H
-#define SCANNERFILEHANDLER_H
+#ifndef CLAMLIBSCANNER_H
+#define CLAMLIBSCANNER_H
 
-#include "default.h"
-#include "genericscanner.h"
-#include "logfile.h"
-#include "params.h"
+#include "../genericscanner.h"
 
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <string.h>
-//#include <unistd.h>
-//#include <sys/time.h>
-//#include <sys/types.h>
-//#include <sys/stat.h>
-#include <fcntl.h>
-#include  <errno.h>
-#include <iostream>
+#include <clamav.h>
 
 using namespace std;
 
-
-class ScannerFileHandler : public GenericScanner  {
+class ClamLibScanner : public GenericScanner {
 
 private:
 
-int fd_scan;
-unsigned long FileLength;
+string ScannerAnswer;
+char Ready[2];
 
-protected:
+const char *virname;
 
-char FileName[MAXSCANTEMPFILELENGTH+1];
+struct cl_node *root;
+struct cl_limits limits;
+struct cl_stat dbstat;
+char dbdir[255];
+
+int scanopts;
 
 public:
 
-bool OpenAndLockFile();
-
-bool UnlockFile();
-
-bool DeleteFile();
-
-bool ReinitFile();
-
-bool TruncateFile( long long ContentLengthT );
-
-bool SetFileSize( long long ContentLengthT );
-
-bool ExpandFile( string *dataT, bool unlockT );
-
-char* GetFileName();
-
-//Not used here
 bool InitDatabase();
 bool ReloadDatabase();
 void FreeDatabase();
-int Scanning();
+string Scan( const char *FileName );
 
+ClamLibScanner();
+~ClamLibScanner();
 
-	ScannerFileHandler();
-	~ScannerFileHandler();
 };
 
 #endif

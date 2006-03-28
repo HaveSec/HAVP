@@ -21,59 +21,42 @@
 #include "default.h"
 #include "connectiontobrowser.h"
 #include "connectiontohttp.h"
-#include "genericscanner.h"
-#include "logfile.h"
-#include "params.h"
+#include "scannerhandler.h"
 
-#include <iostream>
 #include <string>
-#include <deque>
-#include <stdlib.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <signal.h>
 
 using namespace std;
-
 
 class ProxyHandler {
 
 private:
 
 bool HeaderSend;
-
 bool BrowserDropped;
-
 bool DropBrowser;
-
 bool ScannerUsed;
-
 bool UnlockDone;
-
 bool AnswerDone;
-
 bool ReinitDone;
-
 bool ServerClosed;
-
 bool ServerConnected;
-
 bool DropServer;
-
 int alivecount;
-
 string ConnectedHost;
-
 int ConnectedPort;
+
+string Header;
 
 ConnectionToBrowser ToBrowser;
 ConnectionToHTTP ToServer;
 
+bool UseParentProxy;
+string ParentHost;
+int ParentPort;
+
 bool ProxyMessage( int CommunicationAnswerT, string Answer );
-
-int CommunicationHTTP( GenericScanner *VirusScannerT, bool ScannerOff );
-
-int CommunicationFTP( GenericScanner *VirusScannerT, bool ScannerOff );
+int CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff );
+int CommunicationFTP( ScannerHandler *Scanners, bool ScannerOff );
 
 #ifdef SSLTUNNEL
 int CommunicationSSL();
@@ -81,11 +64,11 @@ int CommunicationSSL();
 
 public:
 
- bool Proxy ( SocketHandler *ProxyServerT, GenericScanner *VirusScannerT );
+void Proxy( SocketHandler *ProxyServerT, ScannerHandler *Scanners );
  
- 
-	ProxyHandler();
-	~ProxyHandler();
+ProxyHandler();
+~ProxyHandler();
+
 };
 
 #endif

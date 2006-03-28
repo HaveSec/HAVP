@@ -1,7 +1,7 @@
 /***************************************************************************
-                          clamlibscanner.h  -  description
+                          FProtScanner.h  -  description
                              -------------------
-    begin                : Sa Feb 12 2005
+    begin                : Mit Jun 29 2005
     copyright            : (C) 2005 by Christian Hilgers
     email                : christian@hilgers.ag
  ***************************************************************************/
@@ -15,35 +15,36 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef CLAMLIBSCANNER_H
-#define CLAMLIBSCANNER_H
+#ifndef FPROTSCANNER_H
+#define FPROTSCANNER_H
 
-#include <clamav.h>
+#include "../genericscanner.h"
 
-#include "scannerfilehandler.h"
-
-
-class ClamLibScanner : public ScannerFileHandler  {
+class FProtScanner : public GenericScanner {
 
 private:
 
-struct cl_node *root;
-struct cl_limits limits;
-struct cl_stat dbstat;
+string ServerHost;
+int ServerPort;
+
+string ScannerCmd;
+
+SocketHandler FProtSocket;
+time_t LastError;
+
+string ScannerAnswer;
+char Ready[2];
 
 public:
 
 bool InitDatabase();
-
 bool ReloadDatabase();
-
 void FreeDatabase();
+string Scan( const char *FileName );
 
-int Scanning();
+FProtScanner();
+~FProtScanner();
 
-
-	ClamLibScanner();
-	~ClamLibScanner();
 };
 
 #endif

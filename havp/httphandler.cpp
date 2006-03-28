@@ -19,6 +19,7 @@
 #include "logfile.h"
 #include "utils.h"
 
+
 //Read header
 bool HTTPHandler::ReadHeader( string *headerT )
 {
@@ -31,7 +32,7 @@ bool HTTPHandler::ReadHeader( string *headerT )
 
     *headerT = "";
 
-    if ( (read = SocketHandler::Recv( &tempheader, false )) <= 0 )
+    if ( (read = SocketHandler::Recv( &tempheader, false, -1 )) <= 0 )
     {
         return false;
     }
@@ -61,7 +62,7 @@ bool HTTPHandler::ReadHeader( string *headerT )
             return false;
         }
 
-        if ( (read = SocketHandler::Recv( &tempheader, false )) <= 0 )
+        if ( (read = SocketHandler::Recv( &tempheader, false, -1 )) <= 0 )
         {
             return false;
         }
@@ -102,20 +103,23 @@ int HTTPHandler::AnalyseHeader( string *linesT )
         linesT->replace( lastposition, 1, "" );
     }
 
-    int ret;
-    bool First = true;
-    string tempToken;
     lastposition = 0;
 
     string::size_type length = linesT->length();
-
-    string::size_type position;
+    string::size_type position, positiontmp;
     
     if ( (position = linesT->find( "\n", 0 )) == string::npos )
     {
         return -201;
     }
 
+    int ret;
+    string tempToken, headerbase;
+
+    //Read first line with AnalyseFirstHeaderLine
+    bool First = true;
+
+    //Loop through headers
     while ( position != string::npos && lastposition != length )
     {
         tempToken = linesT->substr( lastposition, position - lastposition );
@@ -126,18 +130,35 @@ int HTTPHandler::AnalyseHeader( string *linesT )
 
             if ( First == true )
             {
+                //Analyse request header
                 if ( (ret = AnalyseFirstHeaderLine( &tempToken )) < 0 )
                 {
                     return ret;
                 }
                 First = false;
             }
-            else if ( (ret = AnalyseHeaderLine( &tempToken )) < 0 )
+            else
             {
-                return ret;
+                if ( (positiontmp = tempToken.find(":")) != string::npos )
+                {
+                    headerbase = tempToken.substr(0, positiontmp + 1);
+
+                    //Make sure we have "Header:<SPACE>value"
+                    if ( (positiontmp = tempToken.find_first_not_of(" ", positiontmp + 1)) != string::npos )
+                    {
+                        tempToken = headerbase + " " + tempToken.substr(positiontmp);
+
+                        if ( (ret = AnalyseHeaderLine( &tempToken )) < 0 )
+                        {
+                            return ret;
+                        }
+                    }
+
+                }
             }
 
-            tokens.push_back( tempToken + "\r\n" );
+            //Add header to send queue
+            tokens.push_back( tempToken );
         }
 
         lastposition = position + 1;
@@ -155,7 +176,7 @@ ssize_t HTTPHandler::ReadBodyPart( string* bodyT )
     *bodyT = "";
     ssize_t count;
 
-    if ( (count = SocketHandler::Recv( bodyT, true )) < 0)
+    if ( (count = SocketHandler::Recv( bodyT, true, -1 )) < 0)
     {
         return -1;
     }

@@ -18,20 +18,13 @@
 #ifndef HELPER_H
 #define HELPER_H
 
-#include <errno.h>
+#include <unistd.h>
+#include <string>
 
 int MakeDaemon();
-
-int HardLockTest ( );
-
-bool ChangeUserAndGroup(string usr, string grp);
-
-bool WritePidFile(pid_t pid);
-
-int InstallSignal ();
-
-int InstallChildSignal ();
-
-//void RereadDatabase ();
+bool HardLockTest();
+bool ChangeUserAndGroup( string usr, string grp );
+bool WritePidFile( pid_t pid );
+int InstallSignal( int level );
 
 #endif

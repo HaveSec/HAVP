@@ -1,5 +1,5 @@
 /***************************************************************************
-                          avgscanner.h  -  description
+                          clamdscanner.h  -  description
                              -------------------
     begin                : Sa Feb 12 2005
     copyright            : (C) 2005 by Christian Hilgers
@@ -15,31 +15,33 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef AVGSCANNER_H
-#define AVGSCANNER_H
+#ifndef CLAMDSCANNER_H
+#define CLAMDSCANNER_H
 
-#include "scannerfilehandler.h"
-#include <sys/socket.h>
-#include <arpa/inet.h>
+#include "../genericscanner.h"
 
-class AVGScanner : public ScannerFileHandler  {
+class ClamdScanner : public GenericScanner {
 
 private:
 
-SocketHandler AVGSocket;
+string ScannerAnswer;
+char Ready[2];
+
+SocketHandler CLAMDSocket;
+time_t LastError;
+
+string ScannerCmd;
 
 public:
 
 bool InitDatabase();
-
 bool ReloadDatabase();
-
 void FreeDatabase();
+string Scan( const char *FileName );
 
-int Scanning();
+ClamdScanner();
+~ClamdScanner();
 
-	AVGScanner();
-	~AVGScanner();
 };
 
 #endif

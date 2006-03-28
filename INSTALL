@@ -19,13 +19,7 @@ Installation:
 make
 make install
 
-You can define the virus scanner by the configure --with-scanner= option:
- - libclamav = Clamav Library [this is default]
- - fprot = F-Prot server (f-protd)
- - aveserver = Kaspersky aveserver (from Mail/File scanner package)
- - trophie = Trend Micro library (libvsapi.so)
-
-It is recommended to create a havp user: 
+It is recommended to create a havp user:
 
 # groupadd havp 
 # useradd havp
@@ -46,8 +40,9 @@ If you do not have a partition free, you can create a loopback file:
 
 Make sure directories have correct permissions for havp user: 
 
-# chown havp /var/log/havp 
 # chown havp /var/tmp/havp
+# chown havp /var/log/havp 
+# chwon havp /var/run/havp
 
 Start havp:
 
@@ -65,6 +60,38 @@ If you have problems check the logfiles:
 More information and help can be found at HAVP forum: http://havp.hege.li/
 
 
+OS SPECIFIC INSTRUCTIONS
+========================
+
+Use of GNU make is recommended for building.
+
+Notice that on Solaris you may need lots of swap space if you use library
+scanners (ClamAV and Trophie). It wants to reserve it even when it is not
+really used. If there is not enough, you will get fork errors. Worst case
+formula: (20MB * USEDLIBRARYSCANNERS) * (USEDSCANNERS + 1) * SERVERNUMBER.
+
+Linux:
+------
+
+Use GCC 3.3+.
+
+Solaris 9:
+----------
+
+GCC 3.4.2 from sunfreeware.com is recommended.
+
+You may need to fix GCC headers like this:
+
+# cd /usr/local/libexec/gcc/*/3.4.2/install-tools
+# ./mkheaders
+
+Solaris 10:
+-----------
+
+Use GCC 3.4.x that comes bundled at /usr/sfw/bin/gcc.
+It is installed from SUNWgcc package.
+
+
 SCANNER SPECIFIC INSTRUCTIONS
 =============================
 
@@ -76,6 +103,10 @@ Scanning limits can be set from default.h before compiling HAVP.
 Library is used directly, so there is no need for clamd running. Freshclam
 should be naturally used.
 
+If you choose to use clamd (which is not recommended as library support is
+faster), you need to enable AllowSupplementaryGroups in clamd.conf, and add
+clamav user to havp group.
+
 
 Kaspersky 
 ---------
@@ -85,6 +116,8 @@ Server package.
 
 You should set ReportLevel=1 at [aveserver.report] section, so log will not
 fill disk.
+
+Daemon is required to be running.
 
 
 Trend Micro (Trophie)
@@ -123,4 +156,24 @@ Remove "-disinf" from FPROT_SCANDEFAULTS at f-prot.conf.
 
 Daemon is required to be running.
 
+
+NOD32
+-----
+
+Tested with Linux Mail Server and File Server packages. File Server version
+can not show virus names.
+
+Daemon is required to be running.
+
+
+Sophos
+------
+
+You need to make sure Sophie is working first, you can get it from:
+http://www.clanfield.info/sophie/
+
+Change user or group to havp user in sophie.cfg, so it can read tempfiles.
+Also change maxproc value to atleast MAXSERVERS value!
+
+Sophie daemon is required to be running.
 

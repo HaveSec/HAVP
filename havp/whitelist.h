@@ -19,60 +19,39 @@
 #define WHITELIST_H
 
 #include <string>
-#include <iostream>
 #include <vector>
 #include <map>
 
 using namespace std;
 
-/**
-@author Christian Hilgers
-*/
 class URLList {
 
 private:
 
 struct PathStruct
 {
- string Path;
- char ExactPath;
- char ExactDomain;
- 
+    string Path;
+    char ExactPath;
+    char ExactDomain;
 };
-
-/*
-struct DomainStruct
-{
- vector <struct PathStruct> Path;
-};
-*/
 
 map <string, vector <struct PathStruct> > URLLists;
 
-char CheckItem ( string *ItemT );
-
+char CheckItem( string *ItemT );
 bool AnalyseURL( string UrlT, string *DomainT, char *ExactDomainT, string *PathT, char *ExactPathT );
-
-
 string DisplayLine( string LineT, char positionT );
-
 bool FindString( string *SearchT, string *LineT, char positionT );
-
-bool Search ( string *DomainT, char ExactDomainT, string *PathT );
+bool Search( string *DomainT, char ExactDomainT, string *PathT );
 
 public:
 
-bool URLFound ( string DomainT, string PathT );
-
-bool CreateURLList(string URLListFileT);
-
+bool URLFound( string DomainT, string PathT );
+bool CreateURLList( string URLListFileT );
 bool ReloadURLList( string URLListFileT );
+void DisplayURLList();
 
-void DisplayURLList( );
-
-    URLList();
-
-    ~URLList();
+URLList();
+~URLList();
 
 };
 

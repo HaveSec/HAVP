@@ -18,72 +18,39 @@
 #ifndef GENERICSCANNER_H
 #define GENERICSCANNER_H
 
+#include "default.h"
 #include "sockethandler.h"
 #include "logfile.h"
-
+#include "params.h"
 
 #include <sys/types.h>
-#include  <errno.h>
-#include <iostream>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <time.h>
 #include <string>
 
 using namespace std;
 
-
 class GenericScanner {
-
-
-protected:
-
-string ScannerAnswer;
-
 
 public:
 
-int commin[2];
-int commout[2];
+string ScannerName;
 
-void WriteScannerAnswer ();
-
-string ReadScannerAnswer ();
-
-int CheckScanner ( bool blocking );
-
-bool PrepareScanning ( SocketHandler *ProxyServerT );
-
-bool CreatePipes ();
-
-// Scannerfilehandler
+bool StartScanning( int fromhandler, int tohandler, const char *FileName );
 
 virtual bool InitDatabase() = 0;
-
 virtual bool ReloadDatabase() = 0;
-
 virtual void FreeDatabase() = 0;
+virtual string Scan( const char *FileName ) = 0;
 
-virtual int Scanning() = 0;
+virtual void CloseSocket();
 
-virtual bool SetFileSize( long long ContentLengthT ) = 0;
-
-virtual bool ExpandFile( string *dataT, bool unlockT ) = 0;
-
-// Scanner
-
-virtual bool OpenAndLockFile() = 0;
-
-virtual bool UnlockFile() = 0;
-
-virtual bool DeleteFile() = 0;
-
-virtual bool ReinitFile() = 0;
-
-virtual bool TruncateFile( long long ContentLengthT ) = 0;
-
-virtual ~GenericScanner ();
-
-GenericScanner ();
+GenericScanner();
+virtual ~GenericScanner();
 
 };
-
 
 #endif

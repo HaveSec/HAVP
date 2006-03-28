@@ -19,36 +19,29 @@
 #define CONNECTIONTOHTTP_H
 
 #include "httphandler.h"
-#include "logfile.h"
 
 class ConnectionToHTTP : public HTTPHandler {
 
 private:
 
-int AnalyseFirstHeaderLine( string *RequestT );
-
-int AnalyseHeaderLine( string *RequestT );
-
 int HTMLResponse;
-
 long long ContentLength;
-
 bool KeepAlive;
+
+int AnalyseFirstHeaderLine( string *RequestT );
+int AnalyseHeaderLine( string *RequestT );
 
 public: 
 
 string PrepareHeaderForBrowser();
-
 int GetResponse();
-
 long long GetContentLength();
-
 bool KeepItAlive();
-
 void ClearVars();
 
-  ConnectionToHTTP();
-	~ConnectionToHTTP();
+ConnectionToHTTP();
+~ConnectionToHTTP();
+
 };
 
 #endif

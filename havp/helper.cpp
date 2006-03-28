@@ -16,172 +16,145 @@
  ***************************************************************************/
 
 #include "default.h"
-#include "scannerfilehandler.h"
-#include "logfile.h"
 #include "params.h"
+#include "logfile.h"
 
-#include <sys/stat.h>
 #include <sys/types.h>
-//#include <unistd.h>
-//#include <stdlib.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <pwd.h>
 #include <grp.h>
-//#include <sys/ipc.h>
-//#include <sys/msg.h>
 #include <signal.h>
+#include <errno.h>
+#include <iostream>
+#include <fstream>
 
+extern char TempFileName[MAXSCANTEMPFILELENGTH+1];
+extern int fd_tempfile;
 
-extern GenericScanner *VirusScanner;
-
-bool WritePidFile(pid_t pid)
+static void ChildExited( int SignalNo )
 {
-    string pidfile=Params::GetConfigString("PIDFILE");
-    ofstream pidf(pidfile.c_str(),ios_base::trunc);
-    if(!pidf) return false;
-    pidf << pid << endl;
-    pidf.close();
-
-    return true;
+    //Handle with waitpid() in havp.cpp
 }
 
-static void ChildExited (int SignalNo)
+static void ChildChildExited( int SignalNo )
 {
-	int dummy;
-	dummy++;
-}
-static void RereadAll (int SignalNo)
-{
- extern bool rereaddatabase;
- extern bool rereadUrlList;
- rereaddatabase = true;
- rereadUrlList = true;
-}
-static void RestartChild (int SignalNo)
-{
- extern bool childrestart;
- childrestart = true;
+    int status;
+    while (waitpid(-1, &status, WNOHANG) > 0);
 }
 
-static void DeleteTempfiles (int SignalNo)
+static void RereadAll( int SignalNo )
 {
-//PSEstart
-    // VirusScanner->DeleteFile();
-    // PSE  don't start new processes
-    pid_t pid;
-    pid_t pgid;
-    pid=getpid();
-    pgid=getpgid(0);
+    extern bool rereadall;
+    rereadall = true;
+}
+
+static void RestartChild( int SignalNo )
+{
+    extern bool childrestart;
+    childrestart = true;
+}
+
+static void ExitProcess( int SignalNo )
+{
+    pid_t pgid = getpgid(0);
 
     //PSE: all processes have same pgid!
-    if (pid == pgid)
+    if (getpid() == pgid)
     {
 	//PSE: only parent, no scan-file to delete!!
 	killpg(pgid,SIGINT);
 
-        //Delete PIDfile
-        string pidfile=Params::GetConfigString("PIDFILE");
-
-        if ( unlink ( pidfile.c_str() ) == -1)
-        {
-            LogFile::ErrorMessage("Can not remove pidfile: %s\n", strerror(errno));
-        }
- 
-	exit(0);
+	//Delete pidfile
+	while (unlink(Params::GetConfigString("PIDFILE").c_str()) < 0 && (errno == EINTR || errno == EBUSY));
     }
     else
     {
-	VirusScanner->DeleteFile();
+        if (fd_tempfile > -1)
+        {
+            //Delete tempfile
+            while (close(fd_tempfile) < 0 && errno == EINTR);
+            while (unlink(TempFileName) < 0 && (errno == EINTR || errno == EBUSY));
+        }
     }
 
-    exit (1);
+    //End process
+    exit(0);
 }
 
 
-int InstallSignal()
+//Install Signal Handlers for different fork levels
+int InstallSignal( int level )
 {
     struct sigaction Signal;
-
     memset(&Signal, 0, sizeof(Signal));
-
     Signal.sa_flags = 0;
 
-    Signal.sa_handler = DeleteTempfiles;
-    if (sigaction(SIGINT, &Signal, NULL) != 0)
-    {
-        return -1;
-    }
-    if (sigaction(SIGTERM, &Signal, NULL) != 0)
-    {
-        return -1;
-    }
+    //Level 0 = Main Havp Process
+    //Level 1 = ProxyHandler Process
+    //Level 2 = Scanner Process
+    //Signals are inherited from previous level at forking..
 
-    Signal.sa_handler = RereadAll;
-    if (sigaction(SIGHUP, &Signal, NULL) != 0)
+    if ( level == 0 ) //Main Havp Process
     {
-        return -1;
-    }
-    //Compatibility for 0.77 and older init-script
-    if (sigaction(SIGUSR2, &Signal, NULL) != 0)
-    {
-        return -1;
-    }
+        Signal.sa_handler = ExitProcess;
+        if (sigaction(SIGINT, &Signal, NULL) != 0) return -1;
+        if (sigaction(SIGTERM, &Signal, NULL) != 0) return -1;
 
-    Signal.sa_handler = SIG_IGN;
-    if (sigaction(SIGUSR1, &Signal, NULL) != 0)
-    {
-        return -1;
-    }
+        Signal.sa_handler = RereadAll;
+        if (sigaction(SIGHUP, &Signal, NULL) != 0) return -1;
+        //Compatibility for 0.77 and older init-script
+        if (sigaction(SIGUSR2, &Signal, NULL) != 0) return -1;
 
-    Signal.sa_handler = SIG_IGN;
-    if (sigaction(SIGPIPE, &Signal, NULL) != 0)
-    {
-        return -1;
-    }
+        Signal.sa_handler = ChildExited;
+        if (sigaction(SIGCHLD, &Signal, NULL) != 0) return -1;
 
-    Signal.sa_handler = ChildExited;
-    if (sigaction(SIGCHLD, &Signal, NULL) != 0)
+        Signal.sa_handler = SIG_IGN;
+        if (sigaction(SIGUSR1, &Signal, NULL) != 0) return -1;
+        if (sigaction(SIGPIPE, &Signal, NULL) != 0) return -1;
+    }
+    else if ( level == 1 ) //ProxyHandler Process
     {
-        return -1;
+        Signal.sa_handler = RestartChild;
+        if (sigaction(SIGUSR1, &Signal, NULL) != 0) return -1;
+
+        Signal.sa_handler = ChildChildExited;
+        if (sigaction(SIGCHLD, &Signal, NULL) != 0) return -1;
+
+        Signal.sa_handler = SIG_IGN;
+        if (sigaction(SIGHUP, &Signal, NULL) != 0) return -1;
+        if (sigaction(SIGUSR2, &Signal, NULL) != 0) return -1;
+    }
+    else if ( level == 2 ) //Scanner Process
+    {
+        Signal.sa_handler = SIG_IGN;
+        if (sigaction(SIGUSR1, &Signal, NULL) != 0) return -1;
     }
 
     return 0;
 }
 
-int InstallChildSignal()
-{
-    struct sigaction Signal;
-
-    memset(&Signal, 0, sizeof(Signal));
-
-    Signal.sa_flags = 0;
-
-    Signal.sa_handler = RestartChild;
-    if (sigaction(SIGUSR1, &Signal, NULL) != 0)
-    {
-        return -1;
-    }
-
-    return 0;
-}
 
 int MakeDaemon()
 {
-    pid_t daemon;
-    if (( daemon = fork() ) < 0)
-    {                                             //Parent error
+    pid_t daemon = fork();
+
+    if ( daemon < 0 )
+    {
         return -1;
     }
-    else if ( daemon != 0)
+    else if (daemon != 0)
     {
-        exit (0);                                 //Parent exit
+        //Exit Parent
+        exit(0);
     }
-
     //Child
 
     setsid();
     chdir("/tmp/");
-    umask(0);
+    umask(077);
 
     //Close stdin/stdout/stderr
     close(0);
@@ -189,111 +162,195 @@ int MakeDaemon()
     close(2);
 
     return 0;
-
 }
 
 
-int HardLockTest()
+bool HardLockTest()
 {
+    memset(&TempFileName, 0, sizeof(TempFileName));
+    strncpy(TempFileName, Params::GetConfigString("SCANTEMPFILE").c_str(), MAXSCANTEMPFILELENGTH);
 
-    pid_t pid;
-    int fd;
-    int status;
-    char tmpread[10];
-    int testread;
-    ScannerFileHandler testlock;
-
-    if ( testlock.OpenAndLockFile() == false )
+    if ((fd_tempfile = mkstemp(TempFileName)) < 0)
     {
-      LogFile::ErrorMessage("Could not open hardlock check file: %s Error: %s\n", testlock.GetFileName(), strerror(errno));
-      cout << "Could not open testfile for mandatory locking!" << endl;
-      string user = Params::GetConfigString("USER");
-      string scanpath = Params::GetConfigString("SCANTEMPFILE");
-      cout << "Maybe you need to: chown " << user << " " << scanpath.substr(0, scanpath.rfind("/")) << endl;
-      cout << "Exiting.." << endl;
-      exit (-1);
+        string Error = strerror(errno);
+        cout << "Could not open lock testfile " << TempFileName << ": " << Error << endl;
+        string user = Params::GetConfigString("USER");
+        string scanpath = Params::GetConfigString("SCANTEMPFILE");
+        cout << "Maybe you need to: chown " << user << " " << scanpath.substr(0, scanpath.rfind("/")) << endl;
+        cout << "Exiting.." << endl;
+        return false;
     }
 
-    if (( pid = fork() ) < 0)
+    struct stat fstatpuff;
+
+    //set-group-ID and group-execute
+    while (fstat(fd_tempfile, &fstatpuff) < 0)
     {
-        //Parent error
-        cout << "Error forking hardlock test" << endl;
-        return (-1);
+        if (errno == EINTR) continue;
+
+        string Error = strerror(errno);
+        cout << "Testfile fstat() failed: " << Error << endl;
+        return false;
     }
-    else if ( pid != 0)
+    while (fchmod(fd_tempfile, (fstatpuff.st_mode & ~S_IXGRP) | S_ISGID | S_IRGRP) < 0)
+    {
+        if (errno == EINTR) continue;
+
+        string Error = strerror(errno);
+        cout << "Testfile fchmod() failed: " << Error << endl;
+        return false;
+    }
+
+    char eicardata[] = "a5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*\0";
+    eicardata[0] = 'X';
+
+    while (write(fd_tempfile, eicardata, 68) < 0)
+    {
+        if (errno == EINTR) continue;
+
+        LogFile::ErrorMessage("Could not write to Scannerfile: %s\n", TempFileName );
+        return false;
+    }
+
+    struct flock lock;
+
+    lock.l_type   = F_WRLCK;
+    lock.l_start  = 0;
+    lock.l_whence = SEEK_SET;
+    lock.l_len    = MAXFILELOCKSIZE;
+
+    while (fcntl(fd_tempfile, F_SETLK, &lock) < 0)
+    {
+        if (errno == EINTR) continue;
+
+        string Error = strerror(errno);
+        cout << "Testfile fcntl() failed: " << Error << endl;
+        return false;
+    }
+
+    if (lseek(fd_tempfile, 0, SEEK_SET) < 0)
+    {
+        string Error = strerror(errno);
+        cout << "Testfile lseek() failed: " << Error << endl;
+        return false;
+    }
+
+    pid_t testpid = fork();
+
+    if (testpid < 0)
+    {
+        string Error = strerror(errno);
+        cout << "Error forking lock test: " << Error << endl;
+        return false;
+    }
+    else if (testpid != 0)
     {
         //Parent
-        while ((pid = wait(&status)) < 0 && errno == EINTR);
+        int status;
+        while ((testpid = wait(&status)) < 0 && errno == EINTR);
 
-        testlock.DeleteFile();
-
-        if ( WEXITSTATUS(status) == 0)
+        if (WEXITSTATUS(status) == 1)
         {
-            exit (-1);
+            return false;
         }
 
-        return 1;
+        //Descriptor not needed anymore
+        while (close(fd_tempfile) < 0 && errno == EINTR);
+        fd_tempfile = -1;
+
+        return true;
     }
     //Child
-    if ( (fd = open(testlock.GetFileName() , O_RDONLY)) < 0)
+
+    int fd;
+
+    if ((fd = open(TempFileName, O_RDONLY)) < 0)
     {
-        LogFile::ErrorMessage("Could not open hardlock check file: %s\n", testlock.GetFileName() );
-        cout << "Could not open hardlock testfile" << endl;
+        string Error = strerror(errno);
+        cout << "Could not open lock testfile " << TempFileName << ": " << Error << endl;
         exit(1);
     }
 
-    //set nonblocking
-    fcntl(fd,F_SETFL,O_NONBLOCK);
+    //Set nonblocking
+    while (fcntl(fd, F_SETFL, O_NONBLOCK) < 0)
+    {
+        if (errno == EINTR) continue;
+
+        string Error = strerror(errno);
+        cout << "Testfile fcntl() failed: " << Error << endl;
+        exit(1);
+    }
+
+    int testread;
+    char tmpread[2];
 
     while ((testread = read(fd, tmpread, 1)) < 0 && errno == EINTR);
-    close(fd);
+    while (close(fd) < 0 && errno == EINTR);
 
-    if ( testread > 0)
+    if (testread > 0)
     {
         cout << "Filesystem not supporting mandatory locks!" << endl;
         cout << "On Linux, you need to mount filesystem with \"-o mand\"" << endl;
-        LogFile::ErrorMessage("Filesystem not supporting hardlock! Mount filesystem with -o mand\n");
-        exit (0);
+        exit(1);
     }
-    exit (1);
+
+    //Success
+    exit(0);
 }
 
-bool ChangeUserAndGroup(string usr, string grp)
+
+bool ChangeUserAndGroup( string usr, string grp )
 {
-    if(grp != "") {
-      struct group *group;
+    if ( grp != "" )
+    {
+        struct group *my_group;
 
-      if ((group = getgrnam ( grp.c_str() )) == NULL)
-      {
-        cout << "Group does not exist: " << grp << endl;
-        cout << "You need to: groupadd " << grp << endl;
-        return false;
-      }
+        if ( (my_group = getgrnam( grp.c_str() )) == NULL )
+        {
+            cout << "Group does not exist: " << grp << endl;
+            cout << "You need to: groupadd " << grp << endl;
+            return false;
+        }
 
-      if ( setgid( group->gr_gid ) < 0 )
-      {
-        cout << "Could not change Group-ID" << endl;
-        return false;
-      }
-     }
-
-    if(usr != "") {
-
-      struct passwd *user;
-
-      if ((user = getpwnam ( usr.c_str() )) == NULL)
-      {
-        cout << "User does not exist: " << usr << endl;
-        cout << "You need to: useradd " << usr << endl;
-        return false;
-      }
-
-      if ( setuid( user->pw_uid ) < 0 )
-      {
-        cout << "Could not change User-ID" << endl;
-        return false;
-      }
+        if ( setgid( my_group->gr_gid ) < 0 )
+        {
+            cout << "Could not change group to: " << grp << endl;
+            return false;
+        }
     }
+
+    if ( usr != "" )
+    {
+        struct passwd *user;
+
+        if ( (user = getpwnam( usr.c_str() )) == NULL )
+        {
+            cout << "User does not exist: " << usr << endl;
+            cout << "You need to: useradd " << usr << endl;
+            return false;
+        }
+
+        if ( setuid( user->pw_uid ) < 0 )
+        {
+            cout << "Could not change user to: " << usr << endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+bool WritePidFile( pid_t havp_pid )
+{
+    ofstream pidf( Params::GetConfigString("PIDFILE").c_str(), ios_base::trunc );
+
+    if ( !pidf ) return false;
+
+    pidf << havp_pid << endl;
+
+    pidf.close();
+
     return true;
 }
 

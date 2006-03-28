@@ -18,30 +18,33 @@
 #ifndef KASPERSKYSCANNER_H
 #define KASPERSKYSCANNER_H
 
-#include "scannerfilehandler.h"
-#include <sys/socket.h>
-#include <sys/un.h>
+#include "../genericscanner.h"
 
-class KasperskyScanner : public ScannerFileHandler  {
+class KasperskyScanner : public GenericScanner {
 
 private:
 
-SocketHandler AVESocket;
-
+string ScannerCmd;
 bool Connected;
+
+SocketHandler AVESocket;
+time_t LastError;
+
+string ScannerAnswer;
+char Ready[2];
 
 public:
 
 bool InitDatabase();
-
 bool ReloadDatabase();
-
 void FreeDatabase();
+string Scan( const char *FileName );
 
-int Scanning();
+void CloseSocket();
 
-	KasperskyScanner();
-	~KasperskyScanner();
+KasperskyScanner();
+~KasperskyScanner();
+
 };
 
 #endif

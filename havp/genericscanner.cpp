@@ -16,64 +16,34 @@
  ***************************************************************************/
 
 #include "genericscanner.h"
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <unistd.h>
 
-bool GenericScanner::PrepareScanning( SocketHandler *ProxyServerT )
+
+bool GenericScanner::StartScanning( int fromhandler, int tohandler, const char *TempFileName )
 {
-    pid_t scannerpid;
-    extern bool childrestart;
+    string ScannerAnswer;
+    ScannerAnswer.reserve(100);
 
-    if ((scannerpid = fork()) < 0)
-    {
-        LogFile::ErrorMessage("Could not fork Scanner: %s", strerror(errno));
-        return false;            //Parent error
-    }
-    else if (scannerpid != 0)
-    {
-        //Parent
-
-        //Scanner forked, close proxy ends that are not needed
-        if (close(commin[1]) < 0) LogFile::ErrorMessage("Could not close pipe commin[1]\n");
-        if (close(commout[0]) < 0) LogFile::ErrorMessage("Could not close pipe commout[0]\n");
-
-        return true;
-    }
-    //Child
-
-    //Close unwanted sockets
-    ProxyServerT->Close();
-
-    //Close pipe ends not needed
-    if (close(commin[0]) < 0) LogFile::ErrorMessage("Could not close pipe commin[0]\n");
-    if (close(commout[1]) < 0) LogFile::ErrorMessage("Could not close pipe commout[1]\n");
-
+    char buf[100];
     int ret;
-    char buf[2];
 
     for(;;)
     {
         //Start scanner and get return code
-        ret = Scanning();
+        ScannerAnswer = Scan( TempFileName );
 
         memset(&buf, 0, sizeof(buf));
-        sprintf(buf, "%d", ret);
+        ScannerAnswer.copy(buf, 99);
 
-        //Send return code for proxyhandler
-        while ((ret = write(commin[1], buf, 1)) < 0)
+        //Send answer to ScannerHandler
+        while ((ret = write(tohandler, buf, 100)) < 0)
         {
             if (errno == EINTR) continue;
             break;
         }
         if (ret <= 0) break; //Pipe was closed - or some bad error
 
-        //Finally write ScannerAnswer from scanner
-        WriteScannerAnswer();
-
-        //Wait for proxyhandler to finish before we loop again - important
-        while ((ret = read(commout[0], buf, 1)) < 0)
+        //Wait for ScannerHandler to finish before we loop again - important
+        while ((ret = read(fromhandler, buf, 1)) < 0)
         {
             if (errno == EINTR) continue;
             break;
@@ -84,141 +54,42 @@ bool GenericScanner::PrepareScanning( SocketHandler *ProxyServerT )
         if (buf[0] == 'q') break;
     }
 
-    //End process
-    DeleteFile();
-    exit(1);
+    //End Scanning loop
+    return false;
 }
 
-bool GenericScanner::CreatePipes()
+
+bool GenericScanner::InitDatabase()
 {
-    //[0] is for reading, [1] is for writing
-
-    int ret;
-
-    if ((ret = pipe(commin)) < 0)
-    {
-        LogFile::ErrorMessage("Error creating pipe: %s\n", strerror(ret));
-        return false;
-    }
-    if ((ret = pipe(commout)) < 0)
-    {
-        LogFile::ErrorMessage("Error creating pipe: %s\n", strerror(ret));
-        return false;
-    }
-
-    return true;
+    LogFile::ErrorMessage("Program Error: InitDatabase()\n");
+    return false;
 }
-
-void GenericScanner::WriteScannerAnswer()
+bool GenericScanner::ReloadDatabase()
 {
-    char out[100];
-    memset(&out, 0, sizeof(out));
-    
-    ScannerAnswer.copy(out, 99);
-
-    while (write(commin[1], out, 100) < 0)
-    {
-        if (errno == EINTR) continue;
-
-        DeleteFile();
-        exit(0);
-    }
+    LogFile::ErrorMessage("Program Error: ReloadDatabase()\n");
+    return false;
 }
-
-string GenericScanner::ReadScannerAnswer()
+void GenericScanner::FreeDatabase()
 {
-    char p_read[100];
-    memset(&p_read, 0, sizeof(p_read));
-
-    int ret;
-
-    fd_set readfd;
-    FD_ZERO(&readfd);
-    FD_SET(commin[0], &readfd);
-
-    while ((ret = select(commin[0]+1, &readfd, NULL, NULL, NULL)) < 0)
-    {
-        if (errno == EINTR) continue;
-        LogFile::ErrorMessage("ReadScannerAnswer select failed: %s\n", strerror(ret));
-    }
-
-    if ((ret = read(commin[0], p_read, 100)) < 0)
-    {
-        LogFile::ErrorMessage("ReadScannerAnswer read failed: %s\n", strerror(errno));
-
-        DeleteFile();
-        exit(0);
-    }
-
-    string Answer = p_read;
-
-    return Answer;
+    LogFile::ErrorMessage("Program Error: FreeDatabase()\n");
 }
-
-int GenericScanner::CheckScanner(bool blocking)
+string GenericScanner::Scan( const char *TempFileName )
 {
-    fd_set readfd;
-    FD_ZERO(&readfd);
-    FD_SET(commin[0], &readfd);
-
-    int ret;
-
-    if (blocking == false)
-    {
-        struct timeval Timeout;
-        Timeout.tv_sec = 0;
-        Timeout.tv_usec = 0;
-
-        //Just return select result, 1 means we have answer waiting
-        while ((ret = select(commin[0]+1, &readfd, NULL, NULL, &Timeout)) < 0)
-        {
-            if (errno == EINTR) continue;
-
-            //Return error
-            return 2;
-        }
-
-        return ret;
-    }
-
-    char p_read[2];
-    memset(&p_read, 0, sizeof(p_read));
-
-    //Wait for answer
-    while (select(commin[0]+1, &readfd, NULL, NULL, NULL) < 0 && errno == EINTR);
-
-    while ((ret = read(commin[0], p_read, 1)) < 0)
-    {
-        if (errno == EINTR) continue;
-
-        LogFile::ErrorMessage("CheckScanner read failed: %s\n", strerror(errno));
-        return 2;
-    }
-    if (ret == 0) return 2; //If scanner process died(?), return error
-
-    //Convert scanner return value to int
-    ret = atoi(p_read);
-
-    //Sanity check
-    if ( (ret < 0) || (ret > 2) )
-    {
-        LogFile::ErrorMessage("Program error: Invalid return from scanner: %d\n", ret);
-        ret = 2;
-    }
-
-    return ret;
+    LogFile::ErrorMessage("Program Error: Scan()\n");
+    return "";
 }
 
+//Scanner might not have this function, so this is allowed
+void GenericScanner::CloseSocket()
+{
+}
 
 //Constructor
-GenericScanner::GenericScanner( )
+GenericScanner::GenericScanner()
 {
-    ScannerAnswer = "";
 }
 
-
 //Destructor
-GenericScanner::~GenericScanner( )
+GenericScanner::~GenericScanner()
 {
-
 }

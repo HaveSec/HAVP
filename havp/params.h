@@ -15,17 +15,11 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #ifndef PARAMS_H
 #define PARAMS_H
 
-#include "default.h"
-#include <iostream>
 #include <string>
-#include <cstdlib>
 #include <map>
-#include <fstream>
-#include <ctype.h>
 
 using namespace std;
 
@@ -35,25 +29,19 @@ private:
 
 static map <string,string> params;
 
-static void ReadConfig(string file);
-
-static void ShowConfig();
-
+static void ReadConfig( string file );
+static void ShowConfig( string cfgfile );
 static void Usage();
-
 static void SetDefaults();
 
 public:
 
-static bool SetParams(int argcT, char* argv[]);
-
-static void SetConfig(string key, string val);
-
-static bool GetConfigBool(string key);
-
-static string GetConfigString(string key);
-
-static int GetConfigInt(string key);
+static bool SetParams( int argcT, char* argv[] );
+static void SetConfig( string key, string val );
+static bool GetConfigBool( string key );
+static string GetConfigString( string key );
+static int GetConfigInt( string key );
 
 };
+
 #endif

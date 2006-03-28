@@ -18,21 +18,9 @@
 #ifndef LOGFILE_H
 #define LOGFILE_H
 
-#include "default.h"
-
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <fcntl.h>
-#include <stdarg.h>
-#include <unistd.h>
-#include <stdio.h>
-
-#include <iostream>
 #include <string>
 
 using namespace std;
-
 
 class LogFile {
 
@@ -45,10 +33,8 @@ static string GetDateAndTime();
 
 public:
 
-static bool InitLogFiles ( const char *AccessLogFileT, const char *ErrorLogFileT );
-
+static bool InitLogFiles( const char *AccessLogFileT, const char *ErrorLogFileT );
 static void AccessMessage( const char *formatT, ... );
-
 static void ErrorMessage( const char *formatT, ... );
    
 };

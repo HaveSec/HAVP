@@ -1,8 +1,8 @@
 /***************************************************************************
-                          havp.h  -  description
+                          kasperskyscanner.h  -  description
                              -------------------
-    begin                : Sa M� 5 2005
-    copyright            : (C) 2005 by Christian Hilgers
+    begin                : Sa Mar 25 2006
+    copyright            : (C) 2006 by Christian Hilgers
     email                : christian@hilgers.ag
  ***************************************************************************/
 
@@ -15,7 +15,36 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef HAVP_H
-#define HAVP_H
+#ifndef SOPHIESCANNER_H
+#define SOPHIESCANNER_H
+
+#include "../genericscanner.h"
+
+class SophieScanner : public GenericScanner {
+
+private:
+
+string ScannerCmd;
+bool Connected;
+
+SocketHandler SOPHIESocket;
+time_t LastError;
+
+string ScannerAnswer;
+char Ready[2];
+
+public:
+
+bool InitDatabase();
+bool ReloadDatabase();
+void FreeDatabase();
+string Scan( const char *FileName );
+
+void CloseSocket();
+
+SophieScanner();
+~SophieScanner();
+
+};
 
 #endif

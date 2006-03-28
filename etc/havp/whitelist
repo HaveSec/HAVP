@@ -19,3 +19,6 @@
 # Whitelist clamav download
 *sourceforge.net/*clamav-*
 
+# Whitelist Windowsupdate, so RANGE is allowed too
+*.microsoft.com/*
+*.windowsupdate.com/*

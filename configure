@@ -273,7 +273,7 @@ PACKAGE_BUGREPORT=
 
 ac_unique_file="Makefile.in"
 ac_default_prefix=/usr/local/
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT SCANNER SCANNEROBJECT SCANNERLIB CFLAGS LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT SCANNEROBJECT SCANNERLIB CFLAGS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -806,7 +806,6 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]      use PACKAGE [ARG=yes]
   --without-PACKAGE         do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-scanner=libclamav  Choose used scanner: libclamav (default), fprot, trophie, aveserver, avg
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -1875,48 +1874,33 @@ _ACEOF
 fi
 
 
+CLAMCFLAGS="`clamav-config --cflags`"
+CLAMLIBS="`clamav-config --libs`"
 
-
-# Check whether --with-scanner or --without-scanner was given.
-if test "${with_scanner+set}" = set; then
-  withval="$with_scanner"
-  HAVPSCANNER_DEF="$withval"
+if [ "$CLAMLIBS" != "" ]; then
+  echo "*** ClamAV library found, support enabled!"
+  SCANNEROBJECT="$SCANNEROBJECT scanners/clamlibscanner.o"
+  CFLAGS="$CFLAGS $CLAMCFLAGS"
+  SCANNERLIB="$SCANNERLIB $CLAMLIBS -lclamav"
+  DEFS="$DEFS -DUSECLAMLIB"
 else
-  HAVPSCANNER_DEF="libclamav"
-fi;
-
-if test $HAVPSCANNER_DEF = aveserver ; then
- SCANNEROBJECT=kasperskyscanner.o
- SCANNER=1
- SCANNERLIB=
-else
-   if test $HAVPSCANNER_DEF = fprot ; then
-    SCANNEROBJECT=f-protscanner.o
-    SCANNER=2
-    SCANNERLIB=
-   else
-     if test $HAVPSCANNER_DEF = trophie ; then
-       SCANNEROBJECT=trophiescanner.o
-       SCANNER=3
-       SCANNERLIB="-L/etc/iscan -lvsapi"
-     else
-       if test $HAVPSCANNER_DEF = avg ; then
-         SCANNEROBJECT=avgscanner.o
-         SCANNER=4
-         SCANNERLIB=
-       else
-         SCANNEROBJECT=clamlibscanner.o
-         SCANNER=0
-         CFLAGS="$CFLAGS `clamav-config --cflags`"
-         SCANNERLIB="`clamav-config --libs ` -lclamav"
-       fi
-     fi
-   fi
+  echo ""
+  echo "NOTICE: "
+  echo " ClamAV library NOT found, support DISABLED! You should really use it. :-)"
+  echo " If you have it installed, make sure clamav-config is found in PATH"
+  echo ""
 fi
 
-
-
-
+if [ -f "/etc/iscan/libvsapi.so" ]; then
+  echo "*** Trend Micro library found, Trophie support enabled!"
+  SCANNEROBJECT="$SCANNEROBJECT scanners/trophiescanner.o"
+  SCANNERLIB="$SCANNERLIB -L/etc/iscan -lvsapi"
+  DEFS="$DEFS -DUSETROPHIE"
+else
+  echo ""
+  echo "NOTICE: /etc/iscan/libvsapi.so not found, Trend Micro support disabled!"
+  echo ""
+fi
 
 
 
@@ -1994,8 +1978,6 @@ s/:*$//;
 s/^[^=]*=[	 ]*$//;
 }'
 fi
-
-DEFS=-DHAVE_CONFIG_H
 
 ac_libobjs=
 ac_ltlibobjs=
@@ -2540,7 +2522,6 @@ s,@CPPFLAGS@,$CPPFLAGS,;t t
 s,@ac_ct_CXX@,$ac_ct_CXX,;t t
 s,@EXEEXT@,$EXEEXT,;t t
 s,@OBJEXT@,$OBJEXT,;t t
-s,@SCANNER@,$SCANNER,;t t
 s,@SCANNEROBJECT@,$SCANNEROBJECT,;t t
 s,@SCANNERLIB@,$SCANNERLIB,;t t
 s,@CFLAGS@,$CFLAGS,;t t
@@ -3106,8 +3087,6 @@ s/^[^=]*=[	 ]*$//;
 }'
 fi
 
-DEFS=-DHAVE_CONFIG_H
-
 ac_libobjs=
 ac_ltlibobjs=
 for ac_i in : $LIBOBJS; do test "x$ac_i" = x: && continue
@@ -3651,7 +3630,6 @@ s,@CPPFLAGS@,$CPPFLAGS,;t t
 s,@ac_ct_CXX@,$ac_ct_CXX,;t t
 s,@EXEEXT@,$EXEEXT,;t t
 s,@OBJEXT@,$OBJEXT,;t t
-s,@SCANNER@,$SCANNER,;t t
 s,@SCANNEROBJECT@,$SCANNEROBJECT,;t t
 s,@SCANNERLIB@,$SCANNERLIB,;t t
 s,@CFLAGS@,$CFLAGS,;t t

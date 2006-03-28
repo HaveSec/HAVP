@@ -1,4 +1,15 @@
 
+*HAVP 0.79 released
+ - MULTIPLE SCANNER SUPPORT! (see havp.config how to enable scanners)
+ - NOD32, Sophos and Clamd scanner support
+ - Parentproxy error on SSL tunneling is passed to browser
+ - Whitelisted sites can use HTTP Range requests (for Windowsupdate..)
+ - Added STREAMUSERAGENT/STREAMSCANSIZE config to reduce stream scanning
+ - Added SCANNERTIMEOUT option to catch scanners gone wild
+ - Added scanning options for ClamLib
+ - Some HTTP header handling fixes
+ - Init-script updated so it works on Solaris
+
 *HAVP 0.78 released
  - Solaris is now supported too
  - AVG scanner support
@@ -7,7 +18,7 @@
  - KEEPBACKTIME config added to complement KEEPBACKBUFFER setting
  - Basic HTTP Keep-Alive support, improves network performance
  - HTTPS/SSL tunneling support (requires configure --enable-ssl-tunnel)
- - FTP is supported when FTP supporting parent proxy is used
+ - FTP is supported and scanned when FTP supporting parent proxy is used
  - Default user and group changed to havp
  - Logging improved
  - Many important and not so important fixes/optimizations
