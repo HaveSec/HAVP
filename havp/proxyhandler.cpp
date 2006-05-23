@@ -29,7 +29,7 @@ extern URLList Whitelist;
 extern URLList Blacklist;
 extern int LL; //LogLevel
 
-void ProxyHandler::Proxy( SocketHandler *ProxyServerT, ScannerHandler *Scanners )
+void ProxyHandler::Proxy( SocketHandler &ProxyServerT, ScannerHandler &Scanners )
 {
     extern bool childrestart;
 
@@ -43,7 +43,7 @@ void ProxyHandler::Proxy( SocketHandler *ProxyServerT, ScannerHandler *Scanners 
     ServerConnected = BrowserDropped = DropBrowser = false;
 
     //Wait for first connection
-    while ( ProxyServerT->AcceptClient( &ToBrowser ) == false ) sleep(10);
+    while ( ProxyServerT.AcceptClient( ToBrowser ) == false ) sleep(10);
 
     //Infinite Processing Loop
     for(;;)
@@ -64,13 +64,14 @@ void ProxyHandler::Proxy( SocketHandler *ProxyServerT, ScannerHandler *Scanners 
             alivecount = 0;
 
             //Wait for new connection
-            while ( ProxyServerT->AcceptClient( &ToBrowser ) == false ) sleep(10);
+            while ( ProxyServerT.AcceptClient( ToBrowser ) == false ) sleep(10);
         }
 
         //Clear request variables
         ToBrowser.ClearVars();
         ToServer.ClearVars();
         ScannerUsed = UnlockDone = AnswerDone = ReinitDone = HeaderSend = BrowserDropped = DropBrowser = DropServer = false;
+        TransferredHeader = TransferredBody = 0;
 
         if ( ++alivecount > 1 )
         {
@@ -82,14 +83,14 @@ void ProxyHandler::Proxy( SocketHandler *ProxyServerT, ScannerHandler *Scanners 
             }
         }
 
-        if ( ToBrowser.ReadHeader( &Header ) == false )
+        if ( ToBrowser.ReadHeader( Header ) == false )
         {
             if (LL>0) if (alivecount==1) LogFile::ErrorMessage("(%s) Could not read browser header\n", ToBrowser.GetIP().c_str());
             DropBrowser = true;
             continue;
         }
 
-        if ( (ret = ToBrowser.AnalyseHeader( &Header )) < 0 )
+        if ( (ret = ToBrowser.AnalyseHeader( Header )) < 0 )
         {
             if (LL>0) LogFile::ErrorMessage("(%s) Invalid request from browser\n", ToBrowser.GetIP().c_str());
             ProxyMessage( ret, "" );
@@ -121,7 +122,7 @@ void ProxyHandler::Proxy( SocketHandler *ProxyServerT, ScannerHandler *Scanners 
         {
             if ( Blacklist.URLFound( ToBrowser.GetHost(), ToBrowser.GetRequest() ) )
             {
-		ToBrowser.PrepareHeaderForServer( false, UseParentProxy );
+        ToBrowser.PrepareHeaderForServer( false, UseParentProxy );
                 ProxyMessage( -45, "" );
                 DropBrowser = true;
                 continue;
@@ -133,7 +134,7 @@ void ProxyHandler::Proxy( SocketHandler *ProxyServerT, ScannerHandler *Scanners 
 #endif
 
         //Keep-Alive?
-        if ( ToBrowser.KeepItAlive() == false || ToBrowser.GetRequestType() != "GET" || (alivecount == 100) )
+        if ( ToBrowser.KeepItAlive() == false || ToBrowser.GetRequestType() != "GET" || ( (alivecount > 99) && (ToBrowser.CheckForData(0) == false) ) )
         {
             DropBrowser = true;
         }
@@ -211,20 +212,22 @@ void ProxyHandler::Proxy( SocketHandler *ProxyServerT, ScannerHandler *Scanners 
         //Check scanners
         if ( ScannerUsed )
         {
-            if ( UnlockDone == false ) Scanners->UnlockTempFile();
-            if ( AnswerDone == false ) Scanners->GetAnswer();
+#ifndef NOMAND
+            if ( UnlockDone == false ) Scanners.UnlockTempFile();
+#endif
+            if ( AnswerDone == false ) Scanners.GetAnswer();
         }
 
         if ( CommunicationAnswer != 0 )
         {
             //Request not clean
-            ProxyMessage( CommunicationAnswer, Scanners->GetAnswerMessage() );
+            ProxyMessage( CommunicationAnswer, Scanners.GetAnswerMessage() );
             DropBrowser = true;
         }
         else if ( Params::GetConfigBool("LOG_OKS") )
         {
             //Clean request
-            LogFile::AccessMessage("%s %s %d %s OK\n", ToBrowser.GetIP().c_str(), ToBrowser.GetCompleteRequest().c_str(), ToServer.GetResponse(), ToBrowser.GetRequestType().c_str() );
+            LogFile::AccessMessage("%s %s %d %s %d+%lld OK\n", ToBrowser.GetIP().c_str(), ToBrowser.GetRequestType().c_str(), ToServer.GetResponse(), ToBrowser.GetCompleteRequest().c_str(), TransferredHeader, TransferredBody);
         }
 
         //If some scanner timed out, bail out..
@@ -237,17 +240,17 @@ void ProxyHandler::Proxy( SocketHandler *ProxyServerT, ScannerHandler *Scanners 
             if ( (DropBrowser || BrowserDropped) && (childrestart || (requests > 1000)) )
             {
                 //Kill all scanners
-                Scanners->ExitScanners();
+                Scanners.ExitScanners();
 
                 //Exit processing loop
                 break;
             }
 
             //Reinit tempfile
-            if ( ReinitDone == false ) Scanners->ReinitTempFile();
+            if ( ReinitDone == false ) Scanners.ReinitTempFile();
 
             //Signal scanners to get ready again
-            if ( Scanners->RestartScanners() == false )
+            if ( Scanners.RestartScanners() == false )
             {
                 //Some scanner did not restart, exit processing loop
                 break;
@@ -260,14 +263,14 @@ void ProxyHandler::Proxy( SocketHandler *ProxyServerT, ScannerHandler *Scanners 
     ToBrowser.Close();
 
     //Delete Tempfile
-    Scanners->DeleteTempFile();
+    Scanners.DeleteTempFile();
 
     //Exit process
     exit(1);
 }
 
 
-int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
+int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
 {
 
     long long ContentLengthReference = ToBrowser.GetContentLength();
@@ -354,7 +357,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
                 {
                     int rest = ContentLengthReference - (MAXRECV * repeat);
 
-                    if ( ToBrowser.RecvLength( &Body, rest ) == false )
+                    if ( ToBrowser.RecvLength( Body, rest ) == false )
                     {
                         BrowserDropped = true;
                         if (LL>0) LogFile::ErrorMessage("(%s) Could not read browser body\n", ToBrowser.GetIP().c_str());
@@ -363,7 +366,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
                 }
                 else
                 {
-                    if ( ToBrowser.RecvLength( &Body, MAXRECV ) == false )
+                    if ( ToBrowser.RecvLength( Body, MAXRECV ) == false )
                     {
                         BrowserDropped = true;
                         if (LL>0) LogFile::ErrorMessage("(%s) Could not read browser body\n", ToBrowser.GetIP().c_str());
@@ -371,7 +374,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
                     }
                 }
 
-                if ( ToServer.Send( &Body ) == false )
+                if ( ToServer.Send( Body ) == false )
                 {
                     if (LL>0) LogFile::ErrorMessage("(%s) Could not send browser body to server (%s:%d)\n", ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
                     DropServer = true;
@@ -385,7 +388,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
         {
             string TempString;
 
-            if ( ToBrowser.Recv( &TempString, true, -1 ) < 0 )
+            if ( ToBrowser.Recv( TempString, true, -1 ) < 0 )
             {
                 BrowserDropped = true;
                 if (LL>0) LogFile::ErrorMessage("(%s) Could not finish browser body transfer\n", ToBrowser.GetIP().c_str());
@@ -404,15 +407,17 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
     }
 
     //Get response from server
-    if ( ToServer.ReadHeader( &Header ) == false )
+    if ( ToServer.ReadHeader( Header ) == false )
     {
         if (LL>0) LogFile::ErrorMessage("(%s) Could not read server header (%s:%d)\n", ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
         DropServer = true;
         return -80;
     }
 
+    TransferredHeader = Header.size();
+
     //Analyse server headers
-    int ret = ToServer.AnalyseHeader( &Header );
+    int ret = ToServer.AnalyseHeader( Header );
     if ( ret < 0 )
     {
         if (LL>0) LogFile::ErrorMessage("(%s) Invalid server header received (%s:%d)\n", ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
@@ -435,17 +440,13 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
     //Server did not send Keep-Alive header, close after request (we can keep browser open)
     if ( ToServer.KeepItAlive() == false ) DropServer = true;
 
+    //Get Content-Length
     ContentLengthReference = ToServer.GetContentLength();
 
     if ( ContentLengthReference == -1 )
     {
         //No Keep-Alive for unknown length
         DropBrowser = true;
-    }
-    else if ( (ContentLengthReference > 0) && (ContentLengthReference < 10) )
-    {
-        //Forget scanning for tiny files
-        ScannerOff = true;
     }
 
     Header = ToServer.PrepareHeaderForBrowser();
@@ -465,7 +466,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
         if ( ToServer.CheckForData(0) )
         {
             string BodyTemp;
-            ssize_t BodyLength = ToServer.Recv( &BodyTemp, true, -1 );
+            ssize_t BodyLength = ToServer.Recv( BodyTemp, true, -1 );
             if ( (BodyLength > 0) && (BodyTemp.find_first_not_of( "\r\n", 0 ) != string::npos) )
             {
                 LogFile::ErrorMessage("(%s) Server tried to send body when not expected (%s:%d)\n", ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
@@ -475,6 +476,18 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
 
         //Return clean
         return 0;
+    }
+
+    if ( (ContentLengthReference > 0) && (ContentLengthReference < 10) )
+    {
+        //Forget scanning for tiny files
+        ScannerOff = true;
+    }
+    else if ( (MaxDownloadSize != 0) && (ScannerOff == false) && (MaxDownloadSize < ContentLengthReference) )
+    {
+        //File too large for downloading
+        DropServer = true;
+        return -250;
     }
 
     unsigned int MaxScanSize = Params::GetConfigInt("MAXSCANSIZE");
@@ -497,7 +510,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
     {
         //Read first part of body
         string BodyTemp;
-        ssize_t BodyLength = ToServer.ReadBodyPart( &BodyTemp );
+        ssize_t BodyLength = ToServer.ReadBodyPart( BodyTemp );
 
         //Server disconnected?
         if ( BodyLength < 0 )
@@ -534,6 +547,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
         }
 
         long long ContentLength = BodyLength;
+        TransferredBody = ContentLength;
 
         //Server Body Transfer Loop
         for(;;)
@@ -552,7 +566,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
             }
 
             //Send body to browser
-            if ( ToBrowser.Send( &BodyTemp ) == false )
+            if ( ToBrowser.Send( BodyTemp ) == false )
             {
                 BrowserDropped = true;
                 if (LL>0) if (alivecount==1) LogFile::ErrorMessage("(%s) Could not send body to browser\n", ToBrowser.GetIP().c_str());
@@ -563,7 +577,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
             if ( ContentLength == ContentLengthReference ) break;
 
             //Read more of body
-            if ( (BodyLength = ToServer.ReadBodyPart( &BodyTemp )) < 0 )
+            if ( (BodyLength = ToServer.ReadBodyPart( BodyTemp )) < 0 )
             {
                 DropServer = true;
                 if (LL>0) LogFile::ErrorMessage("(%s) Could not read server body (%s:%d)\n", ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
@@ -580,6 +594,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
             }
 
             ContentLength += BodyLength;
+            TransferredBody = ContentLength;
 
             //Continue bodyloop..
         }
@@ -594,7 +609,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
 
     //Read first part of body
     string BodyTemp;
-    ssize_t BodyLength = ToServer.ReadBodyPart( &BodyTemp );
+    ssize_t BodyLength = ToServer.ReadBodyPart( BodyTemp );
 
     //Server disconnected?
     if ( BodyLength < 0 )
@@ -624,6 +639,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
 
     //Set initial values
     long long ContentLength = BodyLength;
+    TransferredBody = ContentLength;
     long long TransferDataLength = BodyLength;
 
     deque <std::string> BodyQueue;
@@ -632,9 +648,9 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
     bool PartlyUnlock = false;
     bool ReScan = false;
 
-    int KeepBackTime = Params::GetConfigInt("KEEPBACKTIME");
-    int TricklingTime = Params::GetConfigInt("TRICKLING");
-    int KeepBackBuffer = Params::GetConfigInt("KEEPBACKBUFFER");
+#ifndef NOMAND
+    bool NoKeepBack = false;
+#endif
 
     //Scanner will be used and needs to be reinitialized later
     ScannerUsed = true;
@@ -652,7 +668,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
         //Dynamic scanning
         PartlyUnlock = true;
 
-        if ( Scanners->SetTempFileSize( ContentLengthReference ) == false )
+        if ( Scanners.SetTempFileSize( ContentLengthReference ) == false )
         {
             LogFile::ErrorMessage("(%s) Could not create tempfile, check disk space! (%lld bytes from %s:%d)\n", ToBrowser.GetIP().c_str(), ContentLengthReference, ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
             return -100;
@@ -682,13 +698,24 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
         //Check if we have exceeded MAXSCANSIZE or MAXFILELOCKSIZE which is hard limit
         if ( (UnlockDone == false) && (((MaxScanSize > 0) && (ContentLength > MaxScanSize)) || (ContentLength > MAXFILELOCKSIZE)) )
         {
+#ifndef NOMAND
             //As we won't be scanning anymore, unlock file and let scanners finish
-            Scanners->UnlockTempFile();
+            Scanners.UnlockTempFile();
             UnlockDone = true;
+#else
+            //Check answers
+            TempScannerAnswer = Scanners.GetAnswer();
+            Scanners.ReinitTempFile();
+
+            AnswerDone = UnlockDone = true;
+
+            //Exit bodyloop if error or virus found
+            if ( TempScannerAnswer != 0 ) break;
+#endif
         }
 
         //Expand file if we have not exceeded limits or gotten answer
-        if ( (UnlockDone == false) && ( Scanners->ExpandTempFile( &BodyTemp, PartlyUnlock ) == false ) )
+        if ( (UnlockDone == false) && ( Scanners.ExpandTempFile( BodyTemp, PartlyUnlock ) == false ) )
         {
             LogFile::ErrorMessage("(%s) Could not expand tempfile, check disk space! (%lld bytes from %s:%d)\n", ToBrowser.GetIP().c_str(), ContentLengthReference, ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
             return -100;
@@ -697,47 +724,57 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
         //Exit bodyloop because file is complete
         if ( ContentLength == ContentLengthReference ) break;
 
+#ifndef NOMAND
         //Check for possible scanners answer
-        if ( PartlyUnlock || UnlockDone )
+        if ( (PartlyUnlock || UnlockDone) && (ReinitDone == false) )
         {
-            if ( (ReinitDone == false) && Scanners->HasAnswer() )
+            if ( Scanners.HasAnswer() )
             {
                 AnswerDone = true;
 
                 //Unlock file now so all scanners can finish
                 if ( UnlockDone == false )
                 {
-                    Scanners->UnlockTempFile();
+                    Scanners.UnlockTempFile();
                     UnlockDone = true;
                 }
 
                 //Get Answer
-                TempScannerAnswer = Scanners->GetAnswer();
+                TempScannerAnswer = Scanners.GetAnswer();
 
                 //Exit bodyloop if virus or error found!
                 if ( TempScannerAnswer != 0 ) break;
 
                 //Reinitialize tempfile, it is not needed on disk anymore
-                Scanners->ReinitTempFile();
+                Scanners.ReinitTempFile();
                 ReinitDone = true;
 
                 //Continue bodyloop so browser receives all data
             }
         }
+#endif
 
         Now = time(NULL);
 
+#ifdef NOMAND
+            //Send data if scanning was clean
+            if ( TempScannerAnswer == 0 )
+            {
+
+                TransferData = BodyQueue.begin();
+#else
         //Wait for KeepBackTime to pass
-        if ( (KeepBackTime == 0) || (LastTrickling + KeepBackTime < Now) )
+        if ( NoKeepBack || (LastTrickling + KeepBackTime < Now) )
         {
             //Dont check KeepBackTime anymore
-            KeepBackTime = 0;
+            NoKeepBack = true;
 
             TransferData = BodyQueue.begin();
 
             //Send data if we have enough in buffer or scanning was clean
-            if ( (TempScannerAnswer == 0) || (KeepBackBuffer < (TransferDataLength - TransferData->length())) )
+            if ( (TempScannerAnswer == 0) || (KeepBackBuffer < (TransferDataLength - TransferData->size())) )
             {
+#endif
                 //Send header only once
                 if ( HeaderSend == false )
                 {
@@ -751,9 +788,9 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
                 }
 
                 BodyTemp = *TransferData;
-                TransferDataLength -= BodyTemp.length();
+                TransferDataLength -= BodyTemp.size();
 
-                if ( ToBrowser.Send( &BodyTemp ) == false )
+                if ( ToBrowser.Send( BodyTemp ) == false )
                 {
                     BrowserDropped = true;
                     if (LL>0) if (alivecount==1) LogFile::ErrorMessage("(%s) Could not send body to browser\n", ToBrowser.GetIP().c_str());
@@ -787,18 +824,19 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
 
                 if ( TransferData->size() == 0 ) BodyQueue.erase( TransferData );
 
-                if ( ToBrowser.Send( &character ) == false )
+                if ( ToBrowser.Send( character ) == false )
                 {
                     BrowserDropped = true;
                     if (LL>0) if (alivecount==1) LogFile::ErrorMessage("(%s) Could not send body to browser\n", ToBrowser.GetIP().c_str());
                     return -10;
                 }
-
             }
+#ifndef NOMAND
         }
+#endif
 
         //Read more of body
-        if ( (BodyLength = ToServer.ReadBodyPart( &BodyTemp )) < 0 )
+        if ( (BodyLength = ToServer.ReadBodyPart( BodyTemp )) < 0 )
         {
             DropServer = true;
             if (LL>0) LogFile::ErrorMessage("(%s) Could not read server body (%s:%d)\n", ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
@@ -806,7 +844,15 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
         }
 
         ContentLength += BodyLength;
+        TransferredBody = ContentLength;
         TransferDataLength += BodyLength;
+
+        //Check if file is too large for downloading
+        if ( (MaxDownloadSize != 0) && (ContentLength > MaxDownloadSize) )
+        {
+            DropServer = true;
+            return -250;
+        }
 
         //Server finished, end bodyloop
         if ( BodyLength == 0 )
@@ -834,45 +880,53 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
         ServerConnected = false;
     }
 
+#ifndef NOMAND
     //Unlock if needed
     if ( UnlockDone == false )
     {
-        Scanners->UnlockTempFile();
+        Scanners.UnlockTempFile();
         UnlockDone = true;
     }
+#endif
 
     //Get answer if needed
     if ( AnswerDone == false )
     {
-        TempScannerAnswer = Scanners->GetAnswer();
+#ifdef NOMAND
+        //Truncate file to received size
+        if ( ReScan ) Scanners.TruncateTempFile( ContentLength );
+#endif
+        TempScannerAnswer = Scanners.GetAnswer();
         AnswerDone = true;
     }
 
+#ifndef NOMAND
     //Rescan tempfile if we didn't receive all Content-Length
     //It might have confused scanners with wrong filesize
     if ( ReScan && (TempScannerAnswer != 1) )
     {
         //Truncate file to received size
-        Scanners->TruncateTempFile( ContentLength );
+        Scanners.TruncateTempFile( ContentLength );
 
         //Tell scanners to start scanning again
-        if ( Scanners->RestartScanners() == false )
+        if ( Scanners.RestartScanners() == false )
         {
             //Bail out on error..
             ToBrowser.Close();
-            Scanners->DeleteTempFile();
+            Scanners.DeleteTempFile();
             exit(1);
         }
 
         //Get new answer
-        TempScannerAnswer = Scanners->GetAnswer();
+        TempScannerAnswer = Scanners.GetAnswer();
         AnswerDone = true;
     }
+#endif
 
     //Reinit if needed
     if ( ReinitDone == false )
     {
-        Scanners->ReinitTempFile();
+        Scanners.ReinitTempFile();
         ReinitDone = true;
     }
 
@@ -896,7 +950,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
     {
         BodyTemp = *TransferData;
 
-        if ( ToBrowser.Send( &BodyTemp ) == false )
+        if ( ToBrowser.Send( BodyTemp ) == false )
         {
             BrowserDropped = true;
             if (LL>0) if (alivecount==1) LogFile::ErrorMessage("(%s) Could not send body to browser\n", ToBrowser.GetIP().c_str());
@@ -910,7 +964,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff )
 
 
 //Not yet implemented..
-int ProxyHandler::CommunicationFTP( ScannerHandler *Scanners, bool ScannerOff )
+int ProxyHandler::CommunicationFTP( ScannerHandler &Scanners, bool ScannerOff )
 {
     return 0;
 }
@@ -943,7 +997,7 @@ int ProxyHandler::CommunicationSSL()
             return -60;
         }
 
-        if ( ToServer.ReadHeader( &Header ) == false )
+        if ( ToServer.ReadHeader( Header ) == false )
         {
             if (LL>0) LogFile::ErrorMessage("Could not read server header (%s:%d)\n", ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
             DropServer = true;
@@ -974,13 +1028,13 @@ int ProxyHandler::CommunicationSSL()
             //No body expected?
             if ( ContentLengthReference == 0 ) return 0;
 
-            long long ContentLength;
+            long long ContentLength = 0;
 
             //Server Body Transfer Loop
             for(;;)
             {
                 //Read Body
-                if ( (BodyLength = ToServer.ReadBodyPart( &BodyTemp )) < 0 )
+                if ( (BodyLength = ToServer.ReadBodyPart( BodyTemp )) < 0 )
                 {
                     if (LL>0) LogFile::ErrorMessage("(%s) Could not read server body (%s:%d)\n", ToBrowser.GetIP().c_str(), ParentHost.c_str(), ParentPort);
                     DropServer = true;
@@ -991,6 +1045,7 @@ int ProxyHandler::CommunicationSSL()
                 if ( BodyLength == 0 ) break;
 
                 ContentLength += BodyLength;
+                TransferredBody = ContentLength;
 
                 //If we received more than Content-Length, discard the rest
                 if ( (ContentLengthReference > 0) && (ContentLength > ContentLengthReference) )
@@ -1003,7 +1058,7 @@ int ProxyHandler::CommunicationSSL()
                 }
 
                 //Send body to browser
-                if ( ToBrowser.Send( &BodyTemp ) == false )
+                if ( ToBrowser.Send( BodyTemp ) == false )
                 {
                     BrowserDropped = true;
                     if (LL>0) if (alivecount==1) LogFile::ErrorMessage("(%s) Could not send body to browser\n", ToBrowser.GetIP().c_str());
@@ -1047,16 +1102,16 @@ int ProxyHandler::CommunicationSSL()
     {
         if ( ret == 2 )
         {
-            BodyLength = ToServer.ReadBodyPart( &BodyTemp );
+            BodyLength = ToServer.ReadBodyPart( BodyTemp );
             if ( BodyLength < 1 ) break;
-            if ( ToBrowser.Send( &BodyTemp ) == false ) break;
+            if ( ToBrowser.Send( BodyTemp ) == false ) break;
             continue;
         }
         else if ( ret == 1 )
         {
-            BodyLength = ToBrowser.ReadBodyPart( &BodyTemp );
+            BodyLength = ToBrowser.ReadBodyPart( BodyTemp );
             if ( BodyLength < 1 ) break;
-            if ( ToServer.Send( &BodyTemp ) == false ) break;
+            if ( ToServer.Send( BodyTemp ) == false ) break;
             continue;
         }
     }
@@ -1075,6 +1130,10 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT, string Answer )
     switch ( CommunicationAnswerT )
     {
         case -10: //Browser Dropped
+            if ( Params::GetConfigBool("LOG_OKS") )
+            {
+                LogFile::AccessMessage("%s %s %d %s %d+%lld OK\n", ToBrowser.GetIP().c_str(), ToBrowser.GetRequestType().c_str(), ToServer.GetResponse(), ToBrowser.GetCompleteRequest().c_str(), TransferredHeader, TransferredBody);
+            }
             break;
 
         case -50:
@@ -1090,7 +1149,7 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT, string Answer )
             break;
 
         case -45:
-            LogFile::AccessMessage("%s Blacklisted: %s\n", ToBrowser.GetIP().c_str(), ToBrowser.GetCompleteRequest().c_str());
+            LogFile::AccessMessage("%s %s %d %s %d+%lld BLACKLIST\n", ToBrowser.GetIP().c_str(), ToBrowser.GetRequestType().c_str(), ToServer.GetResponse(), ToBrowser.GetCompleteRequest().c_str(), TransferredHeader, TransferredBody);
             message = ToBrowser.GetCompleteRequest();
             filename = ERROR_BLACKLIST;
             break;
@@ -1155,6 +1214,12 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT, string Answer )
             filename = ERROR_REQUEST;
             break;
 
+        case -250: //File larger than MAXDOWNLOADSIZE
+            LogFile::AccessMessage("%s %s %d %s %d+%lld OVERMAXSIZE\n", ToBrowser.GetIP().c_str(), ToBrowser.GetRequestType().c_str(), ToServer.GetResponse(), ToBrowser.GetCompleteRequest().c_str(), TransferredHeader, TransferredBody);
+            message = ToBrowser.GetCompleteRequest();
+            filename = ERROR_MAXSIZE;
+            break;
+
 #ifdef SSLTUNNEL
         case -300:
             message = "SSL tunneling failed through parentproxy";
@@ -1163,18 +1228,15 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT, string Answer )
 #endif
 
         case 1: //Virus
-            if ( BrowserDropped )
-                LogFile::AccessMessage("%s %s Virus: %s (Browser closed before receiving)\n", ToBrowser.GetIP().c_str(), ToBrowser.GetCompleteRequest().c_str(), Answer.c_str());
-            else
-                LogFile::AccessMessage("%s %s Virus: %s\n", ToBrowser.GetIP().c_str(), ToBrowser.GetCompleteRequest().c_str(), Answer.c_str());
-            SearchReplace( &Answer, ", ", ",<BR>" );
+            LogFile::AccessMessage("%s %s %d %s %d+%lld VIRUS %s\n", ToBrowser.GetIP().c_str(), ToBrowser.GetRequestType().c_str(), ToServer.GetResponse(), ToBrowser.GetCompleteRequest().c_str(), TransferredHeader, TransferredBody, Answer.c_str());
+            SearchReplace( Answer, ", ", "<BR>" );
             message = Answer;
             filename = VIRUS_FOUND;
             break;
 
         case 2: //Error
         case 3: //Scanner timeout
-            LogFile::AccessMessage("%s %s ScannerError: %s\n", ToBrowser.GetIP().c_str(), ToBrowser.GetCompleteRequest().c_str(), Answer.c_str());
+            LogFile::AccessMessage("%s %s %d %s %d+%lld SCANERROR %s\n", ToBrowser.GetIP().c_str(), ToBrowser.GetRequestType().c_str(), ToServer.GetResponse(), ToBrowser.GetCompleteRequest().c_str(), TransferredHeader, TransferredBody, Answer.c_str());
             message = Answer;
             filename = ERROR_SCANNER;
             break;
@@ -1246,7 +1308,7 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT, string Answer )
         //End header
         errorheader += "\r\nContent-Type: text/html\r\nProxy-Connection: close\r\nConnection: close\r\n\r\n";
 
-        if ( ToBrowser.Send( &errorheader ) == false )
+        if ( ToBrowser.Send( errorheader ) == false )
         {
             return false;
         }
@@ -1263,7 +1325,7 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT, string Answer )
         if ( !tfile )
         {
             string TemplateError = "HAVP could not open Template! Check errorlog and config!";
-            if ( ToBrowser.Send( &TemplateError ) == false ) BrowserDropped = true;
+            if ( ToBrowser.Send( TemplateError ) == false ) BrowserDropped = true;
 
             return false;
         }
@@ -1280,8 +1342,8 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT, string Answer )
 
         if ( Response != "" )
         {
-            SearchReplace( &Response, "<!--message-->", message );
-            if ( ToBrowser.Send( &Response ) == false ) BrowserDropped = true;
+            SearchReplace( Response, "<!--message-->", message );
+            if ( ToBrowser.Send( Response ) == false ) BrowserDropped = true;
         } 
     }
     
@@ -1303,7 +1365,12 @@ ProxyHandler::ProxyHandler()
         UseParentProxy = false;
     }
 
-    Header.reserve(1000);
+    MaxDownloadSize = Params::GetConfigInt("MAXDOWNLOADSIZE");
+    KeepBackTime = Params::GetConfigInt("KEEPBACKTIME");
+    TricklingTime = Params::GetConfigInt("TRICKLING");
+    KeepBackBuffer = Params::GetConfigInt("KEEPBACKBUFFER");
+
+    Header.reserve(20000);
 }
 
 

@@ -28,8 +28,8 @@ int HTMLResponse;
 long long ContentLength;
 bool KeepAlive;
 
-int AnalyseFirstHeaderLine( string *RequestT );
-int AnalyseHeaderLine( string *RequestT );
+int AnalyseFirstHeaderLine( string &RequestT );
+int AnalyseHeaderLine( string &RequestT );
 
 public: 
 

@@ -54,9 +54,17 @@ bool UseParentProxy;
 string ParentHost;
 int ParentPort;
 
+int MaxDownloadSize;
+int KeepBackTime;
+int TricklingTime;
+int KeepBackBuffer;
+
+int TransferredHeader;
+long long TransferredBody;
+
 bool ProxyMessage( int CommunicationAnswerT, string Answer );
-int CommunicationHTTP( ScannerHandler *Scanners, bool ScannerOff );
-int CommunicationFTP( ScannerHandler *Scanners, bool ScannerOff );
+int CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff );
+int CommunicationFTP( ScannerHandler &Scanners, bool ScannerOff );
 
 #ifdef SSLTUNNEL
 int CommunicationSSL();
@@ -64,7 +72,7 @@ int CommunicationSSL();
 
 public:
 
-void Proxy( SocketHandler *ProxyServerT, ScannerHandler *Scanners );
+void Proxy( SocketHandler &ProxyServerT, ScannerHandler &Scanners );
  
 ProxyHandler();
 ~ProxyHandler();

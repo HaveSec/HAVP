@@ -32,19 +32,6 @@ bool NOD32Scanner::ReloadDatabase()
 
 string NOD32Scanner::Scan( const char *FileName )
 {
-    int fd = open(FileName, O_RDONLY);
-
-    if ( fd < 0 )
-    {
-        LogFile::ErrorMessage("NOD32: Could not open tempfile: %s\n", strerror(errno));
-        ScannerAnswer = "2Could not open file to scan";
-        return ScannerAnswer;
-    }
-
-    //Wait till file is set up for scanning
-    while (read(fd, Ready, 1) < 0 && errno == EINTR);
-    while (close(fd) < 0 && errno == EINTR);
-
     //Connect
     if ( NOD32Socket.ConnectToSocket( Params::GetConfigString("NOD32SOCKET"), 1 ) == false )
     {
@@ -62,7 +49,7 @@ string NOD32Scanner::Scan( const char *FileName )
     string Response;
 
     //Get initial response
-    if ( NOD32Socket.GetLine( &Response, "\n\n", 600 ) == false )
+    if ( NOD32Socket.GetLine( Response, "\n\n", 600 ) == false )
     {
         NOD32Socket.Close();
 
@@ -81,11 +68,14 @@ string NOD32Scanner::Scan( const char *FileName )
     }
 
     //Send HELO and PARAMS
-    ScannerCmd = "HELO\n" + Agent + "\nhavp\n\nPSET\nscan_obj_files = yes\nscan_obj_archives = yes\nscan_obj_emails = yes\nscan_obj_sfx = yes\nscan_obj_runtimepackers = yes\nscan_app_adware = yes\nscan_app_unsafe = yes\nscan_pattern = yes\nscan_heur = yes\nscan_adv_heur = yes\nscan_all_files = yes\naction_on_infected = \"reject\"\naction_on_notscanned = \"reject\"\nquarantine = no\ntmp_dir = \"";
-    ScannerCmd += Params::GetConfigString("TEMPDIR") + "\"\n\n";
+    ScannerCmd = "HELO\n";
+    ScannerCmd += Agent;
+    ScannerCmd += "\nhavp\n\nPSET\nscan_obj_files = yes\nscan_obj_archives = yes\nscan_obj_emails = yes\nscan_obj_sfx = yes\nscan_obj_runtimepackers = yes\nscan_app_adware = yes\nscan_app_unsafe = yes\nscan_pattern = yes\nscan_heur = yes\nscan_adv_heur = yes\nscan_all_files = yes\naction_on_infected = \"reject\"\naction_on_notscanned = \"reject\"\nquarantine = no\ntmp_dir = \"";
+    ScannerCmd += Params::GetConfigString("TEMPDIR");
+    ScannerCmd += "\"\n\n";
 
     //Send command
-    if ( NOD32Socket.Send( &ScannerCmd ) == false )
+    if ( NOD32Socket.Send( ScannerCmd ) == false )
     {
         NOD32Socket.Close();
 
@@ -95,7 +85,7 @@ string NOD32Scanner::Scan( const char *FileName )
     }
 
     //Receive responses
-    NOD32Socket.GetLine( &Response, "\n\n", 600 );
+    NOD32Socket.GetLine( Response, "\n\n", 600 );
 
     //If we have NOD32 for Linux File Server, change Agent to pac
     //We can't get virusnames then :(
@@ -121,7 +111,7 @@ string NOD32Scanner::Scan( const char *FileName )
         }
 
         //Get initial response
-        if ( NOD32Socket.GetLine( &Response, "\n\n", 600 ) == false )
+        if ( NOD32Socket.GetLine( Response, "\n\n", 600 ) == false )
         {
             NOD32Socket.Close();
 
@@ -143,7 +133,7 @@ string NOD32Scanner::Scan( const char *FileName )
         ScannerCmd += Params::GetConfigString("TEMPDIR") + "\"\n\n";
 
         //Send command
-        if ( NOD32Socket.Send( &ScannerCmd ) == false )
+        if ( NOD32Socket.Send( ScannerCmd ) == false )
         {
             NOD32Socket.Close();
 
@@ -153,10 +143,10 @@ string NOD32Scanner::Scan( const char *FileName )
         }
 
         //Receive responses
-        NOD32Socket.GetLine( &Response, "\n\n", 600 );
+        NOD32Socket.GetLine( Response, "\n\n", 600 );
     }
 
-    if ( NOD32Socket.GetLine( &Response, "\n\n", 600 ) == false )
+    if ( NOD32Socket.GetLine( Response, "\n\n", 600 ) == false )
     {
         NOD32Socket.Close();
 
@@ -179,7 +169,7 @@ string NOD32Scanner::Scan( const char *FileName )
     ScannerCmd += "\n\nQUIT\n\n";
 
     //Send command
-    if ( NOD32Socket.Send( &ScannerCmd ) == false )
+    if ( NOD32Socket.Send( ScannerCmd ) == false )
     {
         NOD32Socket.Close();
 
@@ -191,7 +181,7 @@ string NOD32Scanner::Scan( const char *FileName )
     Response = "";
     int ret;
 
-    while ( (ret = NOD32Socket.Recv( &Response, true, 600 )) != 0 )
+    while ( (ret = NOD32Socket.Recv( Response, true, 600 )) != 0 )
     {
         if (ret < 0)
         {
@@ -260,6 +250,7 @@ void NOD32Scanner::FreeDatabase()
 NOD32Scanner::NOD32Scanner()
 {
     ScannerName = "NOD32 Socket Scanner";
+    ScannerNameShort = "NOD32";
 
     LastError = 0;
 

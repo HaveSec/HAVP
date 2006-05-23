@@ -1,4 +1,16 @@
 
+*HAVP 0.80 released
+ - Experimental FreeBSD support (no mandatory locking, KEEPBACK not supported!)
+ - Avast! scanner support
+ - Added MAXDOWNLOADSIZE config
+ - Added X_FORWARD_FOR config to control the header
+ - Added some archive scanning parameters for Trophie
+ - Added TCP support for clamd
+ - Ignore RAR errors from ClamAV (use ClamAV-devel if you want to scan RARv3)
+ - Fixed bug in socket buffer, sometimes caused nasty effects with POST etc.
+ - Fixed KeepAlive for HTTP/1.1 clients, now on by default
+ - Access logging format changed a bit
+
 *HAVP 0.79 released
  - MULTIPLE SCANNER SUPPORT! (see havp.config how to enable scanners)
  - NOD32, Sophos and Clamd scanner support

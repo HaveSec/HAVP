@@ -1,7 +1,7 @@
 /***************************************************************************
-                          utils.h  -  description
+                          avastscanner.h  -  description
                              -------------------
-    begin                : Sa M� 5 2005
+    begin                : Sa Feb 12 2005
     copyright            : (C) 2005 by Christian Hilgers
     email                : christian@hilgers.ag
  ***************************************************************************/
@@ -15,18 +15,35 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef AVASTSCANNER_H
+#define AVASTSCANNER_H
 
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <string>
+#include "../genericscanner.h"
 
-using namespace std;
+class AvastScanner : public GenericScanner {
 
-string UpperCase( string CaseString );
-void SearchReplace( string &source, string search, string replace );
-int select_eintr( int fds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *timeout );
+private:
+
+bool UseSocket;
+
+string ScannerAnswer;
+char Ready[2];
+
+SocketHandler AvastSocket;
+time_t LastError;
+
+string ScannerCmd;
+
+public:
+
+bool InitDatabase();
+bool ReloadDatabase();
+void FreeDatabase();
+string Scan( const char *FileName );
+
+AvastScanner();
+~AvastScanner();
+
+};
 
 #endif

@@ -31,14 +31,14 @@ protected:
 bool ProxyConnection;
 vector<string> tokens;
 
-virtual int AnalyseFirstHeaderLine( string *RequestT ) = 0;
-virtual int AnalyseHeaderLine( string *RequestT ) = 0;
+virtual int AnalyseFirstHeaderLine( string &RequestT ) = 0;
+virtual int AnalyseHeaderLine( string &RequestT ) = 0;
 
 public:
 
-bool ReadHeader( string *headerT );
-int AnalyseHeader( string *linesT );
-ssize_t ReadBodyPart( string* bodyT );
+bool ReadHeader( string &headerT );
+int AnalyseHeader( string &linesT );
+ssize_t ReadBodyPart( string &bodyT );
 bool SendHeader( string header, bool ConnectionClose );
 
 HTTPHandler();

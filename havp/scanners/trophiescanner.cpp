@@ -67,6 +67,40 @@ bool TrophieScanner::InitDatabase()
         LogFile::ErrorMessage("Trophie: VSInit() failed: %d\n", ret);
         return false;
     }
+
+    if ((ret = VSSetExtractPath(vs_addr, Params::GetConfigString("TEMPDIR").c_str())) != 0)
+    {
+        LogFile::ErrorMessage("Trophie: VSSetExtractPath() failed: %d\n", ret);
+        return false;
+    }
+
+    if ((ret = VSSetTempPath(vs_addr, Params::GetConfigString("TEMPDIR").c_str())) != 0)
+    {
+        LogFile::ErrorMessage("Trophie: VSSetTempPath() failed: %d\n", ret);
+        return false;
+    }
+
+    if ((ret = VSSetExtractFileCountLimit(vs_addr, Params::GetConfigInt("TROPHIEMAXFILES"))) != 0)
+    {
+        LogFile::ErrorMessage("Trophie: VSSetExtractFileCountLimit() failed: %d\n", ret);
+        return false;
+    }
+
+    if ( Params::GetConfigInt("TROPHIEMAXFILESIZE") > 0 )
+    {
+        if ((ret = VSSetExtractFileSizeLimit(vs_addr, 1048576 * Params::GetConfigInt("TROPHIEMAXFILESIZE"))) != 0)
+        {
+            LogFile::ErrorMessage("Trophie: VSSetExtractFileSizeLimit() failed: %d\n", ret);
+            return false;
+        }
+    }
+
+    if ((ret = VSSetExtractFileRatioLimit(vs_addr, Params::GetConfigInt("TROPHIEMAXRATIO"))) != 0)
+    {
+        LogFile::ErrorMessage("Trophie: VSSetExtractFileRatioLimit() failed: %d\n", ret);
+        return false;
+    }
+
     if ((ret = VSReadVirusPattern(vs_addr, -1, 0, (int *) &vs_ptr)) != 0)
     {
         LogFile::ErrorMessage("Trophie: VSReadVirusPattern() failed: %d\n", ret);
@@ -141,19 +175,6 @@ bool TrophieScanner::ReloadDatabase()
 
 string TrophieScanner::Scan( const char *FileName )
 {
-    int fd = open(FileName, O_RDONLY);
-
-    if ( fd < 0 )
-    {
-        LogFile::ErrorMessage("Trophie: Could not open tempfile: %s\n", strerror(errno));
-        ScannerAnswer = "2Could not open file to scan";
-        return ScannerAnswer;
-    }
-
-    //Wait till file is set up for scanning
-    while (read(fd, Ready, 1) < 0 && errno == EINTR);
-    while (close(fd) < 0 && errno == EINTR);
-
     int ret = trophie_scanfile( (char *)FileName );
 
     if ( ret ) //Virus Found
@@ -180,6 +201,7 @@ void TrophieScanner::FreeDatabase()
 TrophieScanner::TrophieScanner()
 {
     ScannerName = "Trend Micro Library Scanner";
+    ScannerNameShort = "Trend";
 
     cur_patt = 0;
 

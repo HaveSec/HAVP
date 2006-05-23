@@ -26,9 +26,6 @@ private:
 
 string ScannerCmd;
 
-string ServerHost;
-int ServerPort;
-
 SocketHandler AVGSocket;
 time_t LastError;
 

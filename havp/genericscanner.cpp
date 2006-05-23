@@ -28,6 +28,30 @@ bool GenericScanner::StartScanning( int fromhandler, int tohandler, const char *
 
     for(;;)
     {
+#ifndef NOMAND
+        int fd = open(TempFileName, O_RDONLY);
+        
+        if ( fd < 0 )
+        {
+            LogFile::ErrorMessage("Could not open tempfile: %s\n", strerror(errno));
+        }
+        else
+        {
+            //Wait until file is ready for scanning
+            char Ready[2];
+            while (read(fd, Ready, 1) < 0 && errno == EINTR);
+            while (close(fd) < 0 && errno == EINTR);
+        }
+#else
+        //Wait for scanning command
+        while ((ret = read(fromhandler, buf, 1)) < 0)
+        {
+            if (errno == EINTR) continue;
+            break;
+        }
+        if (ret <= 0 || buf[0] != 's') break;
+#endif
+
         //Start scanner and get return code
         ScannerAnswer = Scan( TempFileName );
 

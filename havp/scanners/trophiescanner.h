@@ -78,6 +78,11 @@ extern int VSGetDetectableVirusNumber(int);
 extern int VSSetProcessFileCallBackFunc(int, int(*)(char *a, struct callback_type *b, int c, char *d));
 extern int VSSetProcessAllFileInArcFlag(int, int);
 extern int VSSetProcessAllFileFlag(int, int);
+extern int VSSetExtractFileCountLimit(int, int);
+extern int VSSetExtractFileRatioLimit(int, int);
+extern int VSSetExtractFileSizeLimit(int, int);
+extern int VSSetExtractPath(int, const char *);
+extern int VSSetTempPath(int, const char*);
 extern int VSQuit(int);
 
 /* trophie_scanfile */

@@ -1847,9 +1847,23 @@ fi;
 
 
 case "`uname`" in
+
+Linux*)
+  ;;
+
 SunOS*)
-     LDFLAGS="$LDFLAGS -lsocket -lresolv -lnsl"
-    ;;
+  LDFLAGS="$LDFLAGS -lsocket -lresolv -lnsl"
+  ;;
+
+*)
+  echo ""
+  echo "NOTICE:"
+  echo " Linux or Solaris not detected!"
+  echo " Mandatory locking support disabled!"
+  echo ""
+  DEFS="$DEFS -DNOMAND"
+  ;;
+
 esac
 
 

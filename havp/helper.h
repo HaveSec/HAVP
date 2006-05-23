@@ -21,7 +21,7 @@
 #include <unistd.h>
 #include <string>
 
-int MakeDaemon();
+bool MakeDaemon();
 bool HardLockTest();
 bool ChangeUserAndGroup( string usr, string grp );
 bool WritePidFile( pid_t pid );

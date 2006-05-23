@@ -21,21 +21,22 @@
 
 
 //Read header
-bool HTTPHandler::ReadHeader( string *headerT )
+bool HTTPHandler::ReadHeader( string &headerT )
 {
+    headerT = "";
 
-    string::size_type position;
-    bool WrongHeader = false;
-    int poscount = 0;
-    ssize_t read;
     string tempheader;
 
-    *headerT = "";
+    ssize_t read = SocketHandler::Recv( tempheader, false, -1 );
 
-    if ( (read = SocketHandler::Recv( &tempheader, false, -1 )) <= 0 )
+    if ( read < 1 )
     {
         return false;
     }
+
+    bool WrongHeader = false;
+    int poscount = 0;
+    string::size_type position;
 
     while ( (position = tempheader.find ("\r\n\r\n")) == string::npos )
     {
@@ -62,7 +63,7 @@ bool HTTPHandler::ReadHeader( string *headerT )
             return false;
         }
 
-        if ( (read = SocketHandler::Recv( &tempheader, false, -1 )) <= 0 )
+        if ( (read = SocketHandler::Recv( tempheader, false, -1 )) < 1 )
         {
             return false;
         }
@@ -78,7 +79,7 @@ bool HTTPHandler::ReadHeader( string *headerT )
     if ( WrongHeader == false )
     {
         //Read last \r\n
-        if ( SocketHandler::RecvLength(&tempheader, 2 ) == false )
+        if ( SocketHandler::RecvLength( tempheader, 2 ) == false )
         {
             return false;
         }
@@ -89,7 +90,7 @@ bool HTTPHandler::ReadHeader( string *headerT )
 
 
 //Split header to tokens
-int HTTPHandler::AnalyseHeader( string *linesT )
+int HTTPHandler::AnalyseHeader( string &linesT )
 {
 
     //Delete header tokens
@@ -98,17 +99,17 @@ int HTTPHandler::AnalyseHeader( string *linesT )
     string::size_type lastposition = 0;
 
     //Do "Tolerant Applications" - RFC 1945 - Hypertext Transfer Protocol -- HTTP/1.0
-    while ( (lastposition = linesT->find( "\r", lastposition )) != string::npos )
+    while ( (lastposition = linesT.find( "\r", lastposition )) != string::npos )
     {
-        linesT->replace( lastposition, 1, "" );
+        linesT.replace( lastposition, 1, "" );
     }
 
     lastposition = 0;
 
-    string::size_type length = linesT->length();
+    string::size_type length = linesT.length();
     string::size_type position, positiontmp;
     
-    if ( (position = linesT->find( "\n", 0 )) == string::npos )
+    if ( (position = linesT.find( "\n", 0 )) == string::npos )
     {
         return -201;
     }
@@ -122,7 +123,7 @@ int HTTPHandler::AnalyseHeader( string *linesT )
     //Loop through headers
     while ( position != string::npos && lastposition != length )
     {
-        tempToken = linesT->substr( lastposition, position - lastposition );
+        tempToken = linesT.substr( lastposition, position - lastposition );
 
         if ( (lastposition = tempToken.find_last_not_of("\t ")) != string::npos )
         {
@@ -131,7 +132,7 @@ int HTTPHandler::AnalyseHeader( string *linesT )
             if ( First == true )
             {
                 //Analyse request header
-                if ( (ret = AnalyseFirstHeaderLine( &tempToken )) < 0 )
+                if ( (ret = AnalyseFirstHeaderLine( tempToken )) < 0 )
                 {
                     return ret;
                 }
@@ -142,13 +143,14 @@ int HTTPHandler::AnalyseHeader( string *linesT )
                 if ( (positiontmp = tempToken.find(":")) != string::npos )
                 {
                     headerbase = tempToken.substr(0, positiontmp + 1);
+                    headerbase += " ";
 
                     //Make sure we have "Header:<SPACE>value"
                     if ( (positiontmp = tempToken.find_first_not_of(" ", positiontmp + 1)) != string::npos )
                     {
-                        tempToken = headerbase + " " + tempToken.substr(positiontmp);
+                        tempToken = headerbase + tempToken.substr(positiontmp);
 
-                        if ( (ret = AnalyseHeaderLine( &tempToken )) < 0 )
+                        if ( (ret = AnalyseHeaderLine( tempToken )) < 0 )
                         {
                             return ret;
                         }
@@ -162,7 +164,7 @@ int HTTPHandler::AnalyseHeader( string *linesT )
         }
 
         lastposition = position + 1;
-        position = linesT->find( "\n", lastposition );
+        position = linesT.find( "\n", lastposition );
     }
 
     return 0;
@@ -170,10 +172,9 @@ int HTTPHandler::AnalyseHeader( string *linesT )
 
 
 //Read part of Body
-ssize_t HTTPHandler::ReadBodyPart( string* bodyT )
+ssize_t HTTPHandler::ReadBodyPart( string &bodyT )
 {
-
-    *bodyT = "";
+    bodyT = "";
     ssize_t count;
 
     if ( (count = SocketHandler::Recv( bodyT, true, -1 )) < 0)
@@ -196,10 +197,10 @@ bool HTTPHandler::SendHeader( string header, bool ConnectionClose )
     }
     else
     {
-        header += "Connection: Keep-Alive\r\n\r\n";
+        header += "Connection: keep-alive\r\n\r\n";
     }
 
-    if ( SocketHandler::Send( &header ) == false )
+    if ( SocketHandler::Send( header ) == false )
     {
         return false;
     }

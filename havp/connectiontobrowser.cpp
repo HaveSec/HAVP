@@ -25,7 +25,6 @@
 //Prepare Header for Server
 string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, bool UseParentProxy )
 {
-
     string PortString = "";
 
     if ( Port != 80 && Port != 21 )
@@ -36,15 +35,24 @@ string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, bool UsePar
     }
 
     string header;
-    header.reserve(1000);
+    header.reserve(20000);
 
     if ( UseParentProxy )
     {
         //HTTP
         if ( RequestProtocol == "http" )
         {
-            header = RequestType + " http://" + Host + PortString + Request + " HTTP/1.0\r\n";
-            CompleteRequest = "http://" + Host + PortString + Request;
+            header = RequestType;
+            header += " http://";
+            header += Host;
+            header += PortString;
+            header += Request;
+            header += " HTTP/1.0\r\n";
+
+            CompleteRequest = "http://";
+            CompleteRequest += Host;
+            CompleteRequest += PortString;
+            CompleteRequest += Request;
         }
         //FTP
         else if ( RequestProtocol == "ftp" )
@@ -53,56 +61,88 @@ string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, bool UsePar
 
             if ( FtpUser != "" )
             {
-                SearchReplace( &FtpUser, ":", "%3A" );
-                SearchReplace( &FtpUser, "@", "%40" );
+                SearchReplace( FtpUser, ":", "%3A" );
+                SearchReplace( FtpUser, "@", "%40" );
 
                 if ( FtpPass != "" )
                 {
-                    SearchReplace( &FtpPass, ":", "%3A" );
-                    SearchReplace( &FtpPass, "@", "%40" );
+                    SearchReplace( FtpPass, ":", "%3A" );
+                    SearchReplace( FtpPass, "@", "%40" );
 
-                    AuthString = FtpUser + ":" + FtpPass + "@";
+                    AuthString = FtpUser;
+                    AuthString += ":";
+                    AuthString += FtpPass;
+                    AuthString += "@";
                 }
                 else
                 {
-                    AuthString = FtpUser + "@";
+                    AuthString = FtpUser;
+                    AuthString += "@";
                 }
             }
 
-            header = RequestType + " ftp://" + AuthString + Host + PortString + Request + " HTTP/1.0\r\n";
-            CompleteRequest = "ftp://" + Host + PortString + Request;
+            header = RequestType;
+            header += " ftp://";
+            header += AuthString;
+            header += Host;
+            header += PortString;
+            header += Request;
+            header += " HTTP/1.0\r\n";
+
+            CompleteRequest = "ftp://";
+            CompleteRequest += Host;
+            CompleteRequest += PortString;
+            CompleteRequest += Request;
         }
 #ifdef SSLTUNNEL
         //CONNECT
         else if ( RequestProtocol == "connect" )
         {
-            header = "CONNECT " + Request + " HTTP/1.0\r\n";
-            CompleteRequest = "connect://" + Request;
+            header = "CONNECT ";
+            header += Request;
+            header += " HTTP/1.0\r\n";
+
+            CompleteRequest = "connect://";
+            CompleteRequest += Request;
         }
 #endif
     }
     else
     {
-        header = RequestType + " " + Request + " HTTP/1.0\r\n";
-        CompleteRequest = RequestProtocol + "://" + Host + PortString + Request;
+        header = RequestType;
+        header += " ";
+        header += Request;
+        header += " HTTP/1.0\r\n";
+
+        CompleteRequest = RequestProtocol;
+        CompleteRequest += "://";
+        CompleteRequest += Host;
+        CompleteRequest += PortString;
+        CompleteRequest += Request;
     }
 
-    //Strip long URLs
+    //Remove parameters from URL
+    string::size_type QMark = CompleteRequest.find( "?" );
+
+    if ( QMark != string::npos )
+    {
+        CompleteRequest = CompleteRequest.substr( 0, QMark + 1 );
+    }
+
+    //Strip long URL
     if (CompleteRequest.length() > 500)
     {
-        CompleteRequest = CompleteRequest.substr(0,500);
+        CompleteRequest = CompleteRequest.substr( 0, 500 );
         CompleteRequest += "...";
     }
 
     string via = "";
 
-    vector<string>::iterator itvec;
-
     string it;
     it.reserve(200);
 
     //Skip first token
-    for (itvec = tokens.begin() + 1; itvec != tokens.end(); ++itvec)
+    for (vector<string>::iterator itvec = tokens.begin() + 1; itvec != tokens.end(); ++itvec)
     {
 
         //Uppercase for matching
@@ -134,6 +174,10 @@ string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, bool UsePar
         {
             continue;
         }
+        else if ( it.find( "X-FORWARD-FOR", 0 ) == 0 )
+        {
+            continue;
+        }
 
         if ( (Params::GetConfigBool("RANGE") == false) && (ScannerOff == false) && (StreamAgent == false) )
         {
@@ -147,21 +191,29 @@ string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, bool UsePar
            }
         }
 
-        header += *itvec + "\r\n";
+        header += *itvec;
+        header += "\r\n";
     }                                             //for
 
-    header += "Via: 1.0 HAVP" + via + "\r\n";
+    if ( Params::GetConfigBool("X_FORWARDED_FOR") )
+    {
+        header += "X-Forwarded-For: ";
+        header += GetIP();
+        header += "\r\n";
+    }
+
+    header += "Via: 1.0 HAVP";
+    header += via;
+    header += "\r\n";
 
     return header;
-
 }
 
 
-int ConnectionToBrowser::AnalyseFirstHeaderLine( string *RequestT )
+int ConnectionToBrowser::AnalyseFirstHeaderLine( string &RequestT )
 {
-
     //Uppercase for matching
-    string RequestU = UpperCase(*RequestT);
+    string RequestU = UpperCase(RequestT);
 
     //Looking for GET, POST, HEAD, CONNECT etc.
     for(unsigned int i=0;i < Methods.size(); i++)
@@ -177,10 +229,10 @@ int ConnectionToBrowser::AnalyseFirstHeaderLine( string *RequestT )
 }
 
 
-int ConnectionToBrowser::AnalyseHeaderLine( string *RequestT )
+int ConnectionToBrowser::AnalyseHeaderLine( string &RequestT )
 {
     //Uppercase for matching
-    string RequestU = UpperCase(*RequestT);
+    string RequestU = UpperCase(RequestT);
 
     if (RequestU.find("CONTENT-LENGTH: ", 0) == 0)
     {
@@ -190,7 +242,7 @@ int ConnectionToBrowser::AnalyseHeaderLine( string *RequestT )
             return 0;
         }
 
-        string LengthToken = RequestT->substr( 16 );
+        string LengthToken = RequestT.substr( 16 );
 
         //Sanity check for invalid huge Content-Length
         if ( LengthToken.length() > 18 ) return 0;
@@ -205,9 +257,16 @@ int ConnectionToBrowser::AnalyseHeaderLine( string *RequestT )
 
     if (ProxyConnection == false)
     {
-        if (RequestU.find("CONNECTION: KEEP-ALIVE", 0) == 0)
+        if (RequestU.find("CONNECTION: ", 0) == 0)
         {
-            KeepAlive = true;
+            if (RequestU.find("KEEP-ALIVE", 12) != string::npos)
+            {
+                KeepAlive = true;
+            }
+            else
+            {
+                KeepAlive = false;
+            }
 
             return 0;
         }
@@ -233,20 +292,18 @@ int ConnectionToBrowser::AnalyseHeaderLine( string *RequestT )
     {
         if (RequestU.find( "X-FORWARDED-FOR: ", 0 ) == 0)
         {
-            IP = RequestT->substr(17);
+            IP = RequestT.substr(17);
             return 0;
         }
     }
 
     if (RequestU.find("USER-AGENT: ", 0) == 0)
     {
-        UserAgent = RequestT->substr(12);
+        UserAgent = RequestT.substr(12);
 
-        if (Params::GetConfigString("STREAMUSERAGENT") != "")
+        if (StreamUA.size() > 0)
         {
-            vector<string>::iterator UAi;
-
-            for (UAi = StreamUA.begin(); UAi != StreamUA.end(); ++UAi)
+            for (vector<string>::iterator UAi = StreamUA.begin(); UAi != StreamUA.end(); ++UAi)
             {
                 if (RequestU.find(*UAi, 12) != string::npos)
                 {
@@ -269,10 +326,9 @@ int ConnectionToBrowser::AnalyseHeaderLine( string *RequestT )
 
 
 //Get host and port
-int ConnectionToBrowser::GetHostAndPortOfHostLine( string *HostLineT )
+int ConnectionToBrowser::GetHostAndPortOfHostLine( string &HostLineT )
 {
-
-    string HostwithPort = HostLineT->substr( 6 );
+    string HostwithPort = HostLineT.substr( 6 );
 
     string::size_type PositionPort;
 
@@ -312,9 +368,8 @@ int ConnectionToBrowser::GetHostAndPortOfHostLine( string *HostLineT )
 }
 
 
-int ConnectionToBrowser::GetHostAndPortOfRequest( string *RequestT, string::size_type StartPos )
+int ConnectionToBrowser::GetHostAndPortOfRequest( string &RequestT, string::size_type StartPos )
 {
-
     string::size_type Begin, LastPosition;
 
 #ifdef SSLTUNNEL
@@ -323,11 +378,11 @@ int ConnectionToBrowser::GetHostAndPortOfRequest( string *RequestT, string::size
     {
         RequestProtocol = "connect";
 
-        if ( (Begin = RequestT->find_first_not_of( " ", 8 )) != string::npos )
+        if ( (Begin = RequestT.find_first_not_of( " ", 8 )) != string::npos )
         {
-            if ( (LastPosition = RequestT->find( " ", Begin )) != string::npos )
+            if ( (LastPosition = RequestT.find( " ", Begin )) != string::npos )
             {
-                string HostwithPort = RequestT->substr( Begin, LastPosition - Begin );
+                string HostwithPort = RequestT.substr( Begin, LastPosition - Begin );
 
                 if ( (Begin = HostwithPort.find( ":", 1 )) != string::npos )
                 {
@@ -362,17 +417,26 @@ int ConnectionToBrowser::GetHostAndPortOfRequest( string *RequestT, string::size
 
     //Check for other protocols..
 
+    //Uppercase for matching
+    string RequestU = UpperCase(RequestT);
+
     //Transparent proxying?
-    if ( Params::GetConfigBool("TRANSPARENT") == true )
+    if ( Transparent )
     {
-        if ( RequestT->find( "/", StartPos ) == StartPos )
+        if ( RequestT.find( "/", StartPos ) == StartPos )
         {
-            if ( (LastPosition = RequestT->find( " ", StartPos )) != string::npos )
+            if ( (LastPosition = RequestT.find( " ", StartPos )) != string::npos )
             {
                 if ( LastPosition > 4096 ) return -201;
 
+                if ( RequestU.find( "HTTP/1.1", LastPosition + 1 ) != string::npos )
+                {
+                    //KeepAlive by default for HTTP/1.1 clients
+                    KeepAlive = true;
+                }
+
                 RequestProtocol = "http";
-                Request = RequestT->substr( StartPos, LastPosition - StartPos );
+                Request = RequestT.substr( StartPos, LastPosition - StartPos );
 
                 return 0;
             }
@@ -380,9 +444,6 @@ int ConnectionToBrowser::GetHostAndPortOfRequest( string *RequestT, string::size
 
         return -201;
     }
-
-    //Uppercase for matching
-    string RequestU = UpperCase(*RequestT);
 
     //HTTP
     if ( (Begin = RequestU.find( "HTTP://", StartPos )) == StartPos )
@@ -404,7 +465,7 @@ int ConnectionToBrowser::GetHostAndPortOfRequest( string *RequestT, string::size
 
     //Start parsing request..
 
-    if ( (LastPosition = RequestT->find( " ", Begin )) == string::npos )
+    if ( (LastPosition = RequestT.find( " ", Begin )) == string::npos )
     {
         return -201;
     }
@@ -413,8 +474,14 @@ int ConnectionToBrowser::GetHostAndPortOfRequest( string *RequestT, string::size
         return -201;
     }
 
+    if ( RequestU.find( "HTTP/1.1", LastPosition + 1 ) != string::npos )
+    {
+        //KeepAlive by default for HTTP/1.1 clients
+        KeepAlive = true;
+    }
+
     //Split domain and path
-    string RequestDomain = RequestT->substr( Begin, LastPosition - Begin );
+    string RequestDomain = RequestT.substr( Begin, LastPosition - Begin );
 
     if ( (LastPosition = RequestDomain.find( "/", 0 )) != string::npos )
     {
@@ -449,7 +516,7 @@ int ConnectionToBrowser::GetHostAndPortOfRequest( string *RequestT, string::size
 
         //Strip login info.. also from HTTP because IE does it anyway
         RequestDomain.replace( 0, LastPosition + 1, "" );
-        RequestT->replace( Begin, LastPosition + 1, "" );
+        RequestT.replace( Begin, LastPosition + 1, "" );
 
         if ( !RequestDomain.length() )
         {

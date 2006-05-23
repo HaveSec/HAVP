@@ -32,25 +32,6 @@ bool AVGScanner::ReloadDatabase()
 
 string AVGScanner::Scan( const char *FileName )
 {
-    int fd = open(FileName, O_RDONLY);
-
-    if ( fd < 0 )
-    {
-        LogFile::ErrorMessage("AVG: Could not open tempfile: %s\n", strerror(errno));
-        ScannerAnswer = "2Could not open file to scan";
-        return ScannerAnswer;
-    }
-
-    //Wait till file is set up for scanning
-    while (read(fd, Ready, 1) < 0 && errno == EINTR);
-    while (close(fd) < 0 && errno == EINTR);
-
-    if ( AVGSocket.SetDomainAndPort( ServerHost, ServerPort ) == false )
-    {
-        LogFile::ErrorMessage("AVG: Could not connect to scanner\n");
-        ScannerAnswer = "2Could not connect to scanner";
-        return ScannerAnswer;
-    }
     if ( AVGSocket.ConnectToServer() == false )
     {
         AVGSocket.Close();
@@ -71,7 +52,7 @@ string AVGScanner::Scan( const char *FileName )
     ScannerCmd += FileName;
     ScannerCmd += "\r\nQUIT\r\n";
 
-    if ( AVGSocket.Send( &ScannerCmd ) == false )
+    if ( AVGSocket.Send( ScannerCmd ) == false )
     {
         AVGSocket.Close();
         LogFile::ErrorMessage("AVG: Could not connect to scanner\n");
@@ -82,7 +63,7 @@ string AVGScanner::Scan( const char *FileName )
     string Response;
     int ret;
 
-    while ( (ret = AVGSocket.Recv( &Response, true, 600 )) != 0 )
+    while ( (ret = AVGSocket.Recv( Response, true, 600 )) != 0 )
     {
         if (ret < 0)
         {
@@ -140,11 +121,14 @@ void AVGScanner::FreeDatabase()
 AVGScanner::AVGScanner()
 {
     ScannerName = "AVG Socket Scanner";
+    ScannerNameShort = "AVG";
 
     LastError = 0;
 
-    ServerHost = Params::GetConfigString("AVGSERVER");
-    ServerPort = Params::GetConfigInt("AVGPORT");
+    if ( AVGSocket.SetDomainAndPort( Params::GetConfigString("AVGSERVER"), Params::GetConfigInt("AVGPORT") ) == false )
+    {
+        LogFile::ErrorMessage("AVG: Could not resolve scanner host\n");
+    }
 
     ScannerAnswer.reserve(100);
 }

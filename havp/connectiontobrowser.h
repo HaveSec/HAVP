@@ -47,10 +47,10 @@ vector<string> StreamUA;
 
 bool Transparent;
 
-int AnalyseFirstHeaderLine( string *RequestT );
-int AnalyseHeaderLine( string *RequestT );
-int GetHostAndPortOfRequest( string *RequestT, string::size_type StartPos );
-int GetHostAndPortOfHostLine( string *HostLineT );
+int AnalyseFirstHeaderLine( string &RequestT );
+int AnalyseHeaderLine( string &RequestT );
+int GetHostAndPortOfRequest( string &RequestT, string::size_type StartPos );
+int GetHostAndPortOfHostLine( string &HostLineT );
 
 #ifdef REWRITE
 map <string,string> URLRewrite;

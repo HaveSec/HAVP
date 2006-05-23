@@ -137,13 +137,13 @@ int InstallSignal( int level )
 }
 
 
-int MakeDaemon()
+bool MakeDaemon()
 {
     pid_t daemon = fork();
 
     if ( daemon < 0 )
     {
-        return -1;
+        return false;
     }
     else if (daemon != 0)
     {
@@ -161,7 +161,7 @@ int MakeDaemon()
     close(1);
     close(2);
 
-    return 0;
+    return true;
 }
 
 
@@ -177,22 +177,14 @@ bool HardLockTest()
         string user = Params::GetConfigString("USER");
         string scanpath = Params::GetConfigString("SCANTEMPFILE");
         cout << "Maybe you need to: chown " << user << " " << scanpath.substr(0, scanpath.rfind("/")) << endl;
-        cout << "Exiting.." << endl;
         return false;
     }
 
-    struct stat fstatpuff;
-
-    //set-group-ID and group-execute
-    while (fstat(fd_tempfile, &fstatpuff) < 0)
-    {
-        if (errno == EINTR) continue;
-
-        string Error = strerror(errno);
-        cout << "Testfile fstat() failed: " << Error << endl;
-        return false;
-    }
-    while (fchmod(fd_tempfile, (fstatpuff.st_mode & ~S_IXGRP) | S_ISGID | S_IRGRP) < 0)
+#ifndef NOMAND
+    while (fchmod(fd_tempfile, S_IRUSR|S_IWUSR|S_IRGRP|S_ISGID) < 0)
+#else
+    while (fchmod(fd_tempfile, S_IRUSR|S_IWUSR|S_IRGRP) < 0)
+#endif
     {
         if (errno == EINTR) continue;
 
@@ -212,6 +204,10 @@ bool HardLockTest()
         return false;
     }
 
+#ifdef NOMAND
+    return true;
+
+#else
     struct flock lock;
 
     lock.l_type   = F_WRLCK;
@@ -296,6 +292,7 @@ bool HardLockTest()
 
     //Success
     exit(0);
+#endif
 }
 
 

@@ -32,20 +32,18 @@ bool ClamdScanner::ReloadDatabase()
 
 string ClamdScanner::Scan( const char *FileName )
 {
-    int fd = open(FileName, O_RDONLY);
+    bool SockAnswer;
 
-    if ( fd < 0 )
+    if ( UseSocket )
     {
-        LogFile::ErrorMessage("Clamd: Could not open tempfile: %s\n", strerror(errno));
-        ScannerAnswer = "2Could not open file to scan";
-        return ScannerAnswer;
+        SockAnswer = CLAMDSocket.ConnectToSocket( Params::GetConfigString("CLAMDSOCKET"), 1 );
+    }
+    else
+    {
+        SockAnswer = CLAMDSocket.ConnectToServer();
     }
 
-    //Wait till file is set up for scanning
-    while (read(fd, Ready, 1) < 0 && errno == EINTR);
-    while (close(fd) < 0 && errno == EINTR);
-
-    if ( CLAMDSocket.ConnectToSocket( Params::GetConfigString("CLAMDSOCKET"), 1 ) == false )
+    if ( SockAnswer == false )
     {
         //Prevent log flooding, show error only once per minute
         if ( (LastError == 0) || (LastError + 60 < time(NULL)) )
@@ -64,12 +62,23 @@ string ClamdScanner::Scan( const char *FileName )
     ScannerCmd += "\n";
 
     //Send command
-    if ( CLAMDSocket.Send( &ScannerCmd ) == false )
+    if ( CLAMDSocket.Send( ScannerCmd ) == false )
     {
         CLAMDSocket.Close();
 
-        //Try to reconnect
-        if ( CLAMDSocket.ConnectToSocket( Params::GetConfigString("CLAMDSOCKET"), 1 ) == false )
+        //Try to reconnect after 1 second
+        sleep(1);
+
+        if ( UseSocket )
+        {
+            SockAnswer = CLAMDSocket.ConnectToSocket( Params::GetConfigString("CLAMDSOCKET"), 1 );
+        }
+        else
+        {
+            SockAnswer = CLAMDSocket.ConnectToServer();
+        }
+
+        if ( SockAnswer == false )
         {
             //Prevent log flooding, show error only once per minute
             if ( (LastError == 0) || (LastError + 60 < time(NULL)) )
@@ -82,7 +91,7 @@ string ClamdScanner::Scan( const char *FileName )
             return ScannerAnswer;
         }
 
-        if ( CLAMDSocket.Send( &ScannerCmd ) == false )
+        if ( CLAMDSocket.Send( ScannerCmd ) == false )
         {
             CLAMDSocket.Close();
 
@@ -95,7 +104,7 @@ string ClamdScanner::Scan( const char *FileName )
     string Response;
 
     //Get response
-    if ( CLAMDSocket.GetLine( &Response, "\n", 600 ) == false )
+    if ( CLAMDSocket.GetLine( Response, "\n", 600 ) == false )
     {
         CLAMDSocket.Close();
 
@@ -149,8 +158,23 @@ void ClamdScanner::FreeDatabase()
 ClamdScanner::ClamdScanner()
 {
     ScannerName = "Clamd Socket Scanner";
+    ScannerNameShort = "Clamd";
 
     LastError = 0;
+
+    if ( Params::GetConfigString("CLAMDSERVER") != "" )
+    {
+        UseSocket = false;
+
+        if ( CLAMDSocket.SetDomainAndPort( Params::GetConfigString("CLAMDSERVER"), Params::GetConfigInt("CLAMDPORT") ) == false )
+        {
+            LogFile::ErrorMessage("Clamd: Could not resolve scanner host\n");
+        }
+    }
+    else
+    {
+        UseSocket = true;
+    }
 
     ScannerAnswer.reserve(100);
 }

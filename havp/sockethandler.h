@@ -47,6 +47,8 @@ fd_set checkfd, wset;
 
 string source_address;
 
+string RecvBuf;
+
 protected:
 
 struct sockaddr_in my_s_addr;
@@ -57,13 +59,13 @@ int sock_fd;
 
 bool CreateServer( int portT, in_addr_t bind_addrT = INADDR_ANY );
 bool CreateServer( int portT, string bind_addrT );
-bool AcceptClient( SocketHandler *accept_socketT );
+bool AcceptClient( SocketHandler &accept_socketT );
 bool ConnectToServer();
 bool ConnectToSocket( string SocketPath, int retry );
-bool Send( string *sock_outT );
-ssize_t Recv( string *sock_inT, bool sock_delT, int timeout );
-bool RecvLength( string *sock_inT, ssize_t sock_lengthT );
-bool GetLine( string *lineT, string separator, int timeout );
+bool Send( string &sock_outT );
+ssize_t Recv( string &sock_inT, bool sock_delT, int timeout );
+bool RecvLength( string &sock_inT, unsigned int sock_lengthT );
+bool GetLine( string &lineT, string separator, int timeout );
 bool SetDomainAndPort( const string domainT, int portT );
 bool CheckForData( int timeout );
 void Close();

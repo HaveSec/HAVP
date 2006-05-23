@@ -35,7 +35,7 @@ bool ClamLibScanner::InitDatabase()
         return false;
     }
 
-    LogFile::ErrorMessage("ClamAV: Loaded %d signatures\n", no);
+    LogFile::ErrorMessage("ClamAV: Loaded %d signatures (engine %s)\n", no, cl_retver());
 
     //Build engine
     if ( (ret = cl_build(root)) != 0 )
@@ -78,7 +78,7 @@ bool ClamLibScanner::ReloadDatabase()
             return false;
         }
 
-        LogFile::ErrorMessage("ClamAV: Reloaded %d signatures\n", no);
+        LogFile::ErrorMessage("ClamAV: Reloaded %d signatures (engine %s)\n", no, cl_retver());
 
         cl_statfree(&dbstat);
 
@@ -98,24 +98,10 @@ bool ClamLibScanner::ReloadDatabase()
 
 string ClamLibScanner::Scan( const char *FileName )
 {
-    int fd = open(FileName, O_RDONLY);
-
-    if ( fd < 0 )
-    {
-        LogFile::ErrorMessage("ClamAV: Could not open tempfile: %s\n", strerror(errno));
-        ScannerAnswer = "2Could not open file to scan";
-        return ScannerAnswer;
-    }
-
-    //Wait till file is set up for scanning
-    while (read(fd, Ready, 1) < 0 && errno == EINTR);
-    lseek(fd, 0, SEEK_SET);
-
-    int ret = cl_scandesc(fd, &virname, NULL, root, &limits, scanopts);
-    while (close(fd) < 0 && errno == EINTR);
+    int ret = cl_scanfile(FileName, &virname, NULL, root, &limits, scanopts);
 
     //Clean?
-    if ( ret == CL_CLEAN )
+    if ( ret == CL_CLEAN || ret == CL_ERAR )
     {
         ScannerAnswer = "0Clean";
         return ScannerAnswer;
@@ -124,6 +110,13 @@ string ClamLibScanner::Scan( const char *FileName )
     //Virus?
     if ( ret == CL_VIRUS )
     {
+        //Ignore Oversized.XXX errors? ClamAV does not honour BLOCKMAX on Ratio
+        if ( (strstr(virname, "Oversized.") != NULL) && (Params::GetConfigBool("CLAMBLOCKMAX") == false) )
+        {
+            ScannerAnswer = "0Clean";
+            return ScannerAnswer;
+        }
+
         ScannerAnswer = "1";
         ScannerAnswer += virname;
         return ScannerAnswer;
@@ -146,6 +139,7 @@ void ClamLibScanner::FreeDatabase()
 ClamLibScanner::ClamLibScanner()
 {
     ScannerName = "ClamAV Library Scanner";
+    ScannerNameShort = "ClamAV";
 
     memset(&dbdir, 0, sizeof(dbdir));
 

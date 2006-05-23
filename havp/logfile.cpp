@@ -29,15 +29,15 @@ int LogFile::Access_fd;
 int LogFile::Error_fd;
 
 //Open access and error logfiles
-bool LogFile::InitLogFiles ( const char *AccessLogFileT, const char *ErrorLogFileT )
+bool LogFile::InitLogFiles( const char *AccessLogFileT, const char *ErrorLogFileT )
 {
 
-    if ( (Error_fd = open(ErrorLogFileT, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0)
+    if ( (Error_fd = open(ErrorLogFileT, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP)) < 0)
     {
         return false;
     }
 
-    if ( (Access_fd = open(AccessLogFileT, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0)
+    if ( (Access_fd = open(AccessLogFileT, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP)) < 0)
     {
         return false;
     }
@@ -53,7 +53,7 @@ void LogFile::AccessMessage( const char *formatT , ... )
     char str[STRINGLENGTH+1];
 
     string Message;
-    Message.reserve(200);
+    Message.reserve(500);
 
     Message = GetDateAndTime();
 
@@ -78,7 +78,7 @@ void LogFile::ErrorMessage( const char *formatT , ... )
     char str[STRINGLENGTH+1];
 
     string Message;
-    Message.reserve(200);
+    Message.reserve(500);
 
     Message = GetDateAndTime();
 

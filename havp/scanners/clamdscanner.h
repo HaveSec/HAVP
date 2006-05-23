@@ -24,6 +24,8 @@ class ClamdScanner : public GenericScanner {
 
 private:
 
+bool UseSocket;
+
 string ScannerAnswer;
 char Ready[2];
 

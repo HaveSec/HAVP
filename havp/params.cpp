@@ -19,8 +19,15 @@
 #include "params.h"
 #include "utils.h"
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <iostream>
 #include <fstream>
+
+#ifndef INADDR_NONE
+#define INADDR_NONE ((unsigned long) -1)
+#endif
 
 map <string,string> Params::params;
 
@@ -55,22 +62,25 @@ void Params::SetDefaults()
     SetConfig("TRANSPARENT",	"false");
     SetConfig("RANGE",		"false");
     SetConfig("FORWARDED_IP",	"false");
+    SetConfig("X_FORWARDED_FOR","false");
     SetConfig("STREAMUSERAGENT","");
     SetConfig("STREAMSCANSIZE",	"20000");
     SetConfig("DBRELOAD",	"60");
     SetConfig("FAILSCANERROR",	"true");
+    SetConfig("MAXDOWNLOADSIZE","0");
     SetConfig("SCANNERTIMEOUT",	"10");
-//SCANNERS
     SetConfig("ENABLECLAMLIB","false");
         SetConfig("CLAMDBDIR","");
-        SetConfig("CLAMBLOCKMAX","true");
+        SetConfig("CLAMBLOCKMAX","false");
         SetConfig("CLAMBLOCKENCRYPTED","false");
         SetConfig("CLAMMAXFILES","1000");
         SetConfig("CLAMMAXFILESIZE","10");
         SetConfig("CLAMMAXRECURSION","8");
         SetConfig("CLAMMAXRATIO","250");
     SetConfig("ENABLECLAMD","false");
-	SetConfig("CLAMDSOCKET", "/tmp/clamd");
+	SetConfig("CLAMDSOCKET","/tmp/clamd");
+	SetConfig("CLAMDSERVER","");
+	SetConfig("CLAMDPORT","3310");
     SetConfig("ENABLEAVG","false");
         SetConfig("AVGSERVER","127.0.0.1");
         SetConfig("AVGPORT","55555");
@@ -82,19 +92,25 @@ void Params::SetDefaults()
     SetConfig("ENABLENOD32","false");
         SetConfig("NOD32SOCKET","/tmp/nod32d.sock");
     SetConfig("ENABLETROPHIE","false");
+        SetConfig("TROPHIEMAXFILES","1000");
+        SetConfig("TROPHIEMAXFILESIZE","10");
+        SetConfig("TROPHIEMAXRATIO","250");
     SetConfig("ENABLESOPHIE","false");
-	SetConfig("SOPHIESOCKET", "/var/run/sophie");
+	SetConfig("SOPHIESOCKET","/var/run/sophie");
+    SetConfig("ENABLEAVAST","false");
+        SetConfig("AVASTSOCKET","/var/run/avast4/local.sock");
+        SetConfig("AVASTSERVER","");
+        SetConfig("AVASTPORT","5036");
 }
 
-void Params::ReadConfig( string file )
+bool Params::ReadConfig( string file )
 {
     ifstream input( file.c_str() );
 
     if ( !input )
     {
         cerr << "Could not open config file: " << file << endl;
-        cerr << "Exiting.." << endl;
-        exit(1);
+        return false;
     }
 
     string::size_type Position;
@@ -126,15 +142,13 @@ void Params::ReadConfig( string file )
                 cout << "Configuration is not edited!" << endl;
                 cout << "You must delete REMOVETHISLINE option." << endl;
                 cout << "Review the configuration carefully. :)" << endl;
-                cout << "Exiting.." << endl;
-                exit(1);
+                return false;
             }
 
             if ( (Position = line.find_first_not_of(" \t", Position + 1)) == string::npos )
             {
                 cout << "Invalid Config Line: " << line << endl;
-                cout << "Exiting.." << endl;
-                exit(1);
+                return false;
             }
 
             val = line.substr( Position );
@@ -144,12 +158,13 @@ void Params::ReadConfig( string file )
         else
         {
             cout << "Invalid Config Line: " << line << endl;
-            cout << "Exiting.." << endl;
-            exit(1);
+            return false;
         }
     }
 
     input.close();
+
+    return true;
 }
 
 void Params::SetConfig( string param, string value )
@@ -327,7 +342,10 @@ bool Params::SetParams( int argvT, char* argcT[] )
         }
     }
 
-    ReadConfig( cfgfile );
+    if ( ReadConfig( cfgfile ) == false )
+    {
+        return false;
+    }
 
     if ( showconf == true )
     {
@@ -335,6 +353,54 @@ bool Params::SetParams( int argvT, char* argcT[] )
        return false;
     }
 
-    return true;
+    return TestConfig();
 }
 
+bool Params::TestConfig()
+{
+    //Test that some options are sane
+    if ( Params::GetConfigInt("SERVERNUMBER") < 1 )
+    {
+        cout << "Invalid Config: SERVERNUMBER needs to be greater than 0" << endl;
+        return false;
+    }
+    if ( Params::GetConfigString("ACCESSLOG").substr(0,1) != "/" || Params::GetConfigString("ERRORLOG").substr(0,1) != "/" )
+    {
+        cout << "Invalid Config: Log paths need to be abolute" << endl;
+        return false;
+    }
+    if ( Params::GetConfigString("SCANTEMPFILE").find("XXXXXX") == string::npos )
+    {
+        cout << "Invalid Config: SCANTEMPFILE must contain string \"XXXXXX\"" << endl;
+        return false;
+    }
+    if ( Params::GetConfigInt("MAXSERVERS") > 500 )
+    {
+        cout << "Note: MAXSERVERS is unusually high! You are sure you want this?" << endl;
+    }
+    if ( Params::GetConfigString("BIND_ADDRESS") == "NULL" ) Params::SetConfig("BIND_ADDRESS","");
+    if ( Params::GetConfigString("BIND_ADDRESS") != "" )
+    {
+        if ( inet_addr( Params::GetConfigString("BIND_ADDRESS").c_str() ) == INADDR_NONE )
+        {
+            cout << "Invalid Config: Invalid BIND_ADDRESS" << endl;
+            return false;
+        }
+    }
+    if ( Params::GetConfigString("SOURCE_ADDRESS") == "NULL" ) Params::SetConfig("SOURCE_ADDRESS","");
+    if ( Params::GetConfigString("SOURCE_ADDRESS") != "" )
+    {
+        if ( inet_addr( Params::GetConfigString("SOURCE_ADDRESS").c_str() ) == INADDR_NONE )
+        {
+            cout << "Invalid Config: Invalid SOURCE_ADDRESS" << endl;
+            return false;
+        }
+    }
+    if ( Params::GetConfigString("PARENTPROXY") != "" && Params::GetConfigInt("PARENTPORT") < 1 )
+    {
+        cout << "Invalid Config: Invalid PARENTPROXY/PARENTPORT" << endl;
+        return false;
+    }
+
+    return true;
+}

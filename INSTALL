@@ -1,7 +1,4 @@
-
-BASIC INSTALLATION
-==================
-
+x
 This software is GPL2!
 
 This program is distributed in the hope that it will be useful, but WITHOUT
@@ -13,49 +10,62 @@ You MUST check your antivirus licence for the use with HAVP. Maybe you are
 not allowed to use it with HAVP. We don't take ANY WARRANTY!!
 
 
+UPGRADING
+=========
+
+Just install HAVP normally. Your config will be preserved, but check
+havp.config for possible new options. Templates are overwritten, so if
+you have your own, make sure it is not in any default directory.
+
+
+BASIC INSTALLATION
+==================
+
 Installation:
 
-./configure
-make
-make install
+  # ./configure
+  # make
+  # make install
 
 It is recommended to create a havp user:
 
-# groupadd havp 
-# useradd havp
+  # groupadd havp 
+  # useradd -g havp havp
 
 Check the configfile: /usr/local/etc/havp/havp.config
 
-If Linux is used, you need to mount a filesystem for mandatory locking.
-(There may be problems if tmpfs/ramdisk is used. At your own risk.)
-No mounting is needed on Solaris, as ufs supports it directly.
+If Linux is used, you need to enable mandatory locking for the partition
+which your tempfiles are located in. Solaris supports mandatory locking
+without any extra steps.
 
-# mount /dev/hdxx /var/tmp/havp -o mand
+  If you only have root partition available, you can enable mandatory locking
+  support this like this:
 
-If you do not have a partition free, you can create a loopback file:
+  mount -o remount,mand / 
 
-# dd if=/dev/zero of=/var/havp.fs bs=1MB count=1000
-# mkfs.ext3 /var/havp.fs
-# mount /var/havp.fs /var/tmp/havp -o loop,mand
+  You can naturally use this for /var or any other partition. Also add
+  mand-option to /etc/fstab so it will stay after reboot.
+
+  Using tmpfs might have some problems, make sure you test it properly.
 
 Make sure directories have correct permissions for havp user: 
 
-# chown havp /var/tmp/havp
-# chown havp /var/log/havp 
-# chwon havp /var/run/havp
+  # chown havp /var/tmp/havp
+  # chown havp /var/log/havp 
+  # chown havp /var/run/havp
 
 Start havp:
 
-# /etc/init.d/havp start
+  # /etc/init.d/havp start
 
 If you don't want to use the rc-script you can start havp directly:
 
-# /usr/local/sbin/havp -c /path/to/config
+  # /usr/local/sbin/havp -c /path/to/config
 
 If you have problems check the logfiles:
 
-/var/log/havp/havp.log
-/var/log/havp/access.log
+  /var/log/havp/havp.log
+  /var/log/havp/access.log
 
 More information and help can be found at HAVP forum: http://havp.hege.li/
 
@@ -63,7 +73,7 @@ More information and help can be found at HAVP forum: http://havp.hege.li/
 OS SPECIFIC INSTRUCTIONS
 ========================
 
-Use of GNU make is recommended for building.
+Use of GNU make is required for building.
 
 Notice that on Solaris you may need lots of swap space if you use library
 scanners (ClamAV and Trophie). It wants to reserve it even when it is not
@@ -73,7 +83,7 @@ formula: (20MB * USEDLIBRARYSCANNERS) * (USEDSCANNERS + 1) * SERVERNUMBER.
 Linux:
 ------
 
-Use GCC 3.3+.
+Use GCC 3.4+.
 
 Solaris 9:
 ----------
@@ -82,14 +92,21 @@ GCC 3.4.2 from sunfreeware.com is recommended.
 
 You may need to fix GCC headers like this:
 
-# cd /usr/local/libexec/gcc/*/3.4.2/install-tools
-# ./mkheaders
+  # cd /usr/local/libexec/gcc/*/3.4.2/install-tools
+  # ./mkheaders
 
 Solaris 10:
 -----------
 
 Use GCC 3.4.x that comes bundled at /usr/sfw/bin/gcc.
 It is installed from SUNWgcc package.
+
+FreeBSD:
+--------
+
+Use GCC 3.4+ from ports. FreeBSD does not support mandatory locking, which
+means KEEPBACK settings can not be used (only TRICKLING is supported). This
+makes big downloads "hang" more.
 
 
 SCANNER SPECIFIC INSTRUCTIONS
@@ -98,14 +115,13 @@ SCANNER SPECIFIC INSTRUCTIONS
 ClamAV 
 ------
 
-Scanning limits can be set from default.h before compiling HAVP.
+Library is used directly, so there is no need for clamd running.
 
-Library is used directly, so there is no need for clamd running. Freshclam
-should be naturally used.
+If you choose to use clamd (which is not recommended as library support has
+less overhead), you need to enable AllowSupplementaryGroups in clamd.conf,
+and add clamav user to havp group.
 
-If you choose to use clamd (which is not recommended as library support is
-faster), you need to enable AllowSupplementaryGroups in clamd.conf, and add
-clamav user to havp group.
+Remember to have freshclam running.
 
 
 Kaspersky 
@@ -123,12 +139,12 @@ Daemon is required to be running.
 Trend Micro (Trophie)
 ---------------------
 
-/etc/iscan must point to the directory where libvsapi.so and virus patterns
-/are located. Create link if necessary.
+/etc/iscan must point to the directory where libvsapi.so and
+virus patterns are located. Create link if necessary.
 
-Trend library is used directly, so it is not needed for daemon to be
-running. You should naturally run some pattern update script, if Trend
-itself is not running.
+Trend library is used directly, so daemon is not required to be running.
+You should naturally run some pattern update script, if Trend itself is
+not running.
 
 
 AVG 
@@ -143,7 +159,7 @@ Recommended changes to avg.conf:
 
  [AvgDaemon] 
 
- # Raise number of daemons equal to SERVERNUMBER 
+ # Raise number of daemons atleast equal to SERVERNUMBER/MAXSERVERS
  numOfDaemons = xx 
 
 Daemon is required to be running. 
@@ -152,28 +168,44 @@ Daemon is required to be running.
 F-Prot 
 ------
 
-Remove "-disinf" from FPROT_SCANDEFAULTS at f-prot.conf. 
-
 Daemon is required to be running.
 
 
 NOD32
 -----
 
-Tested with Linux Mail Server and File Server packages. File Server version
-can not show virus names.
+Tested with Linux Mail Server and Linux File Server packages.
+File Server version can not display virus names.
 
 Daemon is required to be running.
 
 
-Sophos
-------
+Sophos (Sophie)
+---------------
 
 You need to make sure Sophie is working first, you can get it from:
 http://www.clanfield.info/sophie/
 
 Change user or group to havp user in sophie.cfg, so it can read tempfiles.
-Also change maxproc value to atleast MAXSERVERS value!
+Also change maxproc value to atleast SERVERNUMBER/MAXSERVERS value!
 
 Sophie daemon is required to be running.
+
+
+Avast!
+------
+
+Linux/Unix Servers version is required.
+
+Recommended changes to avastd.conf:
+
+ # Raise number to atleast equal of SERVERNUMBER
+ daemoncount = XX
+ # Raise number to atleast equal of MAXSERVERS
+ maxdaemoncount = XX
+ archivetype = A
+ testall = 1
+ testfull = 0
+
+Daemon is required to be running.
 

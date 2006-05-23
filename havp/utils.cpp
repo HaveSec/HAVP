@@ -32,14 +32,14 @@ string UpperCase( string CaseString )
     return CaseString;
 }
 
-void SearchReplace( string *source, string search, string replace )
+void SearchReplace( string &source, string search, string replace )
 {
-    string::size_type position = source->find(search);
+    string::size_type position = source.find(search);
 
     while (position != string::npos)
     {
-        source->replace(position, search.size(), replace);
-        position = source->find(search);
+        source.replace(position, search.size(), replace);
+        position = source.find(search);
     }
 }
 

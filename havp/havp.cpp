@@ -28,17 +28,10 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <signal.h>
 #include <time.h>
 #include <errno.h>
 #include <iostream>
-
-#ifndef INADDR_NONE
-#define INADDR_NONE ((unsigned long) -1)
-#endif
 
 URLList Whitelist;
 URLList Blacklist;
@@ -52,63 +45,20 @@ int fd_tempfile = -1;
 
 int main(int argc, char *argv[])
 {
-    if ( Params::SetParams(argc,argv) == false ) exit(1);
+    if ( Params::SetParams(argc,argv) == false )
+    {
+        cout << "Exiting.." << endl;
+        exit(1);
+    }
 
     LL = Params::GetConfigInt("LOGLEVEL");
 
     if ( Params::GetConfigBool("DISPLAYINITIALMESSAGES") )
     {
         cout << "Starting HAVP Version: " << VERSION << endl;
-    }
-
-    //Test that some options are sane
-    if ( Params::GetConfigInt("SERVERNUMBER") < 1 )
-    {
-        cout << "Invalid Config: SERVERNUMBER needs to be greater than 0" << endl;
-        cout << "Exiting.." << endl;
-        exit(1);
-    }
-    if ( Params::GetConfigString("ACCESSLOG").substr(0,1) != "/" || Params::GetConfigString("ERRORLOG").substr(0,1) != "/" )
-    {
-        cout << "Invalid Config: Log paths need to be abolute" << endl;
-        cout << "Exiting.." << endl;
-        exit(1);
-    }
-    if ( Params::GetConfigString("SCANTEMPFILE").find("XXXXXX") == string::npos )
-    {
-        cout << "Invalid Config: SCANTEMPFILE must contain string \"XXXXXX\"" << endl;
-        cout << "Exiting.." << endl;
-        exit(1);
-    }
-    if ( Params::GetConfigInt("MAXSERVERS") > 500 )
-    {
-        cout << "Note: MAXSERVERS is unusually high! You are sure you want this?" << endl;
-    }
-    if ( Params::GetConfigString("BIND_ADDRESS") == "NULL" ) Params::SetConfig("BIND_ADDRESS","");
-    if ( Params::GetConfigString("BIND_ADDRESS") != "" )
-    {
-        if ( inet_addr( Params::GetConfigString("BIND_ADDRESS").c_str() ) == INADDR_NONE )
-        {
-            cout << "Invalid Config: Invalid BIND_ADDRESS" << endl;
-            cout << "Exiting.." << endl;
-            exit(1);
-        }
-    }
-    if ( Params::GetConfigString("SOURCE_ADDRESS") == "NULL" ) Params::SetConfig("SOURCE_ADDRESS","");
-    if ( Params::GetConfigString("SOURCE_ADDRESS") != "" )
-    {
-        if ( inet_addr( Params::GetConfigString("SOURCE_ADDRESS").c_str() ) == INADDR_NONE )
-        {
-            cout << "Invalid Config: Invalid SOURCE_ADDRESS" << endl;
-            cout << "Exiting.." << endl;
-            exit(1);
-        }
-    }
-    if ( Params::GetConfigString("PARENTPROXY") != "" && Params::GetConfigInt("PARENTPORT") < 1 )
-    {
-        cout << "Invalid Config: Invalid PARENTPROXY/PARENTPORT" << endl;
-        cout << "Exiting.." << endl;
-        exit(1);
+#ifdef NOMAND
+        cout << "Mandatory locking disabled! KEEPBACK settings not used!" << endl;
+#endif
     }
 
     //Install signal handlers
@@ -126,6 +76,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    //Open logs
     if ( LogFile::InitLogFiles(Params::GetConfigString("ACCESSLOG").c_str(), Params::GetConfigString("ERRORLOG").c_str()) == false )
     {
         cout << "Could not open logfiles!" << endl;
@@ -135,16 +86,21 @@ int main(int argc, char *argv[])
     }
 
     LogFile::ErrorMessage("=== Starting HAVP Version: %s\n", VERSION);
+
+#ifdef NOMAND
+    LogFile::ErrorMessage("=== Mandatory locking disabled! KEEPBACK settings not used!\n");
+#endif
+
     LogFile::ErrorMessage("Change to user %s\n", Params::GetConfigString("USER").c_str());
     LogFile::ErrorMessage("Change to group %s\n", Params::GetConfigString("GROUP").c_str());
 
+    //Create lists
     if ( Whitelist.CreateURLList( Params::GetConfigString("WHITELIST") ) == false )
     {
         cout << "Could not read whitelist!" << endl;
         cout << "Exiting.." << endl;
         exit(1);
     }
-
     if ( Blacklist.CreateURLList( Params::GetConfigString("BLACKLIST") ) == false )
     {
         cout << "Could not read blacklist!" << endl;
@@ -164,6 +120,7 @@ int main(int argc, char *argv[])
 
     SocketHandler ProxyServer;
 
+    //Bind daemon port
     if ( ProxyServer.CreateServer( Params::GetConfigInt("PORT"), Params::GetConfigString("BIND_ADDRESS") ) == false )
     {
         cout << "Could not create server (already running?)" << endl;
@@ -184,10 +141,10 @@ int main(int argc, char *argv[])
     while (close(fd_tempfile) < 0 && errno == EINTR);
     fd_tempfile = -1;
 
-    ScannerHandler *Scanners = new ScannerHandler;
+    ScannerHandler Scanners;
 
     //Initialize scanners
-    if ( Scanners->InitScanners() == false )
+    if ( Scanners.InitScanners() == false )
     {
         cout << "One or more scanners failed to initialize!" << endl;
         cout << "Check errorlog for errors." << endl;
@@ -202,7 +159,7 @@ int main(int argc, char *argv[])
 
     if ( Params::GetConfigBool("DAEMON") )
     {
-        if ( MakeDaemon() < 0 )
+        if ( MakeDaemon() == false )
         {
             cout << "Could not fork daemon" << endl;
             cout << "Exiting.." << endl;
@@ -241,7 +198,7 @@ int main(int argc, char *argv[])
 
             LogFile::ErrorMessage("Signal HUP received, reloading scanners and lists\n");
 
-            if ( Scanners->ReloadDatabases() == true )
+            if ( Scanners.ReloadDatabases() == true )
             {
                 restartchilds = true;
             }
@@ -253,7 +210,7 @@ int main(int argc, char *argv[])
         }
         else if ( time(NULL) > (LastRefresh + dbreload*60) ) //Time Refresh
         {
-            if ( Scanners->ReloadDatabases() == true )
+            if ( Scanners.ReloadDatabases() == true )
             {
                 restartchilds = true;
             }
@@ -296,21 +253,21 @@ int main(int argc, char *argv[])
                 }
 
                 //Create tempfile for scanning
-                if ( Scanners->InitTempFile() == false )
+                if ( Scanners.InitTempFile() == false )
                 {
                     sleep(10);
                     exit(1);
                 }
 
                 //Fork scanner handler process
-                if ( Scanners->CreateScanners( &ProxyServer ) == false )
+                if ( Scanners.CreateScanners( ProxyServer ) == false )
                 {
                     sleep(10);
                     exit(1);
                 }
 
                 //Start processing requests
-                Proxy.Proxy( &ProxyServer, Scanners );
+                Proxy.Proxy( ProxyServer, Scanners );
 
                 exit(1);
             }

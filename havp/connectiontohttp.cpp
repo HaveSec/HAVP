@@ -25,18 +25,17 @@ extern int LL; //LogLevel
 string ConnectionToHTTP::PrepareHeaderForBrowser()
 {
     string header;
-    header.reserve(1000);
+    header.reserve(20000);
     header = "";
 
     vector<string>::iterator itvec;
 
     string it;
-    it.reserve(100);
+    it.reserve(200);
 
     //Strip unwanted headers to browser
     for (itvec = tokens.begin(); itvec != tokens.end(); ++itvec)
     {
-
         //Uppercase for matching
         it = UpperCase(*itvec);
 
@@ -62,8 +61,8 @@ string ConnectionToHTTP::PrepareHeaderForBrowser()
             continue;
         }
 
-        header += *itvec + "\r\n";
-
+        header += *itvec;
+        header += "\r\n";
     }
 
     return header;
@@ -71,18 +70,18 @@ string ConnectionToHTTP::PrepareHeaderForBrowser()
 }
 
 
-int ConnectionToHTTP::AnalyseFirstHeaderLine( string *RequestT )
+int ConnectionToHTTP::AnalyseFirstHeaderLine( string &RequestT )
 {
 
     string::size_type Space;
 
-    if ( (Space = RequestT->find( " ", 0 )) > 0 )
+    if ( (Space = RequestT.find( " ", 0 )) > 0 )
     {
         string::size_type DigitPos;
 
-        if ( (DigitPos = RequestT->find_first_of( "0123456789", Space + 1 )) != string::npos )
+        if ( (DigitPos = RequestT.find_first_of( "0123456789", Space + 1 )) != string::npos )
         {
-            string Response = RequestT->substr( DigitPos, 3 );
+            string Response = RequestT.substr( DigitPos, 3 );
 
             if ( sscanf(Response.c_str(), "%d", &HTMLResponse) == 1 )
             {
@@ -90,7 +89,7 @@ int ConnectionToHTTP::AnalyseFirstHeaderLine( string *RequestT )
             }
             else
             {
-                if (LL>0) LogFile::ErrorMessage("Unknown server response: %s\n", RequestT->c_str());
+                if (LL>0) LogFile::ErrorMessage("Unknown server response: %s\n", RequestT.c_str());
             }
         }
     }
@@ -99,17 +98,17 @@ int ConnectionToHTTP::AnalyseFirstHeaderLine( string *RequestT )
 }
 
 
-int ConnectionToHTTP::AnalyseHeaderLine( string *RequestT )
+int ConnectionToHTTP::AnalyseHeaderLine( string &RequestT )
 {
     //Optimize checks.. no need to match if header line not long enough
 
     //"Content-Length: x" needs atleast 17 chars
     //"Connection: Keep-Alive" needs atleast 22 chars
 
-    if ( RequestT->length() > 16 )
+    if ( RequestT.length() > 16 )
     {
         //Uppercase for matching
-        string RequestU = UpperCase(*RequestT);
+        string RequestU = UpperCase(RequestT);
 
         if ( RequestU.find("CONTENT-LENGTH: ", 0) == 0 )
         {
@@ -119,7 +118,7 @@ int ConnectionToHTTP::AnalyseHeaderLine( string *RequestT )
                 return 0;
             }
 
-            string LengthToken = RequestT->substr( 16 );
+            string LengthToken = RequestT.substr( 16 );
 
             //Sanity check for invalid huge Content-Length
             if ( LengthToken.length() > 18 ) return 0;

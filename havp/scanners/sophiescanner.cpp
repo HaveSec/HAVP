@@ -32,19 +32,6 @@ bool SophieScanner::ReloadDatabase()
 
 string SophieScanner::Scan( const char *FileName )
 {
-    int fd = open(FileName, O_RDONLY);
-
-    if ( fd < 0 )
-    {
-        LogFile::ErrorMessage("Sophie: Could not open tempfile: %s\n", strerror(errno));
-        ScannerAnswer = "2Could not open file to scan";
-        return ScannerAnswer;
-    }
-
-    //Wait till file is set up for scanning
-    while (read(fd, Ready, 1) < 0 && errno == EINTR);
-    while (close(fd) < 0 && errno == EINTR);
-
     if ( Connected == false )
     {
         //Connect
@@ -69,12 +56,14 @@ string SophieScanner::Scan( const char *FileName )
     ScannerCmd += "\n";
 
     //Send command
-    if ( SOPHIESocket.Send( &ScannerCmd ) == false )
+    if ( SOPHIESocket.Send( ScannerCmd ) == false )
     {
         SOPHIESocket.Close();
         Connected = false;
 
         //Try to reconnect if failed
+        sleep(1);
+
         if ( SOPHIESocket.ConnectToSocket( Params::GetConfigString("SOPHIESOCKET"), 1 ) == false )
         {
             //Prevent log flooding, show error only once per minute
@@ -89,7 +78,7 @@ string SophieScanner::Scan( const char *FileName )
         }
 
         //Send command.. again
-        if ( SOPHIESocket.Send( &ScannerCmd ) == false )
+        if ( SOPHIESocket.Send( ScannerCmd ) == false )
         {
             SOPHIESocket.Close();
 
@@ -104,7 +93,7 @@ string SophieScanner::Scan( const char *FileName )
     string Response;
 
     //Get response
-    if ( SOPHIESocket.Recv( &Response, true, 600 ) < 0 )
+    if ( SOPHIESocket.Recv( Response, true, 600 ) < 0 )
     {
         SOPHIESocket.Close();
         LogFile::ErrorMessage("Sophie: Could not read scanner response\n");
@@ -156,6 +145,7 @@ void SophieScanner::CloseSocket()
 SophieScanner::SophieScanner()
 {
     ScannerName = "Sophie Socket Scanner";
+    ScannerNameShort = "Sophos";
 
     Connected = false;
     LastError = 0;

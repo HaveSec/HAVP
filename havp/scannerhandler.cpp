@@ -34,6 +34,7 @@
 #include "scanners/nod32scanner.h"
 #include "scanners/clamdscanner.h"
 #include "scanners/sophiescanner.h"
+#include "scanners/avastscanner.h"
 
 #include <sys/types.h>
 #include <signal.h>
@@ -90,6 +91,10 @@ bool ScannerHandler::InitScanners()
     {
         VirusScanner.push_back(new SophieScanner);
     }
+    if ( Params::GetConfigBool("ENABLEAVAST") )
+    {
+        VirusScanner.push_back(new AvastScanner);
+    }
 
     if ( VirusScanner.size() == 0 )
     {
@@ -134,7 +139,7 @@ bool ScannerHandler::InitScanners()
 
 
 //Fork all scanners, each gets a pipepair for communication
-bool ScannerHandler::CreateScanners( SocketHandler *ProxyServerT )
+bool ScannerHandler::CreateScanners( SocketHandler &ProxyServerT )
 {
     int ret;
 
@@ -180,7 +185,7 @@ bool ScannerHandler::CreateScanners( SocketHandler *ProxyServerT )
             }
 
             //Close ProxyHandler used socket
-            ProxyServerT->Close();
+            ProxyServerT.Close();
 
             //We don't need tempfile descriptor here anymore, ProxyHandler uses it
             while (close(fd_tempfile) < 0)
@@ -217,7 +222,7 @@ bool ScannerHandler::CreateScanners( SocketHandler *ProxyServerT )
         else //Parent = ProxyHandler
         {
             //Struct to hold pipe fds and connected scanners name and pid
-            scanner_st scanner_info = { sh_to_sc[1], sc_to_sh[0], VirusScanner[i]->ScannerName, scannerpid };
+            scanner_st scanner_info = { sh_to_sc[1], sc_to_sh[0], VirusScanner[i]->ScannerName, VirusScanner[i]->ScannerNameShort, scannerpid };
 
             //Add info to list
             Scanner.push_back(scanner_info);
@@ -275,7 +280,8 @@ bool ScannerHandler::CreateScanners( SocketHandler *ProxyServerT )
     answers = 0;
 
     //No virus found yet
-    VirusFound = false;
+    VirusMsg.clear();
+    ErrorMsg.clear();
 
     return true;
 }
@@ -319,13 +325,11 @@ bool ScannerHandler::RestartScanners()
     readfds = scannerfds = origfds;
 
     //No scanners responded yet
-    answers = scannererrors = 0;
-
-    //No virus found yet
-    VirusFound = false;
+    answers = 0;
 
     //Empty message
-    Message = "";
+    VirusMsg.clear();
+    ErrorMsg.clear();
 
     return true;
 }
@@ -348,6 +352,7 @@ void ScannerHandler::ExitScanners()
 }
 
 
+#ifndef NOMAND
 //This check is used only while BodyLoop is running
 //If we return true here, BodyLoop will call GetAnswer()
 bool ScannerHandler::HasAnswer()
@@ -385,8 +390,7 @@ bool ScannerHandler::HasAnswer()
             {
                 LogFile::ErrorMessage("Detected dead %s process\n", Scanner[i].scanner_name.c_str());
 
-                ++scannererrors;
-                if ( VirusFound == false ) Message = "Scanner died";
+                ErrorMsg.push_back( Scanner[i].scanner_name_short + ": Scanner died" );
 
                 //We still need to check other possible answers
                 continue;
@@ -398,36 +402,24 @@ bool ScannerHandler::HasAnswer()
             //Virus found?
             if ( buf[0] == '1' )
             {
-                VirusFound = true;
-
                 //Set answer message (virusname)
                 string Temp = buf;
                 Temp.erase(0,1);
-
                 if ( Temp == "" ) Temp = "Unknown";
 
-                if ( Message == "" )
-                {
-                    Message = Temp;
-                }
-                else
-                {
-                    Message += ", " + Temp;
-                }
+                VirusMsg.push_back( Scanner[i].scanner_name_short + ": " + Temp );
 
                 //Check next descriptor
                 continue;
             }
             else //Any other return code must be error
             {
-                ++scannererrors;
-
-                if ( VirusFound ) continue;
-
                 //Set error message
                 string Temp = buf;
-                Message = Temp.erase(0,1);
-                if ( Message.size() == 0 ) Message = "Error";
+                Temp.erase(0,1);
+                if ( Temp == "" ) Temp = "Error";
+
+                ErrorMsg.push_back( Scanner[i].scanner_name_short + ": " + Temp );
             }
         }
 
@@ -435,11 +427,12 @@ bool ScannerHandler::HasAnswer()
     }
 
     //If virus was found or all scanners returned already, BodyLoop must call GetAnswer()
-    if ( answers == totalscanners || VirusFound ) return true;
+    if ( answers == totalscanners || VirusMsg.size() ) return true;
 
     //Continue BodyLoop
     return false;
 }
+#endif
 
 
 //Wait and read all remaining scanner answers
@@ -447,6 +440,26 @@ int ScannerHandler::GetAnswer()
 {
     int ret;
     char buf[100];
+
+#ifdef NOMAND
+    //Start scanners
+    for ( int i = 0; i < totalscanners; i++ )
+    {
+        while ((ret = write(Scanner[i].toscanner, (const char*)"s", 1)) < 0 && errno == EINTR);
+
+        if (ret <= 0)
+        {
+            LogFile::ErrorMessage("Detected dead %s process\n", Scanner[i].scanner_name.c_str());
+            for ( int ii = 0; ii < totalscanners; ii++ )
+            {
+                kill(Scanner[ii].scanner_pid, SIGKILL);
+            }
+      
+            ErrorMsg.push_back( "Detected dead scanner" );
+            return 3;
+        }
+    }
+#endif
 
     while ( answers < totalscanners )
     {
@@ -470,7 +483,7 @@ int ScannerHandler::GetAnswer()
                 kill(Scanner[i].scanner_pid, SIGKILL);
             }
 
-            Message = "Scanner timeout";
+            ErrorMsg.push_back( "Scanner timeout" );
             return 3;
         }
 
@@ -496,8 +509,7 @@ int ScannerHandler::GetAnswer()
                 {
                     LogFile::ErrorMessage("Detected dead %s process\n", Scanner[i].scanner_name.c_str());
 
-                    ++scannererrors;
-                    if ( VirusFound == false ) Message = "Scanner died";
+                    ErrorMsg.push_back( Scanner[i].scanner_name_short + ": Scanner died" );
 
                     //We still need to check other possible answers
                     continue;
@@ -509,36 +521,24 @@ int ScannerHandler::GetAnswer()
                 //Virus found?
                 if ( buf[0] == '1' )
                 {
-                    VirusFound = true;
-
                     //Set answer message (virusname)
                     string Temp = buf;
                     Temp.erase(0,1);
-
                     if ( Temp == "" ) Temp = "Unknown";
 
-                    if ( Message == "" )
-                    {
-                        Message = Temp;
-                    }
-                    else
-                    {
-                        Message += ", " + Temp;
-                    }
+                    VirusMsg.push_back( Scanner[i].scanner_name_short + ": " + Temp );
 
                     //Check next descriptor
                     continue;
                 }
                 else //Any other return code must be error
                 {
-                    ++scannererrors;
-
-                    if ( VirusFound ) continue;
-
                     //Set error message
                     string Temp = buf;
-                    Message = Temp.erase(0,1);
-                    if ( Message.size() == 0 ) Message = "Error";
+                    Temp.erase(0,1);
+                    if ( Temp == "" ) Temp = "Error";
+
+                    ErrorMsg.push_back( Scanner[i].scanner_name_short + ": " + Temp );
                 }
             }
 
@@ -547,16 +547,15 @@ int ScannerHandler::GetAnswer()
     }
 
     //Virus found?
-    if ( VirusFound ) return 1;
+    if ( VirusMsg.size() ) return 1;
 
     //Return error only if all scanners had one and we want errors
-    if ( (scannererrors == totalscanners) && Params::GetConfigBool("FAILSCANERROR") )
+    if ( (ErrorMsg.size() == (unsigned int)totalscanners) && Params::GetConfigBool("FAILSCANERROR") )
     {
         return 2;
     }
 
     //It's clean.. hopefully
-    Message = "Clean";
     return 0;
 }
 
@@ -564,7 +563,28 @@ int ScannerHandler::GetAnswer()
 //Return scanner answer message
 string ScannerHandler::GetAnswerMessage()
 {
-    return Message;
+    string AnswerMsg = "";
+
+    if ( VirusMsg.size() )
+    {
+        for ( unsigned int i = 0; i < VirusMsg.size(); ++i )
+        {
+            AnswerMsg += ", " + VirusMsg[i];
+        }
+
+        AnswerMsg.erase(0,2);
+    }
+    else if ( ErrorMsg.size() )
+    {
+        for ( unsigned int i = 0; i < ErrorMsg.size(); ++i )
+        {
+            AnswerMsg += ", " + ErrorMsg[i];
+        }
+
+        AnswerMsg.erase(0,2);
+    }
+
+    return AnswerMsg;
 }
 
 
@@ -582,6 +602,7 @@ bool ScannerHandler::InitTempFile()
         return false;
     }
 
+#ifndef NOMAND
     while (write(fd_tempfile, " ", 1) < 0)
     {
         if (errno == EINTR) continue;
@@ -589,18 +610,13 @@ bool ScannerHandler::InitTempFile()
         LogFile::ErrorMessage("Could not write to Scannerfile: %s\n", TempFileName );
         return false;
     }
+#endif
 
-    struct stat fstatpuff;
-
-    //set-group-ID and group-execute
-    while (fstat(fd_tempfile, &fstatpuff) < 0)
-    {
-        if (errno == EINTR) continue;
-
-        LogFile::ErrorMessage("InitTempFile fstat() failed: %s\n", strerror(errno));
-        return false;
-    }
-    while (fchmod(fd_tempfile, (fstatpuff.st_mode & ~S_IXGRP) | S_ISGID | S_IRGRP) < 0)
+#ifndef NOMAND
+    while (fchmod(fd_tempfile, S_IRUSR|S_IWUSR|S_IRGRP|S_ISGID) < 0)
+#else
+    while (fchmod(fd_tempfile, S_IRUSR|S_IWUSR|S_IRGRP) < 0)
+#endif
     {
         if (errno == EINTR) continue;
 
@@ -608,6 +624,7 @@ bool ScannerHandler::InitTempFile()
         return false;
     }
 
+#ifndef NOMAND
     struct flock lock;
 
     lock.l_type   = F_WRLCK;
@@ -622,6 +639,7 @@ bool ScannerHandler::InitTempFile()
         LogFile::ErrorMessage("Could not lock Scannerfile: %s\n", TempFileName);
         return false;
     }
+#endif
 
     if (lseek(fd_tempfile, 0, SEEK_SET) < 0)
     {
@@ -633,6 +651,7 @@ bool ScannerHandler::InitTempFile()
 }
 
 
+#ifndef NOMAND
 //Fully unlock tempfile
 bool ScannerHandler::UnlockTempFile()
 {
@@ -653,6 +672,7 @@ bool ScannerHandler::UnlockTempFile()
 
     return true;
 }
+#endif
 
 
 //Delete tempfile
@@ -699,6 +719,7 @@ bool ScannerHandler::ReinitTempFile()
         exit(1);
     }
 
+#ifndef NOMAND
     while (write(fd_tempfile, " ", 1) < 0)
     {
         if (errno == EINTR) continue;
@@ -706,18 +727,13 @@ bool ScannerHandler::ReinitTempFile()
         LogFile::ErrorMessage("Could not write file: %s\n", strerror(errno));
         exit(1);
     }
+#endif
 
-    struct stat fstatpuff;
-
-    //set-group-ID and group-execute
-    while (fstat(fd_tempfile, &fstatpuff) < 0)
-    {
-        if (errno == EINTR) continue;
-
-        LogFile::ErrorMessage("Could not fstat() Scannerfile: %s\n", strerror(errno));
-        exit(1);
-    }
-    while (fchmod(fd_tempfile, (fstatpuff.st_mode & ~S_IXGRP) | S_ISGID) < 0)
+#ifndef NOMAND
+    while (fchmod(fd_tempfile, S_IRUSR|S_IWUSR|S_IRGRP|S_ISGID) < 0)
+#else
+    while (fchmod(fd_tempfile, S_IRUSR|S_IWUSR|S_IRGRP) < 0)
+#endif
     {
         if (errno == EINTR) continue;
 
@@ -727,6 +743,7 @@ bool ScannerHandler::ReinitTempFile()
 
     TempFileLength = 0;
 
+#ifndef NOMAND
     struct flock lock;
 
     lock.l_type   = F_WRLCK;
@@ -748,6 +765,7 @@ bool ScannerHandler::ReinitTempFile()
         LogFile::ErrorMessage("Could not lock Scannerfile: %s\n", strerror(errno));
         exit(1);
     }
+#endif
 
     if (lseek(fd_tempfile, 0, SEEK_SET) < 0)
     {
@@ -808,10 +826,10 @@ bool ScannerHandler::TruncateTempFile( long long ContentLengthT )
 
 
 //Write data to tempfile
-bool ScannerHandler::ExpandTempFile( string *dataT, bool unlockT )
+bool ScannerHandler::ExpandTempFile( string &dataT, bool unlockT )
 {
     int total_written = 0;
-    int len = dataT->length();
+    int len = dataT.length();
     int ret;
 
     TempFileLength += len;
@@ -819,7 +837,7 @@ bool ScannerHandler::ExpandTempFile( string *dataT, bool unlockT )
     //Handle partial write if interrupted by signal!
     while (total_written < len)
     {
-        while ((ret = write(fd_tempfile, dataT->substr(total_written).c_str(), len - total_written)) < 0)
+        while ((ret = write(fd_tempfile, dataT.substr(total_written).c_str(), len - total_written)) < 0)
         {
             if (errno == EINTR) continue;
 
@@ -830,6 +848,7 @@ bool ScannerHandler::ExpandTempFile( string *dataT, bool unlockT )
         total_written += ret;
     }
 
+#ifndef NOMAND
     //Should we unlock the written part?
     if (unlockT == true)
     {
@@ -848,6 +867,7 @@ bool ScannerHandler::ExpandTempFile( string *dataT, bool unlockT )
             return false;
         }
     }
+#endif
 
     return true;
 }

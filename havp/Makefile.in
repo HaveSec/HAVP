@@ -1,22 +1,27 @@
-CFLAGS=@CFLAGS@
-LDFLAGS=@LDFLAGS@ @SCANNERLIB@
-DEFINES=@DEFS@
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-sbindir=@sbindir@
-etcdir=@sysconfdir@
-INSTALL=../install-sh
+CXX = @CXX@
+CFLAGS = @CFLAGS@ -Wall
+LDFLAGS = @LDFLAGS@ @SCANNERLIB@
+DEFINES = @DEFS@
+INSTALL = ../install-sh
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+sbindir = @sbindir@
+etcdir = @sysconfdir@
 
 OBJECTS = helper.o logfile.o scannerhandler.o connectiontobrowser.o genericscanner.o \
           httphandler.o params.o sockethandler.o connectiontohttp.o havp.o proxyhandler.o \
           utils.o whitelist.o scanners/avgscanner.o scanners/f-protscanner.o \
           scanners/kasperskyscanner.o scanners/nod32scanner.o scanners/clamdscanner.o \
-	  scanners/sophiescanner.o @SCANNEROBJECT@
+          scanners/sophiescanner.o scanners/avastscanner.o @SCANNEROBJECT@
 
-all: 	havp
+all: havp
 
 havp: $(OBJECTS)
-	$(CXX) -Wall -I. -I.. $(CFLAGS) -o havp $(OBJECTS) $(LDFLAGS)
+	$(CXX) $(CFLAGS) -o havp $^ $(LDFLAGS)
+
+%.o: %.cpp %.h
+	$(CXX) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 install: all
 	$(INSTALL) -d $(sbindir)
@@ -47,9 +52,5 @@ install: all
 	@echo " chown <havpuser> /var/run/havp"
 	@echo ""
 
-%.o:	%.cpp %.h
-	$(CXX) -Wall $(DEFINES) -I. -I.. $(CFLAGS) -c $< -o $@
-
 clean:
-	-rm -f havp $(OBJECTS)
-
+	rm -f havp *.o scanners/*.o

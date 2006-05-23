@@ -32,19 +32,6 @@ bool KasperskyScanner::ReloadDatabase()
 
 string KasperskyScanner::Scan( const char *FileName )
 {
-    int fd = open(FileName, O_RDONLY);
-
-    if ( fd < 0 )
-    {
-        LogFile::ErrorMessage("KAV: Could not open tempfile: %s\n", strerror(errno));
-        ScannerAnswer = "2Could not open file to scan";
-        return ScannerAnswer;
-    }
-
-    //Wait till file is set up for scanning
-    while (read(fd, Ready, 1) < 0 && errno == EINTR);
-    while (close(fd) < 0 && errno == EINTR);
-
     string Response;
 
     if ( Connected == false )
@@ -64,7 +51,7 @@ string KasperskyScanner::Scan( const char *FileName )
         }
 
         //Get initial response
-        if ( AVESocket.GetLine( &Response, "\r\n", 600 ) == false )
+        if ( AVESocket.GetLine( Response, "\r\n", 600 ) == false )
         {
             AVESocket.Close();
 
@@ -91,12 +78,14 @@ string KasperskyScanner::Scan( const char *FileName )
     ScannerCmd += "\r\n";
 
     //Send command
-    if ( AVESocket.Send( &ScannerCmd ) == false )
+    if ( AVESocket.Send( ScannerCmd ) == false )
     {
         AVESocket.Close();
         Connected = false;
 
         //Try to reconnect if failed
+        sleep(1);
+
         if ( AVESocket.ConnectToSocket( Params::GetConfigString("AVESOCKET"), 1 ) == false )
         {
             //Prevent log flooding, show error only once per minute
@@ -111,7 +100,7 @@ string KasperskyScanner::Scan( const char *FileName )
         }
 
         //Get initial response
-        if ( AVESocket.GetLine( &Response, "\r\n", 600 ) == false )
+        if ( AVESocket.GetLine( Response, "\r\n", 600 ) == false )
         {
             AVESocket.Close();
 
@@ -130,7 +119,7 @@ string KasperskyScanner::Scan( const char *FileName )
         }
 
         //Send command.. again
-        if ( AVESocket.Send( &ScannerCmd ) == false )
+        if ( AVESocket.Send( ScannerCmd ) == false )
         {
             AVESocket.Close();
 
@@ -147,7 +136,7 @@ string KasperskyScanner::Scan( const char *FileName )
     //Parse response lines
     do
     {
-        if ( AVESocket.GetLine( &Response, "\r\n", 600 ) == false )
+        if ( AVESocket.GetLine( Response, "\r\n", 600 ) == false )
         {
             AVESocket.Close();
             Connected = false;
@@ -226,6 +215,7 @@ void KasperskyScanner::CloseSocket()
 KasperskyScanner::KasperskyScanner()
 {
     ScannerName = "Kaspersky Socket Scanner";
+    ScannerNameShort = "KAV";
 
     Connected = false;
     LastError = 0;

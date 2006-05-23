@@ -38,6 +38,7 @@ class GenericScanner {
 public:
 
 string ScannerName;
+string ScannerNameShort;
 
 bool StartScanning( int fromhandler, int tohandler, const char *FileName );
 

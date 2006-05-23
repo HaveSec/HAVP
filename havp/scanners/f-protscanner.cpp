@@ -32,19 +32,6 @@ bool FProtScanner::ReloadDatabase()
 
 string FProtScanner::Scan( const char *FileName )
 {
-    int fd = open(FileName, O_RDONLY);
-
-    if ( fd < 0 )
-    {
-        LogFile::ErrorMessage("F-Prot: Could not open tempfile: %s\n", strerror(errno));
-        ScannerAnswer = "2Could not open tempfile for scanning";
-        return ScannerAnswer;
-    }
-
-    //Wait till file is set up for scanning
-    while (read(fd, Ready, 1) < 0 && errno == EINTR);
-    while (close(fd) < 0 && errno == EINTR);
-
     if ( FProtSocket.SetDomainAndPort( ServerHost, ServerPort ) == false )
     {
         LogFile::ErrorMessage("F-Prot: Could not connect to scanner\n");
@@ -82,7 +69,7 @@ string FProtScanner::Scan( const char *FileName )
     ScannerCmd += FileName;
     ScannerCmd += " HTTP/1.0\r\n\r\n";
 
-    if ( FProtSocket.Send ( &ScannerCmd ) == false )
+    if ( FProtSocket.Send( ScannerCmd ) == false )
     {
         FProtSocket.Close();
         LogFile::ErrorMessage("F-Prot: Could not call scanner\n");
@@ -93,7 +80,7 @@ string FProtScanner::Scan( const char *FileName )
     string Response;
     int ret;
 
-    while ( (ret = FProtSocket.Recv( &Response, true, 600 )) != 0 )
+    while ( (ret = FProtSocket.Recv( Response, true, 600 )) != 0 )
     {
         if ( ret < 0 )
         {
@@ -133,20 +120,33 @@ string FProtScanner::Scan( const char *FileName )
     }
     else if ( SummaryCode == "infected" )
     {
-        if ( (PositionEnd = Response.rfind( "</name>" )) == string::npos )
+        if ( (PositionEnd = Response.rfind( "</name>" )) != string::npos )
+        {
+            if ( (Position = Response.rfind( ">", PositionEnd )) == string::npos )
+            {
+                ScannerAnswer = "1Unknown";
+                return ScannerAnswer;
+            }
+
+            ScannerAnswer = "1" + Response.substr( Position+1, PositionEnd - (Position + 1) );
+            return ScannerAnswer;
+        }
+        else if ( (PositionEnd = Response.rfind( "</message>" )) != string::npos )
+        {
+            if ( (Position = Response.rfind( ">", PositionEnd )) == string::npos )
+            {
+                ScannerAnswer = "1Unknown";
+                return ScannerAnswer;
+            }
+
+            ScannerAnswer = "1" + Response.substr( Position+1, PositionEnd - (Position + 1) );
+            return ScannerAnswer;
+        }
+        else
         {
             ScannerAnswer = "1Unknown";
             return ScannerAnswer;
         }
-
-        if ( (Position = Response.rfind( ">", PositionEnd )) == string::npos )
-        {
-            ScannerAnswer = "1Unknown";
-            return ScannerAnswer;
-        }
-
-        ScannerAnswer = "1" + Response.substr( Position+1, PositionEnd - (Position + 1) );
-        return ScannerAnswer;
     }
 
     ScannerAnswer = "2Unknown response from scanner";
@@ -163,6 +163,7 @@ void FProtScanner::FreeDatabase()
 FProtScanner::FProtScanner()
 {
     ScannerName = "F-Prot Socket Scanner";
+    ScannerNameShort = "F-Prot";
 
     LastError = 0;
 

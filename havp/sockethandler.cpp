@@ -216,11 +216,11 @@ bool SocketHandler::ConnectToSocket( string SocketPath, int retry )
 
 
 //Accept Client
-bool SocketHandler::AcceptClient( SocketHandler *accept_socketT )
+bool SocketHandler::AcceptClient( SocketHandler &accept_socketT )
 {
     addr_len = sizeof(my_s_addr);
 
-    while ((accept_socketT->sock_fd = ::accept(sock_fd, (sockaddr *) &my_s_addr, (socklen_t *) &addr_len)) < 0)
+    while ((accept_socketT.sock_fd = ::accept(sock_fd, (sockaddr *) &my_s_addr, (socklen_t *) &addr_len)) < 0)
     {
         if (errno == EINTR) continue;
 
@@ -230,17 +230,17 @@ bool SocketHandler::AcceptClient( SocketHandler *accept_socketT )
     }
 
     //Save IP to ToBrowser
-    accept_socketT->my_s_addr = my_s_addr;    
+    accept_socketT.my_s_addr = my_s_addr;    
 
     return true;
 }
 
 
 //Send String
-bool SocketHandler::Send( string *sock_outT )
+bool SocketHandler::Send( string &sock_outT )
 {
     int total_sent = 0;
-    int len = sock_outT->size();
+    int len = sock_outT.size();
     int ret, buffer_count;
 
     while (total_sent < len)
@@ -257,7 +257,7 @@ bool SocketHandler::Send( string *sock_outT )
             return false;
         }
 
-        while ((buffer_count = ::send(sock_fd, sock_outT->substr(total_sent).c_str(), len - total_sent, 0)) < 0)
+        while ((buffer_count = ::send(sock_fd, sock_outT.substr(total_sent).c_str(), len - total_sent, 0)) < 0)
         {
             if (errno == EINTR) continue;
 
@@ -277,8 +277,24 @@ bool SocketHandler::Send( string *sock_outT )
 
 //Receive String - Maximal MAXRECV
 //sock_del = false : Do not delete Data from Socket
-ssize_t SocketHandler::Recv( string *sock_inT, bool sock_delT, int timeout )
+ssize_t SocketHandler::Recv( string &sock_inT, bool sock_delT, int timeout )
 {
+    if ( RecvBuf.size() > 0 )
+    {
+        sock_inT.append( RecvBuf );
+
+        if ( sock_delT == true )
+        {
+            ssize_t tempsize = RecvBuf.size();
+
+            RecvBuf = "";
+
+            return tempsize;
+        }
+
+        return RecvBuf.size();
+    }
+
     char buffer[MAXRECV+1];
     ssize_t buffer_count;
     int ret;
@@ -303,45 +319,54 @@ ssize_t SocketHandler::Recv( string *sock_inT, bool sock_delT, int timeout )
         return -1;
     }
 
-    if (sock_delT == true)
+    while ((buffer_count = ::recv(sock_fd, buffer, MAXRECV, 0)) < 0)
     {
-        while ((buffer_count = ::recv(sock_fd, buffer, MAXRECV, 0)) < 0)
-        {
-            if (errno == EINTR) continue;
+        if (errno == EINTR) continue;
 
-            return -1;
-        }
-    }
-    else
-    {
-        //No delete from socket
-        while ((buffer_count = ::recv(sock_fd, buffer, MAXRECV, MSG_PEEK)) < 0)
-        {
-            if (errno == EINTR) continue;
-
-            return -1;
-        }
+        return -1;
     }
 
-    if (buffer_count == 0)
+    if ( sock_delT == false )
+    {
+        RecvBuf.append( buffer, buffer_count );
+    }
+
+    if ( buffer_count == 0 )
     {
         return 0;
     }
 
-    sock_inT->append(buffer, buffer_count);
+    sock_inT.append( buffer, buffer_count );
+
     return buffer_count;
 }
 
 
 //Receive String of length sock_length
-bool SocketHandler::RecvLength( string *sock_inT, ssize_t sock_lengthT )
+bool SocketHandler::RecvLength( string &sock_inT, unsigned int sock_lengthT )
 {
+    if ( RecvBuf.size() >= sock_lengthT )
+    {
+        sock_inT.append( RecvBuf.substr( 0, sock_lengthT ) );
+
+        RecvBuf.erase( 0, sock_lengthT );
+
+        return true;
+    }
+
     char buffer[MAXRECV+1];
     ssize_t buffer_count;
-    int received = 0;
-    int ret;
+    unsigned int received = 0;
 
-    while ( received < sock_lengthT )
+    if ( RecvBuf.size() > 0 )
+    {
+        sock_inT.append( RecvBuf );
+        received += RecvBuf.size();
+
+        RecvBuf = "";
+    }
+
+    for(;;)
     {
         Timeout.tv_sec = RECVTIMEOUT;
         Timeout.tv_usec = 0;
@@ -349,28 +374,35 @@ bool SocketHandler::RecvLength( string *sock_inT, ssize_t sock_lengthT )
         FD_ZERO(&checkfd);
         FD_SET(sock_fd,&checkfd);
 
-        ret = select_eintr(sock_fd+1, &checkfd, NULL, NULL, &Timeout);
+        int ret = select_eintr(sock_fd+1, &checkfd, NULL, NULL, &Timeout);
 
-        if (ret <= 0) 
+        if ( ret <= 0 )
         {
             return false;
         }
 
-        while ((buffer_count = ::recv(sock_fd, buffer, sock_lengthT - received, 0)) < 0)
-        {
-            if (errno == EINTR) continue;
+        while ((buffer_count = ::recv(sock_fd, buffer, MAXRECV, 0)) < 0 && errno == EINTR);
 
-            return false;
-        }
-
-        if (buffer_count == 0)
+        if ( buffer_count < 1 )
         {
             return false;
         }
 
-        sock_inT->append(buffer, buffer_count);
+        if ( received + buffer_count >= sock_lengthT )
+        {
+            string Rest;
+            Rest.append( buffer, buffer_count );
+
+            unsigned int needed = sock_lengthT - received;
+            
+            sock_inT.append( Rest.substr( 0, needed ) );
+            if ( Rest.size() > needed ) RecvBuf.append( Rest.substr( needed ) );
+
+            return true;
+        }
+
+        sock_inT.append( buffer, buffer_count );
         received += buffer_count;
-
     }
 
     return true;
@@ -378,16 +410,16 @@ bool SocketHandler::RecvLength( string *sock_inT, ssize_t sock_lengthT )
 
 
 //Wait and get something from socket until separator
-bool SocketHandler::GetLine( string *lineT, string separator, int timeout )
+bool SocketHandler::GetLine( string &lineT, string separator, int timeout )
 {
-    *lineT = "";
+    lineT = "";
 
     string TempLine;
     string::size_type Position;
 
     do
     {
-        if ( Recv( &TempLine, false, timeout ) == false )
+        if ( Recv( TempLine, false, timeout ) == false )
         {
             return false;
         }
@@ -396,12 +428,12 @@ bool SocketHandler::GetLine( string *lineT, string separator, int timeout )
 
     TempLine = "";
 
-    if ( RecvLength( &TempLine, Position + separator.size() ) == false )
+    if ( RecvLength( TempLine, Position + separator.size() ) == false )
     {
         return false;
     }
 
-    *lineT = TempLine.erase( Position );
+    lineT = TempLine.erase( Position );
 
     return true;
 }
@@ -434,6 +466,11 @@ bool SocketHandler::SetDomainAndPort( const string domainT, int portT )
 
 bool SocketHandler::CheckForData( int timeout )
 {
+    if ( RecvBuf.size() > 0 )
+    {
+        return true;
+    }
+
     int ret;
 
     Timeout.tv_sec = timeout;
@@ -526,6 +563,9 @@ SocketHandler::SocketHandler()
         l_addr.sin_port = htons(0);
         l_addr.sin_addr.s_addr = inet_addr( source_address.c_str() );
     }
+
+    RecvBuf.reserve(1500);
+    RecvBuf = "";
 }
 
 

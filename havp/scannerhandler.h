@@ -36,6 +36,7 @@ struct scanner_st
     int toscanner;
     int fromscanner;
     string scanner_name;
+    string scanner_name_short;
     pid_t scanner_pid;
 };
 
@@ -44,9 +45,10 @@ struct timeval ScannersTimeout;
 int ScannerTimeout;
 
 fd_set readfds, origfds, scannerfds;
-int totalscanners, top_fd, answers, scannererrors;
-string Message;
-bool VirusFound;
+int totalscanners, top_fd, answers;
+
+vector<string> ErrorMsg;
+vector<string> VirusMsg;
 
 vector<scanner_st> Scanner;
 vector<GenericScanner*> VirusScanner;
@@ -56,11 +58,13 @@ unsigned long TempFileLength;
 public:
 
 bool InitScanners();
-bool CreateScanners( SocketHandler *ProxyServerT );
+bool CreateScanners( SocketHandler &ProxyServerT );
 bool ReloadDatabases();
 bool RestartScanners();
 void ExitScanners();
+#ifndef NOMAND
 bool HasAnswer();
+#endif
 int GetAnswer();
 string GetAnswerMessage();
 
@@ -68,9 +72,9 @@ bool InitTempFile();
 bool UnlockTempFile();
 bool DeleteTempFile();
 bool ReinitTempFile();
-bool TruncateTempFile( long long ContentLengthT );
 bool SetTempFileSize( long long ContentLengthT );
-bool ExpandTempFile( string *dataT, bool unlockT );
+bool TruncateTempFile( long long ContentLengthT );
+bool ExpandTempFile( string &dataT, bool unlockT );
 
 ScannerHandler();
 ~ScannerHandler();
