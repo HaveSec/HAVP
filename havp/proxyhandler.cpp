@@ -819,6 +819,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
 
                 TransferDataLength -= 1; //send one character
 
+                TransferData = BodyQueue.begin();
                 string character = TransferData->substr(0,1);
                 TransferData->erase(0,1);
 

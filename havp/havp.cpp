@@ -69,6 +69,16 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    SocketHandler ProxyServer;
+
+    //Bind daemon port
+    if ( ProxyServer.CreateServer( Params::GetConfigInt("PORT"), Params::GetConfigString("BIND_ADDRESS") ) == false )
+    {
+        cout << "Could not create server (already running?)" << endl;
+        cout << "Exiting.." << endl;
+        exit(1);
+    }
+
     //Change user/group ID
     if ( ChangeUserAndGroup(Params::GetConfigString("USER"), Params::GetConfigString("GROUP")) == false )
     {
@@ -116,16 +126,6 @@ int main(int argc, char *argv[])
     if ( Params::GetConfigBool("TRANSPARENT") )
     {
         LogFile::ErrorMessage("Use transparent proxy mode\n");
-    }
-
-    SocketHandler ProxyServer;
-
-    //Bind daemon port
-    if ( ProxyServer.CreateServer( Params::GetConfigInt("PORT"), Params::GetConfigString("BIND_ADDRESS") ) == false )
-    {
-        cout << "Could not create server (already running?)" << endl;
-        cout << "Exiting.." << endl;
-        exit(1);
     }
 
     //Test that mandatory locking works (this leaves file with EICAR data on disk)

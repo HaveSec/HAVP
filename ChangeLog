@@ -1,4 +1,8 @@
 
+*HAVP 0.81 released
+ - Fixed binding to low ports (<1024)
+ - Fixed FreeBSD, downloads that took longer than TRICKLING did not work
+
 *HAVP 0.80 released
  - Experimental FreeBSD support (no mandatory locking, KEEPBACK not supported!)
  - Avast! scanner support
