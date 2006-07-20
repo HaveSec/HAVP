@@ -29,7 +29,11 @@ private:
 static int Error_fd;
 static int Access_fd;
 
-static string GetDateAndTime();
+static bool UseSyslog;
+static int SyslogLevel;
+
+static int GetSyslogLevel();
+static int GetSyslogFacility();
 
 public:
 

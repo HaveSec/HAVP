@@ -137,6 +137,12 @@ int ConnectionToHTTP::AnalyseHeaderLine( string &RequestT )
 
             return 0;
         }
+
+        if ( RequestU.find("CONTENT-TYPE: IMAGE/", 0) != string::npos )
+        {
+            IsImage = true;
+        }
+
     }//End >16 check
 
     return 0;
@@ -157,10 +163,15 @@ bool ConnectionToHTTP::KeepItAlive()
     return KeepAlive;
 }
 
+bool ConnectionToHTTP::ContentImage()
+{
+    return IsImage;
+}
+
 void ConnectionToHTTP::ClearVars()
 {
     ContentLength = -1;
-    KeepAlive = false;
+    KeepAlive = IsImage = false;
 }
 
 

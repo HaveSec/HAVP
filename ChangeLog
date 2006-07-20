@@ -1,4 +1,12 @@
 
+*HAVP 0.82 released
+ - Improved ZIP handling (header pre-fetch, scans ZIPs larger than MAXSCANSIZE)
+ - Added SCANIMAGES config
+ - Ignore RAR errors from clamd
+ - Fixes to HTTP header handling
+ - Added syslog logging option
+ - Signal HUP re-opens logfiles, making rotation possible
+
 *HAVP 0.81 released
  - Fixed binding to low ports (<1024)
  - Fixed FreeBSD, downloads that took longer than TRICKLING did not work

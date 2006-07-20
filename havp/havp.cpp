@@ -198,13 +198,16 @@ int main(int argc, char *argv[])
 
             LogFile::ErrorMessage("Signal HUP received, reloading scanners and lists\n");
 
-            if ( Scanners.ReloadDatabases() == true )
-            {
-                restartchilds = true;
-            }
+            //Reload databases
+            if ( Scanners.ReloadDatabases() == true ) restartchilds = true;
 
+            //Reload lists
             Whitelist.ReloadURLList( Params::GetConfigString("WHITELIST") );
             Blacklist.ReloadURLList( Params::GetConfigString("BLACKLIST") );
+
+            //Reopen logs
+            LogFile::InitLogFiles(Params::GetConfigString("ACCESSLOG").c_str(), Params::GetConfigString("ERRORLOG").c_str());
+            if ( Params::GetConfigBool("USESYSLOG") == false ) restartchilds = true;
 
             LastRefresh = time(NULL);
         }

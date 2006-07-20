@@ -872,6 +872,51 @@ bool ScannerHandler::ExpandTempFile( string &dataT, bool unlockT )
     return true;
 }
 
+#ifndef NOMAND
+bool ScannerHandler::ExpandTempFileRange( string &dataT, long long offset )
+{
+    struct flock lock;
+    int total_written = 0;
+    int len = dataT.length();
+    int ret;
+    //off_t origpos;
+
+    //if ((origpos = lseek(fd_tempfile, 0, SEEK_CUR)) < 0) return false;
+
+    if (lseek(fd_tempfile, offset, SEEK_SET) < 0) return false;
+
+    //Handle partial write if interrupted by signal!
+    while (total_written < len)
+    {
+        while ((ret = write(fd_tempfile, dataT.substr(total_written).c_str(), len - total_written)) < 0)
+        {
+            if (errno == EINTR) continue;
+
+            LogFile::ErrorMessage("Could not expand tempfile: %s %s\n", TempFileName, strerror(errno));
+            return false;
+        }
+
+        total_written += ret;
+    }
+
+    //if (lseek(fd_tempfile, origpos, SEEK_SET) < 0) return false;
+    if (lseek(fd_tempfile, 0, SEEK_SET) < 0) return false;
+
+    lock.l_type   = F_UNLCK;
+    lock.l_start  = offset;             // byte-offset
+    lock.l_whence = SEEK_SET;
+    lock.l_len    = len;                // number of bytes; 0 = EOF
+
+    //partly unlock
+    if (fcntl(fd_tempfile, F_SETLK, &lock) < 0)
+    {
+        LogFile::ErrorMessage("Could not unlock file: %s\n", TempFileName);
+        return false;
+    }
+
+    return true;
+}
+#endif
 
 //Constructor
 ScannerHandler::ScannerHandler()

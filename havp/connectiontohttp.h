@@ -27,6 +27,7 @@ private:
 int HTMLResponse;
 long long ContentLength;
 bool KeepAlive;
+bool IsImage;
 
 int AnalyseFirstHeaderLine( string &RequestT );
 int AnalyseHeaderLine( string &RequestT );
@@ -37,6 +38,7 @@ string PrepareHeaderForBrowser();
 int GetResponse();
 long long GetContentLength();
 bool KeepItAlive();
+bool ContentImage();
 void ClearVars();
 
 ConnectionToHTTP();

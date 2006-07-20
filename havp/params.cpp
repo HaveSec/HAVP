@@ -48,6 +48,11 @@ void Params::SetDefaults()
     SetConfig("ERRORLOG",	"/var/log/havp/havp.log");
     SetConfig("LOG_OKS",	"true");
     SetConfig("LOGLEVEL",	"1");
+    SetConfig("USESYSLOG",	"false");
+    SetConfig("SYSLOGNAME",	"havp");
+    SetConfig("SYSLOGFACILITY",	"daemon");
+    SetConfig("SYSLOGLEVEL",	"info");
+    SetConfig("SCANIMAGES",	"true");
     SetConfig("MAXSCANSIZE",	"0");
     SetConfig("KEEPBACKBUFFER",	"200000");
     SetConfig("KEEPBACKTIME",	"5");

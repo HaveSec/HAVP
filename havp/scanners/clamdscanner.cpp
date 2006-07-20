@@ -136,6 +136,13 @@ string ClamdScanner::Scan( const char *FileName )
     //Error?
     if ( (Position = Response.find(" ERROR")) != string::npos )
     {
+        //Ignore RAR errors
+        if ( Response.find("RAR module failure") != string::npos )
+        {
+            ScannerAnswer = "0Clean";
+            return ScannerAnswer;
+        }
+
         string::size_type PositionStart = Response.find(": ") + 2;
 
         ScannerAnswer = "2" + Response.substr( PositionStart, Position - PositionStart );

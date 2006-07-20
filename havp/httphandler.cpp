@@ -26,22 +26,56 @@ bool HTTPHandler::ReadHeader( string &headerT )
     headerT = "";
 
     string tempheader;
+    ssize_t read;
+    int received = 0;
+    string::size_type position;
 
-    ssize_t read = SocketHandler::Recv( tempheader, false, -1 );
-
-    if ( read < 1 )
+    //Read initial header, ignore whitespace from beginning
+    for(;;)
     {
-        return false;
+        read = SocketHandler::Recv( tempheader, false, -1 );
+
+        if ( read < 1 )
+        {
+            return false;
+        }
+
+        received += read;
+
+        if ( (position = tempheader.find_first_not_of("\r\n\t ")) != string::npos )
+        {
+            if ( position > 0 )
+            {
+                tempheader.erase( 0, position );
+
+                read -= position;
+
+                string ws;
+                SocketHandler::RecvLength( ws, position );
+            }
+
+            //Jump to header processing
+            break;
+        }
+
+        if ( received > 20480 )
+        {
+            LogFile::ErrorMessage("Too large header received (>20kB)\n");
+            return false;
+        }
+
+        SocketHandler::RecvLength( tempheader, read );
+
+        tempheader = "";
     }
 
     bool WrongHeader = false;
     int poscount = 0;
-    string::size_type position;
 
-    while ( (position = tempheader.find ("\r\n\r\n")) == string::npos )
+    while ( (position = tempheader.find("\r\n\r\n")) == string::npos )
     {
         //Maybe we should also look for \n\n (19.3 RFC 1945 - Tolerant Applications)
-        if ( (position = tempheader.find ("\n\n")) != string::npos )
+        if ( (position = tempheader.find("\n\n")) != string::npos )
         {
             WrongHeader = true;
             break;
@@ -55,19 +89,25 @@ bool HTTPHandler::ReadHeader( string &headerT )
         }
 
         poscount += read;
+        received += read;
 
         //Too big header
-        if ( poscount > 20480 )
+        if ( received > 20480 )
         {
-            LogFile::ErrorMessage("Server sent too big header (>20kB)\n");
+            LogFile::ErrorMessage("Too large header received (>20kB)\n");
             return false;
         }
 
         if ( (read = SocketHandler::Recv( tempheader, false, -1 )) < 1 )
         {
+            //Did not receive last empty line?
+            if ( read == 0 && ( headerT.find_last_of( "\r\n" ) == headerT.size() - 1 ) )
+            {
+                return true;
+            }
+
             return false;
         }
-
     }
 
     //Read last part of header
