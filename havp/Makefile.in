@@ -20,7 +20,7 @@ all: havp
 havp: $(OBJECTS)
 	$(CXX) $(CFLAGS) -o havp $^ $(LDFLAGS)
 
-%.o: %.cpp %.h
+%.o: %.cpp %.h default.h
 	$(CXX) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 install: all

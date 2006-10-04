@@ -130,6 +130,11 @@ bool ScannerHandler::InitScanners()
             LogFile::ErrorMessage("ERROR: %s failed EICAR virus test! (%s)\n", Name.c_str(), Answer.substr(1).c_str());
             return false;
         }
+
+        if ( Name.find("ClamAV") != string::npos )
+        {
+            if ( Name.find("devel") != string::npos ) ClamVersion = 2;
+        }
     }
 
     LogFile::ErrorMessage("--- All scanners initialized\n");

@@ -47,7 +47,7 @@ void Params::SetDefaults()
     SetConfig("ACCESSLOG",	"/var/log/havp/access.log");
     SetConfig("ERRORLOG",	"/var/log/havp/havp.log");
     SetConfig("LOG_OKS",	"true");
-    SetConfig("LOGLEVEL",	"1");
+    SetConfig("LOGLEVEL",	"0");
     SetConfig("USESYSLOG",	"false");
     SetConfig("SYSLOGNAME",	"havp");
     SetConfig("SYSLOGFACILITY",	"daemon");

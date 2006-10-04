@@ -512,8 +512,8 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
     if ( BodyLength < 0 )
     {
         DropServer = true;
-        if (LL>0) LogFile::ErrorMessage("(%s) Could not read server body (%s:%d)\n", ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
-        return -75;
+        if (LL>0) LogFile::ErrorMessage("(%s) Could not read initial server body (%s:%d)\n", ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
+        return -74;
     }
 
     //Nothing received?
@@ -535,10 +535,13 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
     }
 
     //Scan JPG? GIF? PNG?
-    if ( Params::GetConfigBool("SCANIMAGES") == false && ToServer.ContentImage() &&
-         ( BodyTemp.find("\255\216\255\224", 0, 4) == 0 ||
-           BodyTemp.find("GIF8", 0, 4) == 0 ||
-           BodyTemp.find("\137PNG", 0, 4) == 0 ) )
+    if ( Params::GetConfigBool("SCANIMAGES") == false
+         && ToServer.ContentImage()
+         && ( BodyTemp.find("\255\216\255\224", 0, 4) == 0
+              || BodyTemp.find("GIF8", 0, 4) == 0
+              || BodyTemp.find("\137PNG", 0, 4) == 0
+              )
+         )
     {
         ScannerOff = true;
     }
@@ -662,16 +665,38 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
             return -100;
         }
 
-        //Dynamic scanning
+#ifndef NOMAND
+        //Check if we need to work around ClamAV mmap() handling
+        //These can fail if trying to scan locked file: BinHex, PDF
+        if ( BodyTemp.find("(This file", 0, 10) == 0
+             || ( Scanners.ClamVersion == 2
+                  && BodyTemp.find("%PDF-", 0, 5) == 0
+                  )
+             )
+        {
+            //No partial unlock
+            PartlyUnlock = false;
+        }
+        else
+        {
+#endif
+
+        //Partial unlocking - dynamic scanning
         PartlyUnlock = true;
+
+#ifndef NOMAND
+        }
+#endif
     }
 
 #ifndef NOMAND
     string Zipheader = "";
 
     //Try to get ZIP header first for large files
-    if ( ContentLengthReference > 1000000 && (MaxScanSize == 0 || MaxScanSize > 1000000) &&
-         (BodyTemp.find("PK\003\004", 0, 4) == 0 || BodyTemp.find("PK00PK\003\004", 0, 8) == 0) )
+    if ( ContentLengthReference > 1000000
+         && ( MaxScanSize == 0 || MaxScanSize > 1000000 )
+         && ( BodyTemp.find("PK\003\004", 0, 4) == 0 || BodyTemp.find("PK00PK\003\004", 0, 8) == 0 )
+         )
     {
         string RangeServer;
         int RangePort;
@@ -806,8 +831,6 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
             //Received MAXSCANSIZE, finish tempfile, keep getting server data until everything received
             else if ( (UnlockDone == false) && (TransferredBody >= (TempLengthReference - Zipheader.size())) )
             {
-                LogFile::ErrorMessage("TLR tb: %lld, tlr: %lld, bodytemp: %d, erase: %d\n", TransferredBody, TempLengthReference, BodyTemp.size(), (TempLengthReference - Zipheader.size()) - (TransferredBody - BodyTemp.size()));
-
                 string BodyTemp2 = BodyTemp.substr( 0, (TempLengthReference - Zipheader.size()) - (TransferredBody - BodyTemp.size()) );
 
                 if ( Scanners.ExpandTempFile( BodyTemp2, PartlyUnlock ) == false )
@@ -1304,6 +1327,11 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT, string Answer )
             filename = ERROR_DOWN;
             break;
 
+        case -74:
+            message = "Zero sized reply";
+            filename = ERROR_DOWN;
+            break;
+
         case -75:
             message = "Could not read body";
             filename = ERROR_DOWN;
@@ -1366,6 +1394,11 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT, string Answer )
 
         case -231:
             message = "Server tried to send partial data<br>and RANGE is set to false";
+            filename = ERROR_REQUEST;
+            break;
+
+        case -232:
+            message = "Server sent forbidden Transfer-Encoding header";
             filename = ERROR_REQUEST;
             break;
 

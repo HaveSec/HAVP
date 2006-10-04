@@ -21,7 +21,7 @@
 
 #include "../config.h"
 
-#define VERSION "0.82"
+#define VERSION "0.83"
 
 //##############################################################
 //Define if you want to rewrite a URL
@@ -68,9 +68,6 @@
 
 //SENDTIMEOUT in seconds
 #define SENDTIMEOUT 120
-
-//Disable Encoding - This is a work around for the IE 5.5 and IE 6.X bug
-#define NOENCODING 1
 
 //Maximum client connection waiting for accept
 #define MAXCONNECTIONS 1024

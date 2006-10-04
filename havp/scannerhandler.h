@@ -57,6 +57,8 @@ unsigned long TempFileLength;
 
 public:
 
+int ClamVersion;
+
 bool InitScanners();
 bool CreateScanners( SocketHandler &ProxyServerT );
 bool ReloadDatabases();

@@ -1,4 +1,9 @@
 
+*HAVP 0.83 released
+ - Fixed ftp:// logins
+ - Allow Accept-Encoding header so HTTP compression works
+ - Workaround for some ClamAV mmap() troubles (affected BinHex and PDF)
+
 *HAVP 0.82 released
  - Improved ZIP handling (header pre-fetch, scans ZIPs larger than MAXSCANSIZE)
  - Added SCANIMAGES config

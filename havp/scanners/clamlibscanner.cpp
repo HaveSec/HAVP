@@ -138,7 +138,17 @@ void ClamLibScanner::FreeDatabase()
 //Constructor
 ClamLibScanner::ClamLibScanner()
 {
-    ScannerName = "ClamAV Library Scanner";
+    ScannerName = cl_retver();
+
+    if ( ScannerName.find("devel") != string::npos )
+    {
+        ScannerName = "ClamAV Library Scanner (devel)";
+    }
+    else
+    {
+        ScannerName = "ClamAV Library Scanner";
+    }
+
     ScannerNameShort = "ClamAV";
 
     memset(&dbdir, 0, sizeof(dbdir));

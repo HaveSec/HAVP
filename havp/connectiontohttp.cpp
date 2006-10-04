@@ -39,11 +39,7 @@ string ConnectionToHTTP::PrepareHeaderForBrowser()
         //Uppercase for matching
         it = UpperCase(*itvec);
 
-        if( it.find( "TRANSFER-ENCODING", 0 ) == 0 )
-        {
-            continue;
-        }
-        else if( it.find( "KEEP-ALIVE", 0 ) == 0 )
+        if( it.find( "KEEP-ALIVE", 0 ) == 0 )
         {
             continue;
         }
@@ -141,6 +137,12 @@ int ConnectionToHTTP::AnalyseHeaderLine( string &RequestT )
         if ( RequestU.find("CONTENT-TYPE: IMAGE/", 0) != string::npos )
         {
             IsImage = true;
+        }
+
+        if ( RequestU.find("TRANSFER-ENCODING: ", 0) == 0 )
+        {
+            //Not allowed on HTTP/1.0
+            return -232;
         }
 
     }//End >16 check

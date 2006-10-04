@@ -156,10 +156,6 @@ string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, bool UsePar
         {
             continue;
         }
-        else if (( it.find( "ACCEPT-ENCODING", 0 ) && NOENCODING ) == 0 )
-        {
-            continue;
-        }
         else if ( it.find( "VIA", 0 ) == 0 )
         {
             string line = *itvec;
@@ -498,7 +494,7 @@ int ConnectionToBrowser::GetHostAndPortOfRequest( string &RequestT, string::size
     {
         if ( RequestProtocol == "ftp" )
         {
-            string UserPass = RequestDomain.substr( Begin, LastPosition + 1 );
+            string UserPass = RequestDomain.substr( 0, LastPosition );
 
             string::size_type Position;
 
