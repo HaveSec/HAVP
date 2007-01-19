@@ -83,7 +83,7 @@ string AVGScanner::Scan( const char *FileName )
         return ScannerAnswer;
     }
 
-    if ( Response.find( "\n200 OK" ) != string::npos )
+    if ( MatchSubstr( Response, "\n200 OK", -1 ) )
     {
         ScannerAnswer = "0Clean";
         return ScannerAnswer;

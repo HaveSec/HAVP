@@ -12,9 +12,6 @@
 if [ ! -f "$1" ]; then exit 0; fi
 if [ ! -f "$1.default" ]; then exit 0; fi
 
-PATH=/usr/bin:/usr/local/bin:/usr/perl/bin:/opt/perl/bin:/opt/sfw/bin
-export PATH
-
 perl -e '
 	open(OLDCONF, "$ARGV[0]") or die;
 	while (<OLDCONF>)

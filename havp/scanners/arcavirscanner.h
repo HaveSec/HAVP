@@ -1,5 +1,5 @@
 /***************************************************************************
-                          nod32scanner.h  -  description
+                          arcavirscanner.h  -  description
                              -------------------
     begin                : Sa Feb 12 2005
     copyright            : (C) 2005 by Christian Hilgers
@@ -15,21 +15,18 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef NOD32SCANNER_H
-#define NOD32SCANNER_H
+#ifndef ARCAVIRSCANNER_H
+#define ARCAVIRSCANNER_H
 
 #include "../genericscanner.h"
 
-class NOD32Scanner : public GenericScanner {
+class ArcavirScanner : public GenericScanner {
 
 private:
 
-string Agent;
-int Version;
-
 string ScannerCmd;
 
-SocketHandler NOD32Socket;
+SocketHandler ArcavirSocket;
 time_t LastError;
 
 string ScannerAnswer;
@@ -41,11 +38,9 @@ bool InitDatabase();
 bool ReloadDatabase();
 void FreeDatabase();
 string Scan( const char *FileName );
-string ScanV25( const char *FileName );
-string ScanV21( const char *FileName );
 
-NOD32Scanner();
-~NOD32Scanner();
+ArcavirScanner();
+~ArcavirScanner();
 
 };
 

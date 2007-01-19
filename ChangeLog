@@ -1,6 +1,15 @@
 
+*HAVP 0.84 released
+ - Fix bug in tcp buffer, requests could leak to other clients sometimes
+ - Support for Arcavir scanner
+ - Support for multiple IPs in hostnames, all are tried if necessary
+ - Pass Proxy-Authorization header to parent proxy (thanks Mateus)
+ - Ignore scanner errors if MAXSCANSIZE reached (thanks Vittorio)
+ - Build system polished a bit (--prefix supported)
+ - Added support for old NOD32 scanner (set NOD32VERSION in config)
+ - Default for MAXSCANSIZE 5000000, not suggested to be 0 anymore
+
 *HAVP 0.83 released
- - Fixed ftp:// logins
  - Allow Accept-Encoding header so HTTP compression works
  - Workaround for some ClamAV mmap() troubles (affected BinHex and PDF)
 

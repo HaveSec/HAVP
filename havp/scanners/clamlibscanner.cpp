@@ -140,7 +140,7 @@ ClamLibScanner::ClamLibScanner()
 {
     ScannerName = cl_retver();
 
-    if ( ScannerName.find("devel") != string::npos )
+    if ( MatchSubstr( ScannerName, "devel", -1 ) )
     {
         ScannerName = "ClamAV Library Scanner (devel)";
     }

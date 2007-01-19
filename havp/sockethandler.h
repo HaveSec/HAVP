@@ -20,6 +20,7 @@
 
 #include "default.h"
 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <sys/un.h>
@@ -43,11 +44,16 @@ struct timeval Timeout;
 
 socklen_t addr_len;
 
+int ip_count;
+int ips;
+
 fd_set checkfd, wset;
 
 string source_address;
 
 string RecvBuf;
+
+string LastHost;
 
 protected:
 
@@ -62,11 +68,14 @@ bool CreateServer( int portT, string bind_addrT );
 bool AcceptClient( SocketHandler &accept_socketT );
 bool ConnectToServer();
 bool ConnectToSocket( string SocketPath, int retry );
+bool Send( const char *sock_outT, int len );
 bool Send( string &sock_outT );
 ssize_t Recv( string &sock_inT, bool sock_delT, int timeout );
 bool RecvLength( string &sock_inT, unsigned int sock_lengthT );
 bool GetLine( string &lineT, string separator, int timeout );
-bool SetDomainAndPort( const string domainT, int portT );
+bool SetDomainAndPort( string domainT, int portT );
+int IPCount();
+string GetIP();
 bool CheckForData( int timeout );
 void Close();
 

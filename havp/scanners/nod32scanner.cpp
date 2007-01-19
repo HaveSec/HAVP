@@ -29,8 +29,17 @@ bool NOD32Scanner::ReloadDatabase()
     return false;
 }
 
-
 string NOD32Scanner::Scan( const char *FileName )
+{
+    if ( Version == 25 )
+    {
+        return ScanV25( FileName );
+    }
+
+    return ScanV21( FileName );
+}
+
+string NOD32Scanner::ScanV25( const char *FileName )
 {
     //Connect
     if ( NOD32Socket.ConnectToSocket( Params::GetConfigString("NOD32SOCKET"), 1 ) == false )
@@ -58,7 +67,7 @@ string NOD32Scanner::Scan( const char *FileName )
     }
 
     //Check greeting
-    if ( Response.find("200", 0, 3) == string::npos )
+    if ( MatchBegin( Response, "200", 3 ) == false )
     {
         NOD32Socket.Close();
 
@@ -96,54 +105,7 @@ string NOD32Scanner::Scan( const char *FileName )
 
         NOD32Socket.Close();
 
-        //Connect again
-        if ( NOD32Socket.ConnectToSocket( Params::GetConfigString("NOD32SOCKET"), 1 ) == false )
-        {
-            //Prevent log flooding, show error only once per minute
-            if ( (LastError == 0) || (LastError + 60 < time(NULL)) )
-            {
-                LogFile::ErrorMessage("NOD32: Could not connect to scanner! Scanner down?\n");
-                LastError = time(NULL);
-            }
-
-            ScannerAnswer = "2Could not connect to scanner socket";
-            return ScannerAnswer;
-        }
-
-        //Get initial response
-        if ( NOD32Socket.GetLine( Response, "\n\n", 600 ) == false )
-        {
-            NOD32Socket.Close();
-
-            ScannerAnswer = "2Could not read from scanner socket";
-            return ScannerAnswer;
-        }
-
-        //Check greeting
-        if ( Response.find("200", 0, 3) == string::npos )
-        {
-            NOD32Socket.Close();
-
-            LogFile::ErrorMessage("NOD32: Invalid greeting from scanner\n");
-            ScannerAnswer = "2Invalid greeting from scanner";
-            return ScannerAnswer;
-        }
-
-        ScannerCmd = "HELO\n" + Agent + "\nhavp\n\nPSET\nscan_obj_files = yes\nscan_obj_archives = yes\nscan_obj_emails = yes\nscan_obj_sfx = yes\nscan_obj_runtimepackers = yes\nscan_app_adware = yes\nscan_app_unsafe = yes\nscan_pattern = yes\nscan_heur = yes\nscan_adv_heur = yes\nscan_all_files = yes\naction_on_infected = \"reject\"\naction_on_notscanned = \"reject\"\nquarantine = no\ntmp_dir = \"";
-        ScannerCmd += Params::GetConfigString("TEMPDIR") + "\"\n\n";
-
-        //Send command
-        if ( NOD32Socket.Send( ScannerCmd ) == false )
-        {
-            NOD32Socket.Close();
-
-            LogFile::ErrorMessage("NOD32: Could not write command to scanner\n");
-            ScannerAnswer = "2Scanner connection failed";
-            return ScannerAnswer;
-        }
-
-        //Receive responses
-        NOD32Socket.GetLine( Response, "\n\n", 600 );
+        return Scan( FileName );
     }
 
     if ( NOD32Socket.GetLine( Response, "\n\n", 600 ) == false )
@@ -155,7 +117,7 @@ string NOD32Scanner::Scan( const char *FileName )
         return ScannerAnswer;
     }
 
-    if ( Response.find("200 OK PSET", 0, 11) == string::npos )
+    if ( MatchBegin( Response, "200 OK PSET", 11 ) == false )
     {
         NOD32Socket.Close();
 
@@ -195,14 +157,14 @@ string NOD32Scanner::Scan( const char *FileName )
     NOD32Socket.Close();
 
     //Clean
-    if ( Response.find("201 CLEAN", 0, 9) == 0 )
+    if ( MatchBegin( Response, "201 CLEAN", 9 ) )
     {
         ScannerAnswer = "0Clean";
         return ScannerAnswer;
     }
 
     //Infected
-    if ( Response.find("501 INFECTED", 0, 12) == 0 )
+    if ( MatchBegin( Response, "501 INFECTED", 12 ) )
     {
         if ( Agent != "cli" )
         {
@@ -229,7 +191,7 @@ string NOD32Scanner::Scan( const char *FileName )
     }
 
     //Error
-    if ( Response.find("5", 0, 1) == 0 )
+    if ( MatchBegin( Response, "5", 1 ) )
     {
         ScannerAnswer = "2" + Response;
         return ScannerAnswer;
@@ -237,6 +199,130 @@ string NOD32Scanner::Scan( const char *FileName )
 
     LogFile::ErrorMessage("NOD32: Unknown response from scanner: %s\n", Response.c_str());
     ScannerAnswer = "2Unknown scanner response";
+    return ScannerAnswer;
+}
+
+
+string NOD32Scanner::ScanV21( const char *FileName )
+{
+    //Connect
+    if ( NOD32Socket.ConnectToSocket( Params::GetConfigString("NOD32SOCKET"), 1 ) == false )
+    {
+        //Prevent log flooding, show error only once per minute
+        if ( (LastError == 0) || (LastError + 60 < time(NULL)) )
+        {
+            LogFile::ErrorMessage("NOD32: Could not connect to scanner! Scanner down?\n");
+            LastError = time(NULL);
+        }
+
+        ScannerAnswer = "2Could not connect to scanner socket";
+        return ScannerAnswer;
+    }
+
+    string Response;
+
+    //Get initial response
+    if ( NOD32Socket.Recv( Response, true, 30 ) <= 0 )
+    {
+        NOD32Socket.Close();
+
+        ScannerAnswer = "2Could not read from scanner socket";
+        return ScannerAnswer;
+    }
+
+    //Check greeting
+    if ( MatchBegin( Response, "200", 3 ) == false )
+    {
+        NOD32Socket.Close();
+
+        LogFile::ErrorMessage("NOD32: Invalid greeting from scanner\n");
+        ScannerAnswer = "2Invalid greeting from scanner";
+        return ScannerAnswer;
+    }
+
+    //Send HELO and PARAMS
+    char ScannerCmd[] = "SETU\0SCFI1\0SCAR1\0SCEM1\0SCRT1\0SCSX1\0SCAD1\0SCUS1\0EXSC0\0SCPA1\0SCHE1\0SCHS2\0WREM0\0WRSB0\0WRHD0\0ALLF1\0LOGA0\0ACTI0\0ACTU16\0SNDS0\0\0";
+
+    //Send command - doublecheck lenght parameter..
+    if ( NOD32Socket.Send( ScannerCmd, 121 ) == false )
+    {
+        NOD32Socket.Close();
+
+        LogFile::ErrorMessage("NOD32: Could not write command to scanner\n");
+        ScannerAnswer = "2Scanner connection failed";
+        return ScannerAnswer;
+    }
+
+    //Receive response
+    Response = "";
+    if ( NOD32Socket.Recv( Response, true, 600 ) <= 0 )
+    {
+        NOD32Socket.Close();
+
+        ScannerAnswer = "2Could not read from scanner socket";
+        return ScannerAnswer;
+    }
+
+    if ( MatchBegin( Response, "200", 3 ) == false )
+    {
+        NOD32Socket.Close();
+
+        LogFile::ErrorMessage("NOD32: Invalid response from scanner: %s\n", Response.c_str());
+        ScannerAnswer = "2Invalid response from scanner";
+        return ScannerAnswer;
+    }
+
+    //Blah..
+    char ScanCmd[1024];
+    ScanCmd[0] = '\0';
+    strcat(ScanCmd, "SCAN*cli*");
+    strncat(ScanCmd, FileName, 200);
+    strcat(ScanCmd, "**QUIT*");
+    int ScanLen = strlen(ScanCmd);
+    for ( int j = 0; j <= ScanLen; j++ ) { if ( ScanCmd[j] == '*' ) ScanCmd[j] = '\0'; }
+
+    //Send command
+    if ( NOD32Socket.Send( ScanCmd, ScanLen + 1 ) == false )
+    {
+        NOD32Socket.Close();
+
+        LogFile::ErrorMessage("NOD32: Could not write command to scanner\n");
+        ScannerAnswer = "2Scanner connection failed";
+        return ScannerAnswer;
+    }
+
+    Response = "";
+    int ret;
+
+    while ( (ret = NOD32Socket.Recv( Response, true, 600 )) != 0 )
+    {
+        if (ret < 0)
+        {
+            NOD32Socket.Close();
+            LogFile::ErrorMessage("NOD32: Could not read scanner response\n");
+            ScannerAnswer = "2Could not read scanner response";
+            return ScannerAnswer;
+        }
+    }
+
+    NOD32Socket.Close();
+
+    //Clean or archive error
+    if ( MatchBegin( Response, "200", 3 ) || MatchBegin( Response, "205", 3 ) )
+    {
+        ScannerAnswer = "0Clean";
+        return ScannerAnswer;
+    }
+
+    //Infected
+    if ( MatchBegin( Response, "201", 3 ) )
+    {
+        ScannerAnswer = "1Unknown";
+        return ScannerAnswer;
+    }
+
+    //Error
+    ScannerAnswer = "2" + Response;
     return ScannerAnswer;
 }
 
@@ -254,8 +340,10 @@ NOD32Scanner::NOD32Scanner()
 
     LastError = 0;
 
-    //Assume we have NOD32 for Linux Mail Server by default
+    //Assume we have NOD32 v2.5+ for Linux Mail Server by default
     Agent = "cli";
+    Version = Params::GetConfigInt("NOD32VERSION");
+    if ( Version != 25 && Version != 21 ) { Version = 25; }
 
     ScannerAnswer.reserve(100);
 }

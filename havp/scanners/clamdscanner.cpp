@@ -116,7 +116,7 @@ string ClamdScanner::Scan( const char *FileName )
     CLAMDSocket.Close();
 
     //Clean?
-    if ( Response.find(" OK") != string::npos )
+    if ( MatchSubstr( Response, " OK", -1 ) )
     {
         ScannerAnswer = "0Clean";
         return ScannerAnswer;

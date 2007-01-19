@@ -19,9 +19,7 @@
 #ifndef DEFAULT_H
 #define DEFAULT_H
 
-#include "../config.h"
-
-#define VERSION "0.83"
+#define VERSION "0.84"
 
 //##############################################################
 //Define if you want to rewrite a URL
@@ -45,13 +43,12 @@
  "ENABLEAVESERVER","AVESOCKET", \
  "ENABLEFPROT","FPROTSERVER","FPROTPORT", \
  "ENABLETROPHIE","TROPHIEMAXFILES","TROPHIEMAXFILESIZE","TROPHIEMAXRATIO", \
- "ENABLENOD32","NOD32SOCKET", \
+ "ENABLENOD32","NOD32SOCKET","NOD32VERSION", \
  "ENABLECLAMD","CLAMDSOCKET","CLAMDSERVER","CLAMDPORT", \
  "ENABLESOPHIE","SOPHIESOCKET", \
- "ENABLEAVAST","AVASTSOCKET","AVASTSERVER","AVASTPORT"
+ "ENABLEAVAST","AVASTSOCKET","AVASTSERVER","AVASTPORT", \
+ "ENABLEARCAVIR","ARCAVIRSOCKET"
 //SCANNERS
-
-#define CONFIGFILE "/usr/local/etc/havp/havp.config"
 
 
 //##############################################################
@@ -89,7 +86,10 @@
  "POLL","REPORT","ERROR","NONE"
 
 //Maximum length of SCANTEMPFILE
-#define MAXSCANTEMPFILELENGTH 200 
+#define MAXSCANTEMPFILELENGTH 200
+
+//Maximum length of http headers
+#define MAXHTTPHEADERLENGTH 20480
 
 // HTML Error String
 #define ERROR_DNS	"dns.html"
@@ -101,5 +101,15 @@
 #define ERROR_BODY	"error.html"
 #define ERROR_BLACKLIST	"blacklist.html"
 #define ERROR_MAXSIZE	"maxsize.html"
+
+// DONT TOUCH - run configure
+#undef CONFIGFILE
+#undef WHITELISTFILE
+#undef BLACKLISTFILE
+#undef TEMPLATEPATH
+#undef NOMAND
+#undef SSLTUNNEL
+#undef USECLAMLIB
+#undef USETROPHIE
 
 #endif

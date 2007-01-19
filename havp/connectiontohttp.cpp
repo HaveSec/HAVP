@@ -39,19 +39,19 @@ string ConnectionToHTTP::PrepareHeaderForBrowser()
         //Uppercase for matching
         it = UpperCase(*itvec);
 
-        if( it.find( "KEEP-ALIVE", 0 ) == 0 )
+        if ( MatchBegin( it, "KEEP-ALIVE", 10 ) )
         {
             continue;
         }
-        else if( it.find( "CONNECTION", 0) == 0 )
+        else if ( MatchBegin( it, "CONNECTION", 10 ) )
         {
             continue;
         }
-        else if( it.find( "PROXY-CONNECTION", 0) == 0 )
+        else if ( MatchBegin( it, "PROXY-CONNECTION", 16 ) )
         {
             continue;
         }
-        else if( it.find( "CONTENT-LENGTH", 0) == 0 && (ContentLength == -1) )
+        else if ( MatchBegin( it, "CONTENT-LENGTH", 14 ) && (ContentLength == -1) )
         {
             //Do not pass invalid Content-Length
             continue;
@@ -106,7 +106,7 @@ int ConnectionToHTTP::AnalyseHeaderLine( string &RequestT )
         //Uppercase for matching
         string RequestU = UpperCase(RequestT);
 
-        if ( RequestU.find("CONTENT-LENGTH: ", 0) == 0 )
+        if ( MatchBegin( RequestU, "CONTENT-LENGTH: ", 16 ) )
         {
             if ( RequestU.find_first_not_of("0123456789", 16) != string::npos )
             {
@@ -127,19 +127,19 @@ int ConnectionToHTTP::AnalyseHeaderLine( string &RequestT )
             return 0;
         }
 
-        if ( RequestU.find("CONNECTION: KEEP-ALIVE", 0) != string::npos )
+        if ( MatchSubstr( RequestU, "CONNECTION: KEEP-ALIVE", -1 ) )
         {
             KeepAlive = true;
 
             return 0;
         }
 
-        if ( RequestU.find("CONTENT-TYPE: IMAGE/", 0) != string::npos )
+        if ( MatchBegin( RequestU, "CONTENT-TYPE: IMAGE/", 20 ) )
         {
             IsImage = true;
         }
 
-        if ( RequestU.find("TRANSFER-ENCODING: ", 0) == 0 )
+        if ( MatchBegin( RequestU, "TRANSFER-ENCODING: ", 19 ) )
         {
             //Not allowed on HTTP/1.0
             return -232;

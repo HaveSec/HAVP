@@ -129,12 +129,19 @@ int main(int argc, char *argv[])
     }
 
     //Test that mandatory locking works (this leaves file with EICAR data on disk)
-    if ( HardLockTest() == false )
+    int locktry = 0;
+    while ( HardLockTest() == false )
     {
         if (fd_tempfile > -1) while (close(fd_tempfile) < 0 && errno == EINTR);
         while (unlink(TempFileName) < 0 && (errno == EINTR || errno == EBUSY));
-        cout << "Exiting.." << endl;
-        exit(1);
+
+        if ( ++locktry > 3 )
+        {
+            cout << "Too many tries - Exiting.." << endl;
+            exit(1);
+        }
+
+        sleep(1);
     }
 
     //Tempfile descriptor not needed anymore
@@ -258,6 +265,7 @@ int main(int argc, char *argv[])
                 //Create tempfile for scanning
                 if ( Scanners.InitTempFile() == false )
                 {
+                    Scanners.DeleteTempFile();
                     sleep(10);
                     exit(1);
                 }

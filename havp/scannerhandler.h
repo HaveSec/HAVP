@@ -57,8 +57,6 @@ unsigned long TempFileLength;
 
 public:
 
-int ClamVersion;
-
 bool InitScanners();
 bool CreateScanners( SocketHandler &ProxyServerT );
 bool ReloadDatabases();
@@ -77,9 +75,7 @@ bool ReinitTempFile();
 bool SetTempFileSize( long long ContentLengthT );
 bool TruncateTempFile( long long ContentLengthT );
 bool ExpandTempFile( string &dataT, bool unlockT );
-#ifndef NOMAND
 bool ExpandTempFileRange( string &dataT, long long offset );
-#endif
 
 ScannerHandler();
 ~ScannerHandler();

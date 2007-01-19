@@ -112,7 +112,7 @@ string AvastScanner::Scan( const char *FileName )
         return ScannerAnswer;
     }
 
-    if ( Response.find("220", 0, 3) == string::npos )
+    if ( MatchBegin( Response, "220", 3 ) == false )
     {
         AvastSocket.Close();
 
@@ -129,7 +129,7 @@ string AvastScanner::Scan( const char *FileName )
         return ScannerAnswer;
     }
 
-    if ( Response.find("200 OK", 0, 6) == string::npos )
+    if ( MatchBegin( Response, "200 OK", 6 ) == false )
     {
         AvastSocket.Close();
 
@@ -159,7 +159,7 @@ string AvastScanner::Scan( const char *FileName )
             }
         }
     }
-    while ( Response.find("221", 0, 3) == string::npos );
+    while ( MatchBegin( Response, "221", 3 ) == false );
     
     //Connection will be closed
     AvastSocket.Close();

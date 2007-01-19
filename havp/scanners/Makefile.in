@@ -1,0 +1,20 @@
+CXX = @CXX@
+CFLAGS = @CFLAGS@
+DEFINES = @DEFS@
+AR = @AR@
+
+OBJECTS = avgscanner.o f-protscanner.o kasperskyscanner.o \
+          nod32scanner.o clamdscanner.o sophiescanner.o \
+          avastscanner.o arcavirscanner.o @SCANNEROBJECTS@
+
+all: scanners
+
+scanners: $(OBJECTS) ../default.h
+	rm -f scanners.a
+	$(AR) cr scanners.a $(OBJECTS)
+
+%.o: %.cpp %.h
+	$(CXX) $(CFLAGS) $(DEFINES) -c -o $@ $<
+
+clean:
+	rm -f *.o *.a

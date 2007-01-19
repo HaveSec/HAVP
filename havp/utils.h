@@ -28,5 +28,7 @@ using namespace std;
 string UpperCase( string CaseString );
 void SearchReplace( string &source, string search, string replace );
 int select_eintr( int fds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *timeout );
-
+bool MatchSubstr(string &hay, const char* needle, int startpos);
+bool MatchBegin(string &hay, const char *needle, int needlelength);
+    
 #endif

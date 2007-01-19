@@ -102,21 +102,21 @@ string SophieScanner::Scan( const char *FileName )
     }
 
     //Clean?
-    if ( Response.find("0", 0, 1) == 0 )
+    if ( MatchBegin( Response, "0", 1 ) )
     {
         ScannerAnswer = "0Clean";
         return ScannerAnswer;
     }
 
     //Virus?
-    if ( Response.find("1", 0, 1) == 0 )
+    if ( MatchBegin( Response, "1", 1 ) )
     {
         ScannerAnswer = "1" + Response.substr( 2 );
         return ScannerAnswer;
     }
 
     //Error?
-    if ( Response.find("-1", 0, 2) == 0 )
+    if ( MatchBegin( Response, "-1", 2 ) )
     {
         ScannerAnswer = "2" + Response.substr( 3 );
         return ScannerAnswer;

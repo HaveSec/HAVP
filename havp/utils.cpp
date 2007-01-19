@@ -72,3 +72,21 @@ int select_eintr( int fds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, 
 
     return ret;
 }
+
+bool MatchBegin(string &hay, const char *needle, int needlelength)
+{
+    return ( strncmp(hay.c_str(), needle, needlelength) == 0 ) ? true : false;
+}
+    
+bool MatchSubstr(string &hay, const char *needle, int startpos)
+{
+    if (startpos == -1)
+    {
+        return ( strstr(hay.c_str(), needle) != NULL ) ? true : false;
+    }
+    else
+    {
+        return ( strstr(hay.c_str(), needle) == hay.c_str() + startpos ) ? true : false;
+    }
+}
+

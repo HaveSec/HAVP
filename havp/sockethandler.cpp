@@ -20,7 +20,6 @@
 #include "params.h"
 #include "utils.h"
 
-#include <sys/types.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -235,6 +234,43 @@ bool SocketHandler::AcceptClient( SocketHandler &accept_socketT )
     return true;
 }
 
+//Send String
+bool SocketHandler::Send( const char *sock_outT, int len )
+{
+    int total_sent = 0;
+    int ret, buffer_count;
+
+    do
+    {
+        Timeout.tv_sec = SENDTIMEOUT;
+        Timeout.tv_usec = 0;
+        FD_ZERO(&checkfd);
+        FD_SET(sock_fd,&checkfd);
+
+        ret = select_eintr(sock_fd+1, NULL, &checkfd, NULL, &Timeout);
+
+        if (ret <= 0)
+        {
+            return false;
+        }
+
+        while ((buffer_count = ::send(sock_fd, sock_outT + total_sent, len - total_sent, 0)) < 0)
+        {
+            if (errno == EINTR) continue;
+
+            return false;
+        }
+        if (buffer_count == 0)
+        {
+            return false;
+        }
+
+        total_sent += buffer_count;
+    }
+    while (total_sent < len);
+        
+    return true;
+}
 
 //Send String
 bool SocketHandler::Send( string &sock_outT )
@@ -243,7 +279,7 @@ bool SocketHandler::Send( string &sock_outT )
     int len = sock_outT.size();
     int ret, buffer_count;
 
-    while (total_sent < len)
+    do
     {
         Timeout.tv_sec = SENDTIMEOUT;
         Timeout.tv_usec = 0;
@@ -270,6 +306,7 @@ bool SocketHandler::Send( string &sock_outT )
 
         total_sent += buffer_count;
     }
+    while (total_sent < len);
         
     return true;
 }
@@ -439,30 +476,60 @@ bool SocketHandler::GetLine( string &lineT, string separator, int timeout )
 }
 
 
-//Set Server Domain and Port for Client
-bool SocketHandler::SetDomainAndPort( const string domainT, int portT )
+//Resolve and set hostname/port for connecting
+bool SocketHandler::SetDomainAndPort( string domainT, int portT )
 {
+    if ( domainT == "" ) return false;
+    if ( portT < 1 || portT > 65536 ) return false;
+
+    domainT = domainT.substr(0, 250);
     my_s_addr.sin_port = htons(portT);
 
-    if ( domainT == "" ) return false;
-
+    //IP?
     if ( inet_aton( domainT.c_str(), &ip_addr ) != 0 )
     {
         my_s_addr.sin_addr = ip_addr;
+
         return true;
     }
-    else
+    //Same host as last time, use next IP
+    else if ( LastHost == domainT )
     {
-        if ( (server = gethostbyname( domainT.c_str() )) )
-        {
-            memcpy(&my_s_addr.sin_addr, server->h_addr_list[0], server->h_length);
-            return true;
-        }
+        if ( ++ip_count == ips ) ip_count = 0;
+
+        memcpy(&my_s_addr.sin_addr, server->h_addr_list[ip_count], server->h_length);
+
+        return true;
+    }
+    //Resolve host
+    else if ( (server = gethostbyname( domainT.c_str() )) )
+    {
+        //Count IPs
+        for ( ips = 0; server->h_addr_list[ips] != NULL && ips != 16; ips++ );
+
+        if ( !ips ) return false;
+
+        memcpy(&my_s_addr.sin_addr, server->h_addr_list[0], server->h_length);
+
+        ip_count = 0;
+        LastHost = domainT;
+
+        return true;
     }
 
     return false;
 }
 
+int SocketHandler::IPCount()
+{
+    return ips;
+}
+
+string SocketHandler::GetIP()
+{
+    string ip = inet_ntoa(my_s_addr.sin_addr);
+    return ip;
+}
 
 bool SocketHandler::CheckForData( int timeout )
 {
@@ -525,6 +592,9 @@ int SocketHandler::CheckForSSLData( int sockBrowser, int sockServer )
 
 void SocketHandler::Close()
 {
+    //Clear receive buffer
+    RecvBuf = "";
+
     //Check that we have a real fd
     if ( sock_fd > -1 )
     {
@@ -551,6 +621,8 @@ SocketHandler::SocketHandler()
 
     memset(&my_u_addr, 0, sizeof(my_u_addr));
     my_u_addr.sun_family = AF_LOCAL;
+
+    ip_count = 0;
 
     //No socket exists yet
     sock_fd = -1;

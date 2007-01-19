@@ -1,10 +1,8 @@
-all: 	havp
+all:
 	cd havp && $(MAKE)
 
 clean:
 	cd havp && $(MAKE) clean
 
-.PHONY:	havp/havp
-install: havp/havp
+install:
 	cd havp && $(MAKE) install
-

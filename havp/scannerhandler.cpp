@@ -35,6 +35,7 @@
 #include "scanners/clamdscanner.h"
 #include "scanners/sophiescanner.h"
 #include "scanners/avastscanner.h"
+#include "scanners/arcavirscanner.h"
 
 #include <sys/types.h>
 #include <signal.h>
@@ -95,6 +96,10 @@ bool ScannerHandler::InitScanners()
     {
         VirusScanner.push_back(new AvastScanner);
     }
+    if ( Params::GetConfigBool("ENABLEARCAVIR") )
+    {
+        VirusScanner.push_back(new ArcavirScanner);
+    }
 
     if ( VirusScanner.size() == 0 )
     {
@@ -129,11 +134,6 @@ bool ScannerHandler::InitScanners()
         {
             LogFile::ErrorMessage("ERROR: %s failed EICAR virus test! (%s)\n", Name.c_str(), Answer.substr(1).c_str());
             return false;
-        }
-
-        if ( Name.find("ClamAV") != string::npos )
-        {
-            if ( Name.find("devel") != string::npos ) ClamVersion = 2;
         }
     }
 
@@ -713,6 +713,7 @@ bool ScannerHandler::ReinitTempFile()
     if (lseek(fd_tempfile, 0, SEEK_SET) < 0)
     {
         LogFile::ErrorMessage("Could not lseek Scannerfile: %s\n", strerror(errno));
+        DeleteTempFile();
         exit(1);
     }
 
@@ -721,6 +722,7 @@ bool ScannerHandler::ReinitTempFile()
         if (errno == EINTR) continue;
 
         LogFile::ErrorMessage("Could not truncate file: %s\n", strerror(errno));
+        DeleteTempFile();
         exit(1);
     }
 
@@ -730,6 +732,7 @@ bool ScannerHandler::ReinitTempFile()
         if (errno == EINTR) continue;
 
         LogFile::ErrorMessage("Could not write file: %s\n", strerror(errno));
+        DeleteTempFile();
         exit(1);
     }
 #endif
@@ -743,6 +746,7 @@ bool ScannerHandler::ReinitTempFile()
         if (errno == EINTR) continue;
 
         LogFile::ErrorMessage("Could not fchmod() Scannerfile: %s\n", strerror(errno));
+        DeleteTempFile();
         exit(1);
     }
 
@@ -768,6 +772,7 @@ bool ScannerHandler::ReinitTempFile()
         }
 
         LogFile::ErrorMessage("Could not lock Scannerfile: %s\n", strerror(errno));
+        DeleteTempFile();
         exit(1);
     }
 #endif
@@ -775,6 +780,7 @@ bool ScannerHandler::ReinitTempFile()
     if (lseek(fd_tempfile, 0, SEEK_SET) < 0)
     {
         LogFile::ErrorMessage("Could not lseek Scannerfile: %s\n", strerror(errno));
+        DeleteTempFile();
         exit(1);
     }
 
@@ -823,6 +829,7 @@ bool ScannerHandler::TruncateTempFile( long long ContentLengthT )
         if (errno == EINTR) continue;
 
         LogFile::ErrorMessage("Could not truncate Scannerfile: %s\n", strerror(errno));
+        DeleteTempFile();
         exit(1);
     }
 
@@ -877,10 +884,8 @@ bool ScannerHandler::ExpandTempFile( string &dataT, bool unlockT )
     return true;
 }
 
-#ifndef NOMAND
 bool ScannerHandler::ExpandTempFileRange( string &dataT, long long offset )
 {
-    struct flock lock;
     int total_written = 0;
     int len = dataT.length();
     int ret;
@@ -907,6 +912,9 @@ bool ScannerHandler::ExpandTempFileRange( string &dataT, long long offset )
     //if (lseek(fd_tempfile, origpos, SEEK_SET) < 0) return false;
     if (lseek(fd_tempfile, 0, SEEK_SET) < 0) return false;
 
+#ifndef NOMAND
+    struct flock lock;
+
     lock.l_type   = F_UNLCK;
     lock.l_start  = offset;             // byte-offset
     lock.l_whence = SEEK_SET;
@@ -918,10 +926,10 @@ bool ScannerHandler::ExpandTempFileRange( string &dataT, long long offset )
         LogFile::ErrorMessage("Could not unlock file: %s\n", TempFileName);
         return false;
     }
+#endif
 
     return true;
 }
-#endif
 
 //Constructor
 ScannerHandler::ScannerHandler()

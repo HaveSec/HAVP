@@ -148,15 +148,19 @@ string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, bool UsePar
         //Uppercase for matching
         it = UpperCase(*itvec);
 
-        if ( it.find( "PROXY", 0 ) == 0 )
+        if ( MatchBegin( it, "PROXY", 5 ) )
+        {
+            //Pass Proxy-Authorization to parent proxy if used
+            if (! (UseParentProxy && MatchBegin( it, "PROXY-AUTHORIZATION", 19 )) )
+            {
+                continue;
+            }
+        }
+        else if ( MatchBegin( it, "KEEP-ALIVE", 10 ) )
         {
             continue;
         }
-        else if ( it.find( "KEEP-ALIVE", 0 ) == 0 )
-        {
-            continue;
-        }
-        else if ( it.find( "VIA", 0 ) == 0 )
+        else if ( MatchBegin( it, "VIA", 3 ) )
         {
             string line = *itvec;
             string::size_type Position = line.find_first_not_of(" ", 4);
@@ -166,30 +170,26 @@ string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, bool UsePar
             }
             continue;
         }
-        else if ( it.find( "CONNECTION", 0 ) == 0 )
+        else if ( MatchBegin( it, "CONNECTION", 10 ) )
         {
             continue;
         }
-        else if ( it.find( "X-FORWARD-FOR", 0 ) == 0 )
+        else if ( MatchBegin( it, "X-FORWARD", 9 ) )
         {
             continue;
         }
-
-        if ( (Params::GetConfigBool("RANGE") == false) && (ScannerOff == false) && (StreamAgent == false) )
+        else if ( MatchBegin( it, "RANGE:", 6 ) || MatchBegin( it, "IF-RANGE", 8 ) )
         {
-           if ( it.find( "RANGE:", 0 ) == 0 )
-           {
-              continue;
-           }
-           else if ( it.find( "IF-RANGE", 0 ) == 0 )
-	   {
-              continue;
-           }
+            //Range allowed when whitelisted or streaming User-Agent
+            if ( Params::GetConfigBool("RANGE") == false && ScannerOff == false && StreamAgent == false )
+            {
+                continue;
+            }
         }
 
         header += *itvec;
         header += "\r\n";
-    }                                             //for
+    }
 
     if ( Params::GetConfigBool("X_FORWARDED_FOR") )
     {
@@ -212,9 +212,9 @@ int ConnectionToBrowser::AnalyseFirstHeaderLine( string &RequestT )
     string RequestU = UpperCase(RequestT);
 
     //Looking for GET, POST, HEAD, CONNECT etc.
-    for(unsigned int i=0;i < Methods.size(); i++)
+    for (unsigned int i=0;i < Methods.size(); i++)
     {
-        if( RequestU.find( Methods[i] + " ", 0 ) == 0 )
+        if ( RequestU.find( Methods[i] + " ", 0 ) == 0 )
         {
             RequestType = Methods[i];
             return GetHostAndPortOfRequest( RequestT, Methods[i].size() + 1 );
@@ -230,7 +230,7 @@ int ConnectionToBrowser::AnalyseHeaderLine( string &RequestT )
     //Uppercase for matching
     string RequestU = UpperCase(RequestT);
 
-    if (RequestU.find("CONTENT-LENGTH: ", 0) == 0)
+    if ( MatchBegin( RequestU, "CONTENT-LENGTH: ", 15 ) )
     {
         if ( RequestU.find_first_not_of("0123456789", 16) != string::npos )
         {
@@ -251,11 +251,11 @@ int ConnectionToBrowser::AnalyseHeaderLine( string &RequestT )
         return 0;
     }
 
-    if (ProxyConnection == false)
+    if ( ProxyConnection == false )
     {
-        if (RequestU.find("CONNECTION: ", 0) == 0)
+        if ( MatchBegin( RequestU, "CONNECTION: ", 12 ) )
         {
-            if (RequestU.find("KEEP-ALIVE", 12) != string::npos)
+            if ( MatchSubstr( RequestU, "KEEP-ALIVE", 12 ) )
             {
                 KeepAlive = true;
             }
@@ -267,11 +267,11 @@ int ConnectionToBrowser::AnalyseHeaderLine( string &RequestT )
             return 0;
         }
 
-        if (RequestU.find("PROXY-CONNECTION: ", 0) == 0)
+        if ( MatchBegin( RequestU, "PROXY-CONNECTION: ", 18 ) )
         {
             ProxyConnection = true;
 
-            if (RequestU.find("KEEP-ALIVE", 18) != string::npos)
+            if ( MatchSubstr( RequestU, "KEEP-ALIVE", 18 ) )
             {
                 KeepAlive = true;
             }
@@ -284,24 +284,24 @@ int ConnectionToBrowser::AnalyseHeaderLine( string &RequestT )
         }
     }
 
-    if (Params::GetConfigBool("FORWARDED_IP") == true)
+    if ( Params::GetConfigBool("FORWARDED_IP") == true )
     {
-        if (RequestU.find( "X-FORWARDED-FOR: ", 0 ) == 0)
+        if ( MatchBegin( RequestU, "X-FORWARDED-FOR: ", 17 ) )
         {
             IP = RequestT.substr(17);
             return 0;
         }
     }
 
-    if (RequestU.find("USER-AGENT: ", 0) == 0)
+    if ( MatchBegin( RequestU, "USER-AGENT: ", 12 ) )
     {
         UserAgent = RequestT.substr(12);
 
-        if (StreamUA.size() > 0)
+        if ( StreamUA.size() > 0 )
         {
             for (vector<string>::iterator UAi = StreamUA.begin(); UAi != StreamUA.end(); ++UAi)
             {
-                if (RequestU.find(*UAi, 12) != string::npos)
+                if ( RequestU.find(*UAi, 12) != string::npos )
                 {
                     StreamAgent = true;
                 }
@@ -312,7 +312,7 @@ int ConnectionToBrowser::AnalyseHeaderLine( string &RequestT )
     }
 
     //Checks for TRANSPARENT
-    if (Transparent && RequestU.find( "HOST: ", 0 ) == 0)
+    if (Transparent && MatchBegin( RequestU, "HOST: ", 6 ) )
     {
         return GetHostAndPortOfHostLine( RequestT );
     }

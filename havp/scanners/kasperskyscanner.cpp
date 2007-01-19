@@ -60,7 +60,7 @@ string KasperskyScanner::Scan( const char *FileName )
         }
 
         //Check greeting
-        if ( Response.find("201", 0, 3) == string::npos )
+        if ( MatchBegin( Response, "201", 3 ) == false )
         {
             AVESocket.Close();
 
@@ -109,7 +109,7 @@ string KasperskyScanner::Scan( const char *FileName )
         }
 
         //Check greeting
-        if ( Response.find("201", 0, 3) == string::npos )
+        if ( MatchBegin( Response, "201", 3 ) == false )
         {
             AVESocket.Close();
 
@@ -146,7 +146,7 @@ string KasperskyScanner::Scan( const char *FileName )
         }
 
         //Virus name found
-        if ( Response.find("322-", 0, 4) == 0 )
+        if ( MatchBegin( Response, "322-", 4 ) )
         {
             string::size_type Position;
 
@@ -156,40 +156,40 @@ string KasperskyScanner::Scan( const char *FileName )
             }
         }
     }
-    while ( Response.find("3", 0, 1) == 0 );
+    while ( MatchBegin( Response, "3", 1 ) );
 
     //Clean
-    if ( Response.find("220", 0, 3) == 0 )
+    if ( MatchBegin( Response, "220", 3 ) )
     {
         ScannerAnswer = "0Clean";
         return ScannerAnswer;
     }
     //Infected
-    else if ( Response.find("230", 0, 3) == 0 )
+    else if ( MatchBegin( Response, "230", 3 ) )
     {
         if (ScannerAnswer == "") ScannerAnswer = "1Unknown";
         return ScannerAnswer;
     }
     //Suspicious
-    else if ( Response.find("232", 0, 3) == 0 )
+    else if ( MatchBegin( Response, "232", 3 ) )
     {
         if (ScannerAnswer == "") ScannerAnswer = "1Suspicious";
         return ScannerAnswer;
     }
     //Scan Error
-    else if ( Response.find("241", 0, 3) == 0 )
+    else if ( MatchBegin( Response, "241", 3 ) )
     {
         ScannerAnswer = "2" + Response;
         return ScannerAnswer;
     }
     //Other Error
-    else if ( Response.find("5", 0, 1) == 0 )
+    else if ( MatchBegin( Response, "5", 1 ) )
     {
         ScannerAnswer = "2" + Response;
         return ScannerAnswer;
     }
     //Other non-fatal responses
-    else if ( Response.find("2", 0, 1) == 0 )
+    else if ( MatchBegin( Response, "2", 1 ) )
     {
         ScannerAnswer = "0Clean";
         return ScannerAnswer;

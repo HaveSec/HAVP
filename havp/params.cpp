@@ -53,14 +53,14 @@ void Params::SetDefaults()
     SetConfig("SYSLOGFACILITY",	"daemon");
     SetConfig("SYSLOGLEVEL",	"info");
     SetConfig("SCANIMAGES",	"true");
-    SetConfig("MAXSCANSIZE",	"0");
+    SetConfig("MAXSCANSIZE",	"5000000");
     SetConfig("KEEPBACKBUFFER",	"200000");
     SetConfig("KEEPBACKTIME",	"5");
     SetConfig("TRICKLING",	"30");
     SetConfig("WHITELISTFIRST",	"true");
-    SetConfig("WHITELIST",	"/usr/local/etc/havp/whitelist");
-    SetConfig("BLACKLIST",	"/usr/local/etc/havp/blacklist");
-    SetConfig("TEMPLATEPATH",	"/usr/local/etc/havp/templates/en");
+    SetConfig("WHITELIST",	WHITELISTFILE);
+    SetConfig("BLACKLIST",	BLACKLISTFILE);
+    SetConfig("TEMPLATEPATH",	TEMPLATEPATH);
     SetConfig("TEMPDIR",	"/var/tmp");
     SetConfig("SCANTEMPFILE",	"/var/tmp/havp/havp-XXXXXX");
     SetConfig("PIDFILE",	"/var/run/havp/havp.pid");
@@ -74,6 +74,7 @@ void Params::SetDefaults()
     SetConfig("FAILSCANERROR",	"true");
     SetConfig("MAXDOWNLOADSIZE","0");
     SetConfig("SCANNERTIMEOUT",	"10");
+//SCANNERS
     SetConfig("ENABLECLAMLIB","false");
         SetConfig("CLAMDBDIR","");
         SetConfig("CLAMBLOCKMAX","false");
@@ -96,6 +97,7 @@ void Params::SetDefaults()
         SetConfig("FPROTSERVER","127.0.0.1");
     SetConfig("ENABLENOD32","false");
         SetConfig("NOD32SOCKET","/tmp/nod32d.sock");
+        SetConfig("NOD32VERSION","25");
     SetConfig("ENABLETROPHIE","false");
         SetConfig("TROPHIEMAXFILES","1000");
         SetConfig("TROPHIEMAXFILESIZE","10");
@@ -106,6 +108,8 @@ void Params::SetDefaults()
         SetConfig("AVASTSOCKET","/var/run/avast4/local.sock");
         SetConfig("AVASTSERVER","");
         SetConfig("AVASTPORT","5036");
+    SetConfig("ENABLEARCAVIR","false");
+        SetConfig("ARCAVIRSOCKET","/var/run/arcavird.socket");
 }
 
 bool Params::ReadConfig( string file )

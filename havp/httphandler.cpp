@@ -18,7 +18,7 @@
 #include "httphandler.h"
 #include "logfile.h"
 #include "utils.h"
-
+#include "default.h"
 
 //Read header
 bool HTTPHandler::ReadHeader( string &headerT )
@@ -58,9 +58,9 @@ bool HTTPHandler::ReadHeader( string &headerT )
             break;
         }
 
-        if ( received > 20480 )
+        if ( received > MAXHTTPHEADERLENGTH )
         {
-            LogFile::ErrorMessage("Too large header received (>20kB)\n");
+            LogFile::ErrorMessage("Too large header received (>%d)\n", MAXHTTPHEADERLENGTH);
             return false;
         }
 

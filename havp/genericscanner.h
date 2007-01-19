@@ -22,6 +22,7 @@
 #include "sockethandler.h"
 #include "logfile.h"
 #include "params.h"
+#include "utils.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
