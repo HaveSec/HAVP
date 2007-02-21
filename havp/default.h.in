@@ -19,7 +19,7 @@
 #ifndef DEFAULT_H
 #define DEFAULT_H
 
-#define VERSION "0.84"
+#define VERSION "0.85"
 
 //##############################################################
 //Define if you want to rewrite a URL

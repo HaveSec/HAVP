@@ -1,4 +1,8 @@
 
+*HAVP 0.85 released
+ - Added support for ClamAV 0.90 library
+   (once compiled for it, older library versions not supported)
+
 *HAVP 0.84 released
  - Fix bug in tcp buffer, requests could leak to other clients sometimes
  - Support for Arcavir scanner

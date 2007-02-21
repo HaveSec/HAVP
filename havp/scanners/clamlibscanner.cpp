@@ -29,7 +29,11 @@ bool ClamLibScanner::InitDatabase()
 
     LogFile::ErrorMessage("ClamAV: Using database directory: %s\n", dbdir);
 
+#ifdef CL_DB_STDOPT
+    if ( (ret = cl_load(dbdir, &root, &no, CL_DB_STDOPT)) != 0 )
+#else
     if ( (ret = cl_loaddbdir(dbdir, &root, &no)) != 0 )
+#endif
     {
         LogFile::ErrorMessage("ClamAV: Could not load database: %s\n", cl_strerror(ret));
         return false;
@@ -65,7 +69,11 @@ bool ClamLibScanner::ReloadDatabase()
 
         cl_settempdir(Params::GetConfigString("TEMPDIR").c_str(), 0);
 
+#ifdef CL_DB_STDOPT
+        if ( (ret = cl_load(dbdir, &root, &no, CL_DB_STDOPT)) != 0 )
+#else
         if ( (ret = cl_loaddbdir(dbdir, &root, &no)) != 0 )
+#endif
         {
             LogFile::ErrorMessage("ClamAV: Could not reload database: %s\n", cl_strerror(ret));
             return false;
