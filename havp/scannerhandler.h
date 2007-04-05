@@ -50,16 +50,24 @@ int totalscanners, top_fd, answers;
 vector<string> ErrorMsg;
 vector<string> VirusMsg;
 
+vector<string> IgnoredViruses;
+
 vector<scanner_st> Scanner;
 vector<GenericScanner*> VirusScanner;
 
 unsigned long TempFileLength;
 
+bool DeadScanner;
+bool CompleteTempFile;
+string LastRequestURL;
+
+bool IgnoredVirus( string VirusName );
+
 public:
 
 bool InitScanners();
 bool CreateScanners( SocketHandler &ProxyServerT );
-bool ReloadDatabases();
+int ReloadDatabases();
 bool RestartScanners();
 void ExitScanners();
 #ifndef NOMAND
@@ -67,6 +75,9 @@ bool HasAnswer();
 #endif
 int GetAnswer();
 string GetAnswerMessage();
+
+void LastURL( string URL );
+void HaveCompleteFile();
 
 bool InitTempFile();
 bool UnlockTempFile();

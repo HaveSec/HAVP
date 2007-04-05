@@ -88,10 +88,10 @@ bool GenericScanner::InitDatabase()
     LogFile::ErrorMessage("Program Error: InitDatabase()\n");
     return false;
 }
-bool GenericScanner::ReloadDatabase()
+int GenericScanner::ReloadDatabase()
 {
     LogFile::ErrorMessage("Program Error: ReloadDatabase()\n");
-    return false;
+    return -1;
 }
 void GenericScanner::FreeDatabase()
 {

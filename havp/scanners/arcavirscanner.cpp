@@ -24,9 +24,9 @@ bool ArcavirScanner::InitDatabase()
 }
 
 
-bool ArcavirScanner::ReloadDatabase()
+int ArcavirScanner::ReloadDatabase()
 {
-    return false;
+    return 0;
 }
 
 string ArcavirScanner::Scan( const char *FileName )

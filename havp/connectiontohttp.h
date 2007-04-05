@@ -26,8 +26,9 @@ private:
 
 int HTMLResponse;
 long long ContentLength;
-bool KeepAlive;
+bool IsKeepAlive;
 bool IsImage;
+bool IsChunked;
 
 int AnalyseFirstHeaderLine( string &RequestT );
 int AnalyseHeaderLine( string &RequestT );
@@ -37,8 +38,9 @@ public:
 string PrepareHeaderForBrowser();
 int GetResponse();
 long long GetContentLength();
-bool KeepItAlive();
-bool ContentImage();
+bool IsItKeepAlive();
+bool IsItImage();
+bool IsItChunked();
 void ClearVars();
 
 ConnectionToHTTP();

@@ -24,9 +24,9 @@ bool ClamdScanner::InitDatabase()
 }
 
 
-bool ClamdScanner::ReloadDatabase()
+int ClamdScanner::ReloadDatabase()
 {
-    return false;
+    return 0;
 }
 
 

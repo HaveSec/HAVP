@@ -24,9 +24,9 @@ bool SophieScanner::InitDatabase()
 }
 
 
-bool SophieScanner::ReloadDatabase()
+int SophieScanner::ReloadDatabase()
 {
-    return false;
+    return 0;
 }
 
 

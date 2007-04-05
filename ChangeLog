@@ -1,4 +1,13 @@
 
+*HAVP 0.86 released
+ - Experimental support for chunked Transfer-Encoding, fixes some broken sites
+ - Added IGNOREVIRUS config for whitelisting virus names
+ - Added CLAMBLOCKBROKEN config
+ - Improve detection with AVG, only Viruses were found, not Trojans etc
+ - HAVP is killed if database reloading fails for Library Scanner
+ - Log URL when crashed scanner process detected, for troubleshooting
+ - Build system updated (--prefix --sbindir --sysconfdir --localstatedir)
+
 *HAVP 0.85 released
  - Added support for ClamAV 0.90 library
    (once compiled for it, older library versions not supported)

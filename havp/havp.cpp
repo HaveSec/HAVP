@@ -206,7 +206,19 @@ int main(int argc, char *argv[])
             LogFile::ErrorMessage("Signal HUP received, reloading scanners and lists\n");
 
             //Reload databases
-            if ( Scanners.ReloadDatabases() == true ) restartchilds = true;
+            int rl = Scanners.ReloadDatabases();
+
+            if ( rl == 1 )
+            {
+                restartchilds = true;
+            }
+            else if ( rl < 0 )
+            {
+                LogFile::ErrorMessage("FATAL: Library Scanners failed reloading databases, Exiting HAVP!");
+                killpg(getpgid(0), SIGTERM);
+                sleep(10);
+                exit(1);
+            }
 
             //Reload lists
             Whitelist.ReloadURLList( Params::GetConfigString("WHITELIST") );
@@ -220,9 +232,19 @@ int main(int argc, char *argv[])
         }
         else if ( time(NULL) > (LastRefresh + dbreload*60) ) //Time Refresh
         {
-            if ( Scanners.ReloadDatabases() == true )
+            //Reload databases
+            int rl = Scanners.ReloadDatabases();
+
+            if ( rl == 1 )
             {
                 restartchilds = true;
+            }
+            else if ( rl < 0 )
+            {
+                LogFile::ErrorMessage("FATAL: Library Scanners failed database reload, stopping HAVP!");
+                killpg(getpgid(0), SIGTERM);
+                sleep(10);
+                exit(1);
             }
 
             LastRefresh = time(NULL);

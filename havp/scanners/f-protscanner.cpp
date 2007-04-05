@@ -24,9 +24,9 @@ bool FProtScanner::InitDatabase()
 }
 
 
-bool FProtScanner::ReloadDatabase()
+int FProtScanner::ReloadDatabase()
 {
-    return false;
+    return 0;
 }
 
 

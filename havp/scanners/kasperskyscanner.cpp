@@ -24,9 +24,9 @@ bool KasperskyScanner::InitDatabase()
 }
 
 
-bool KasperskyScanner::ReloadDatabase()
+int KasperskyScanner::ReloadDatabase()
 {
-    return false;
+    return 0;
 }
 
 

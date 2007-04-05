@@ -44,7 +44,7 @@ string ScannerNameShort;
 bool StartScanning( int fromhandler, int tohandler, const char *FileName );
 
 virtual bool InitDatabase() = 0;
-virtual bool ReloadDatabase() = 0;
+virtual int ReloadDatabase() = 0;
 virtual void FreeDatabase() = 0;
 virtual string Scan( const char *FileName ) = 0;
 

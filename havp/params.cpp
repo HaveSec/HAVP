@@ -44,8 +44,8 @@ void Params::SetDefaults()
     SetConfig("SOURCE_ADDRESS",	"");
     SetConfig("PARENTPROXY",	"");
     SetConfig("PARENTPORT",	"0");
-    SetConfig("ACCESSLOG",	"/var/log/havp/access.log");
-    SetConfig("ERRORLOG",	"/var/log/havp/havp.log");
+    SetConfig("ACCESSLOG",	ACCESSLOG);
+    SetConfig("ERRORLOG",	ERRORLOG);
     SetConfig("LOG_OKS",	"true");
     SetConfig("LOGLEVEL",	"0");
     SetConfig("USESYSLOG",	"false");
@@ -63,7 +63,7 @@ void Params::SetDefaults()
     SetConfig("TEMPLATEPATH",	TEMPLATEPATH);
     SetConfig("TEMPDIR",	"/var/tmp");
     SetConfig("SCANTEMPFILE",	"/var/tmp/havp/havp-XXXXXX");
-    SetConfig("PIDFILE",	"/var/run/havp/havp.pid");
+    SetConfig("PIDFILE",	PIDFILE);
     SetConfig("TRANSPARENT",	"false");
     SetConfig("RANGE",		"false");
     SetConfig("FORWARDED_IP",	"false");
@@ -74,9 +74,11 @@ void Params::SetDefaults()
     SetConfig("FAILSCANERROR",	"true");
     SetConfig("MAXDOWNLOADSIZE","0");
     SetConfig("SCANNERTIMEOUT",	"10");
+    SetConfig("IGNOREVIRUS",	"");
 //SCANNERS
     SetConfig("ENABLECLAMLIB","false");
         SetConfig("CLAMDBDIR","");
+        SetConfig("CLAMBLOCKBROKEN","false");
         SetConfig("CLAMBLOCKMAX","false");
         SetConfig("CLAMBLOCKENCRYPTED","false");
         SetConfig("CLAMMAXFILES","1000");

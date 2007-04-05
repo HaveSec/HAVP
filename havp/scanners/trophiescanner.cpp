@@ -153,23 +153,23 @@ bool TrophieScanner::InitDatabase()
 }
 
 
-bool TrophieScanner::ReloadDatabase()
+int TrophieScanner::ReloadDatabase()
 {
     int ret = VSQuit(vs_addr);
 
     if ( ret != 0 )
     {
         LogFile::ErrorMessage("Trophie: VSQuit() failed: %d\n", ret);
-        return false;
+        return -1;
     }
 
     if ( InitDatabase() == false )
     {
         LogFile::ErrorMessage("Trophie: Database reload failed\n");
-        return false;
+        return -1;
     }
 
-    return true;
+    return 1;
 }
 
 

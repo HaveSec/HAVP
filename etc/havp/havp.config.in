@@ -39,7 +39,7 @@ REMOVETHISLINE deleteme
 # /etc/init.d/havp script requires this to work.
 #
 # Default:
-# PIDFILE /var/run/havp/havp.pid
+# PIDFILE @localstatedir@/run/havp/havp.pid
 
 #
 # For performance reasons several instances of HAVP have to run.
@@ -64,8 +64,8 @@ REMOVETHISLINE deleteme
 # Needs to have write permission for HAVP user.
 #
 # Default:
-# ACCESSLOG /var/log/havp/access.log
-# ERRORLOG /var/log/havp/havp.log
+# ACCESSLOG @localstatedir@/log/havp/access.log
+# ERRORLOG @localstatedir@/log/havp/havp.log
 
 #
 # Syslog can be used instead of logging to file.
@@ -187,7 +187,7 @@ REMOVETHISLINE deleteme
 # Path to template files.
 #
 # Default:
-# TEMPLATEPATH /usr/local/etc/havp/templates/en
+# TEMPLATEPATH @sysconfdir@/havp/templates/en
 
 #
 # Set to true if you want to prefer Whitelist.
@@ -201,13 +201,13 @@ REMOVETHISLINE deleteme
 # List of URLs not to scan.
 #
 # Default:
-# WHITELIST /usr/local/etc/havp/whitelist
+# WHITELIST @sysconfdir@/havp/whitelist
 
 #
 # List of URLs that are denied access.
 #
 # Default:
-# BLACKLIST /usr/local/etc/havp/blacklist
+# BLACKLIST @sysconfdir@/havp/blacklist
 
 #
 # Is scanner error fatal?
@@ -337,6 +337,14 @@ REMOVETHISLINE deleteme
 # Default:
 # STREAMSCANSIZE 20000
 
+#
+# Whitelist specific viruses by case-insensitive substring match.
+# For example, "Oversized." and "Encrypted." are good candidates,
+# if you can't disable those checks any other way.
+#
+# Default: NONE
+# IGNOREVIRUS Oversized. Encrypted. Phishing.
+
 
 #####
 ##### ClamAV Library Scanner (libclamav)
@@ -351,6 +359,11 @@ ENABLECLAMLIB false
 # Default: NONE
 # CLAMDBDIR /path/to/directory
 
+# Should we block broken executables?
+#
+# Default:
+# CLAMBLOCKBROKEN false
+
 # Should we block encrypted archives?
 #
 # Default:
@@ -361,7 +374,8 @@ ENABLECLAMLIB false
 # Default:
 # CLAMBLOCKMAX false
 
-# Scanning limits inside archives (filesize = MB):
+# Scanning limits _inside_ archives (filesize = MB):
+# Read clamd.conf for more info.
 #
 # Default:
 # CLAMMAXFILES 1000

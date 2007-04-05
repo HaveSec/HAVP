@@ -56,6 +56,10 @@ string ConnectionToHTTP::PrepareHeaderForBrowser()
             //Do not pass invalid Content-Length
             continue;
         }
+        else if ( MatchBegin( it, "TRANSFER-ENCODING", 17 ) )
+        {
+            continue;
+        }
 
         header += *itvec;
         header += "\r\n";
@@ -129,7 +133,7 @@ int ConnectionToHTTP::AnalyseHeaderLine( string &RequestT )
 
         if ( MatchSubstr( RequestU, "CONNECTION: KEEP-ALIVE", -1 ) )
         {
-            KeepAlive = true;
+            IsKeepAlive = true;
 
             return 0;
         }
@@ -137,6 +141,15 @@ int ConnectionToHTTP::AnalyseHeaderLine( string &RequestT )
         if ( MatchBegin( RequestU, "CONTENT-TYPE: IMAGE/", 20 ) )
         {
             IsImage = true;
+
+            return 0;
+        }
+
+        if ( MatchBegin( RequestU, "TRANSFER-ENCODING: CHUNKED", 26 ) )
+        {
+            IsChunked = true;
+
+            return 0;
         }
 
         if ( MatchBegin( RequestU, "TRANSFER-ENCODING: ", 19 ) )
@@ -160,20 +173,25 @@ int ConnectionToHTTP::GetResponse()
     return HTMLResponse;
 }
 
-bool ConnectionToHTTP::KeepItAlive()
+bool ConnectionToHTTP::IsItKeepAlive()
 {
-    return KeepAlive;
+    return IsKeepAlive;
 }
 
-bool ConnectionToHTTP::ContentImage()
+bool ConnectionToHTTP::IsItImage()
 {
     return IsImage;
+}
+
+bool ConnectionToHTTP::IsItChunked()
+{
+    return IsChunked;
 }
 
 void ConnectionToHTTP::ClearVars()
 {
     ContentLength = -1;
-    KeepAlive = IsImage = false;
+    IsKeepAlive = IsImage = IsChunked = false;
 }
 
 

@@ -46,5 +46,4 @@ perl -e '
 	close(REPCONF);
 	close(NEWCONF);
 	rename("$ARGV[0].tmp", "$ARGV[0]") or die;
-	print("Config updated: $ARGV[0]\n");
 ' $1

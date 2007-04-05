@@ -288,31 +288,45 @@ bool ScannerHandler::CreateScanners( SocketHandler &ProxyServerT )
     VirusMsg.clear();
     ErrorMsg.clear();
 
+    LastRequestURL = "";
+    CompleteTempFile = false;
+
     return true;
 }
 
 
 //Reload scanner databases
 //Called from main HAVP process only!
-bool ScannerHandler::ReloadDatabases()
+int ScannerHandler::ReloadDatabases()
 {
-    bool reloaded = false;
+    int reloaded = 0;
+    int failed = 0;
 
     for ( unsigned int i = 0; i < VirusScanner.size(); i++ )
     {
-        if ( VirusScanner[i]->ReloadDatabase() == true )
+        int rl = VirusScanner[i]->ReloadDatabase();
+
+        if ( rl == 1 )
         {
-            reloaded = true;
+            reloaded++;
+        }
+        else if ( rl < 0 )
+        {
+            failed++;
         }
     }
 
-    return reloaded;
+    if ( failed ) return -1;
+    if ( reloaded ) return 1;
+    return 0;
 }
 
 
 //Tell all scanners to start scanning again
 bool ScannerHandler::RestartScanners()
 {
+    if ( DeadScanner ) return false;
+
     int ret;
 
     for ( int i = 0; i < totalscanners; i++ )
@@ -321,7 +335,7 @@ bool ScannerHandler::RestartScanners()
 
         if (ret <= 0)
         {
-            LogFile::ErrorMessage("Detected dead %s process\n", Scanner[i].scanner_name.c_str());
+            LogFile::ErrorMessage("Detected crashed %s process (restart, pid: %d, lasturl: %s)\n", Scanner[i].scanner_name.c_str(), Scanner[i].scanner_pid, LastRequestURL.c_str());
             return false;
         }
     }
@@ -335,6 +349,9 @@ bool ScannerHandler::RestartScanners()
     //Empty message
     VirusMsg.clear();
     ErrorMsg.clear();
+
+    LastRequestURL = "";
+    CompleteTempFile = false;
 
     return true;
 }
@@ -351,7 +368,7 @@ void ScannerHandler::ExitScanners()
 
         if (ret <= 0)
         {
-            LogFile::ErrorMessage("Detected dead %s process\n", Scanner[i].scanner_name.c_str());
+            LogFile::ErrorMessage("Detected crashed %s process (exit, pid: %d, lasturl: %s)\n", Scanner[i].scanner_name.c_str(), Scanner[i].scanner_pid, LastRequestURL.c_str());
         }
     }
 }
@@ -393,9 +410,10 @@ bool ScannerHandler::HasAnswer()
 
             if (ret <= 0) //Pipe was closed - or some bad error
             {
-                LogFile::ErrorMessage("Detected dead %s process\n", Scanner[i].scanner_name.c_str());
+                LogFile::ErrorMessage("Detected crashed %s process (hasanswer, pid: %d, lasturl: %s)\n", Scanner[i].scanner_name.c_str(), Scanner[i].scanner_pid, LastRequestURL.c_str());
+                DeadScanner = true;
 
-                ErrorMsg.push_back( Scanner[i].scanner_name_short + ": Scanner died" );
+                ErrorMsg.push_back( Scanner[i].scanner_name_short + ": Scanner crashed" );
 
                 //We still need to check other possible answers
                 continue;
@@ -412,7 +430,10 @@ bool ScannerHandler::HasAnswer()
                 Temp.erase(0,1);
                 if ( Temp == "" ) Temp = "Unknown";
 
-                VirusMsg.push_back( Scanner[i].scanner_name_short + ": " + Temp );
+                if ( IgnoredVirus( Temp ) == false )
+                {
+                    VirusMsg.push_back( Scanner[i].scanner_name_short + ": " + Temp );
+                }
 
                 //Check next descriptor
                 continue;
@@ -454,7 +475,9 @@ int ScannerHandler::GetAnswer()
 
         if (ret <= 0)
         {
-            LogFile::ErrorMessage("Detected dead %s process\n", Scanner[i].scanner_name.c_str());
+            LogFile::ErrorMessage("Detected crashed %s process (getanswer, pid: %d, lasturl: %s)\n", Scanner[i].scanner_name.c_str(), Scanner[i].scanner_pid, LastRequestURL.c_str());
+            DeadScanner = true;
+
             for ( int ii = 0; ii < totalscanners; ii++ )
             {
                 kill(Scanner[ii].scanner_pid, SIGKILL);
@@ -481,7 +504,7 @@ int ScannerHandler::GetAnswer()
         //If some scanner has timed out, kill them all
         if ( ret == 0 )
         {
-            LogFile::ErrorMessage("Error: Some scanner has timed out! Killing..\n");
+            LogFile::ErrorMessage("Error: Some scanner has timed out! (lasturl: %s)\n", LastRequestURL.c_str());
 
             for ( int i = 0; i < totalscanners; i++ )
             {
@@ -512,9 +535,10 @@ int ScannerHandler::GetAnswer()
 
                 if (ret <= 0) //Pipe was closed - or some bad error
                 {
-                    LogFile::ErrorMessage("Detected dead %s process\n", Scanner[i].scanner_name.c_str());
+                    LogFile::ErrorMessage("Detected crashed %s process (getanswer, pid: %d, lasturl: %s)\n", Scanner[i].scanner_name.c_str(), Scanner[i].scanner_pid, LastRequestURL.c_str());
+                    DeadScanner = true;
 
-                    ErrorMsg.push_back( Scanner[i].scanner_name_short + ": Scanner died" );
+                    ErrorMsg.push_back( Scanner[i].scanner_name_short + ": Scanner crashed" );
 
                     //We still need to check other possible answers
                     continue;
@@ -531,7 +555,10 @@ int ScannerHandler::GetAnswer()
                     Temp.erase(0,1);
                     if ( Temp == "" ) Temp = "Unknown";
 
-                    VirusMsg.push_back( Scanner[i].scanner_name_short + ": " + Temp );
+                    if ( IgnoredVirus( Temp ) == false )
+                    {
+                        VirusMsg.push_back( Scanner[i].scanner_name_short + ": " + Temp );
+                    }
 
                     //Check next descriptor
                     continue;
@@ -552,7 +579,10 @@ int ScannerHandler::GetAnswer()
     }
 
     //Virus found?
-    if ( VirusMsg.size() ) return 1;
+    if ( VirusMsg.size() )
+    {
+        return 1;
+    }
 
     //Return error only if all scanners had one and we want errors
     if ( (ErrorMsg.size() == (unsigned int)totalscanners) && Params::GetConfigBool("FAILSCANERROR") )
@@ -590,6 +620,47 @@ string ScannerHandler::GetAnswerMessage()
     }
 
     return AnswerMsg;
+}
+
+
+//Update last requested URL
+void ScannerHandler::LastURL( string URL )
+{
+    LastRequestURL = URL;
+}
+
+
+//Called if TempFile is fully complete, not cut off with MaxScanSize etc
+void ScannerHandler::HaveCompleteFile()
+{
+    CompleteTempFile = true;
+}
+
+
+//Check if Virus is whitelisted
+bool ScannerHandler::IgnoredVirus( string VirusName )
+{
+    //IGNOREVIRUS?
+    if ( IgnoredViruses.size() > 0 )
+    {
+        string Virus = UpperCase( VirusName );
+
+        for ( vector<string>::iterator IV = IgnoredViruses.begin(); IV != IgnoredViruses.end(); ++IV )
+        {
+            if ( Virus.find(*IV) != string::npos )
+            {
+                return true;
+            }
+        }
+    }
+
+    //CLAMBLOCKBROKEN? Ignore detection from incomplete file
+    if ( VirusName == "Broken.Executable" && CompleteTempFile == false )
+    {
+        return true;
+    }
+
+    return false;
 }
 
 
@@ -944,6 +1015,29 @@ ScannerHandler::ScannerHandler()
         //10 minutes as failsafe
         ScannerTimeout = 600;
     }
+
+    //Whitelisted viruses
+    if ( Params::GetConfigString("IGNOREVIRUS") != "" )
+    {
+        string Tokens = UpperCase( Params::GetConfigString("IGNOREVIRUS") );
+        string::size_type Position;
+
+        while ( (Position = Tokens.find(" ")) != string::npos )
+        {
+            if ( Position == 0 )
+            {
+                Tokens.erase( 0, 1 );
+                continue;
+            }
+
+            IgnoredViruses.push_back( Tokens.substr( 0, Position ));
+            Tokens.erase( 0, Position + 1 );
+        }
+
+        IgnoredViruses.push_back( Tokens );
+    }
+
+    DeadScanner = false;
 }
 
 //Destructor

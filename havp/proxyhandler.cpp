@@ -130,7 +130,7 @@ void ProxyHandler::Proxy( SocketHandler &ProxyServerT, ScannerHandler &Scanners 
 #endif
 
         //Keep-Alive?
-        if ( ToBrowser.KeepItAlive() == false || ToBrowser.GetRequestType() != "GET" || ( (alivecount > 99) && (ToBrowser.CheckForData(0) == false) ) )
+        if ( ToBrowser.IsItKeepAlive() == false || ToBrowser.GetRequestType() != "GET" || ( (alivecount > 99) && (ToBrowser.CheckForData(0) == false) ) )
         {
             DropBrowser = true;
         }
@@ -331,6 +331,9 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
 
     string HeaderServer = ToBrowser.PrepareHeaderForServer( ScannerOff, UseParentProxy );
 
+    //Update requested URL to Scannerhandler, we can report it on some errors then
+    Scanners.LastURL( ToBrowser.GetCompleteRequest().c_str() );
+
     //Send header to server
     if ( ToServer.SendHeader( HeaderServer, DropBrowser ) == false )
     {
@@ -428,7 +431,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
     if ( (ToServer.GetResponse() == 206) && (Params::GetConfigBool("RANGE") == false) )
     {
         //If whitelisted or streaming User-Agent, we do allow partial
-        if ( (ScannerOff == false) && ( ToBrowser.StreamingAgent() == false) )
+        if ( (ScannerOff == false) && ( ToBrowser.IsItStreamAgent() == false) )
         {
             if (LL>0) LogFile::ErrorMessage("(%s) Server tried to send partial data and RANGE set to false (%s/%s:%d)\n", ToServer.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
             DropServer = true;
@@ -437,16 +440,28 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
     }
 
     //Server did not send Keep-Alive header, close after request (we can keep browser open)
-    if ( ToServer.KeepItAlive() == false ) DropServer = true;
+    if ( ToServer.IsItKeepAlive() == false ) DropServer = true;
 
     //Get Content-Length
     ContentLengthReference = ToServer.GetContentLength();
+
+    //Chunked workaround?
+    bool ChunkedTransfer = ToServer.IsItChunked();
 
     if ( ContentLengthReference == -1 )
     {
         //No Keep-Alive for unknown length
         DropBrowser = true;
     }
+    else if ( ChunkedTransfer )
+    {
+        // Chunked transfer not allowed with Content-Length
+        LogFile::ErrorMessage("(%s) Invalid server header received, Chunked encoding with Content-Length (%s/%s:%d)\n", ToServer.GetIP().c_str(), ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
+        DropServer = true;
+        return -233;
+    }
+
+    if ( ChunkedTransfer ) DropBrowser = true;
 
     Header = ToServer.PrepareHeaderForBrowser();
 
@@ -492,7 +507,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
     unsigned int MaxScanSize = Params::GetConfigInt("MAXSCANSIZE");
 
     //For streaming User-Agents, check if we need scanning
-    if ( ToBrowser.StreamingAgent() )
+    if ( ToBrowser.IsItStreamAgent() )
     {
         if ( Params::GetConfigInt("STREAMSCANSIZE") > 0 )
         {
@@ -509,7 +524,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
     
     //Read first part of body
     string BodyTemp;
-    ssize_t BodyLength = ToServer.ReadBodyPart( BodyTemp );
+    ssize_t BodyLength = ToServer.ReadBodyPart( BodyTemp, ChunkedTransfer );
 
     //Server disconnected?
     if ( BodyLength < 0 )
@@ -539,7 +554,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
 
     //Scan JPG? GIF? PNG?
     if ( Params::GetConfigBool("SCANIMAGES") == false
-         && ToServer.ContentImage()
+         && ToServer.IsItImage()
          && ( MatchBegin( BodyTemp, "\255\216\255\224", 4 )
               || MatchBegin( BodyTemp, "GIF8", 4 )
               || MatchBegin( BodyTemp, "\137PNG", 4 )
@@ -591,7 +606,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
             if ( ContentLength == ContentLengthReference ) break;
 
             //Read more of body
-            if ( (BodyLength = ToServer.ReadBodyPart( BodyTemp )) < 0 )
+            if ( (BodyLength = ToServer.ReadBodyPart( BodyTemp, ChunkedTransfer )) < 0 )
             {
                 DropServer = true;
                 if (LL>0) LogFile::ErrorMessage("(%s) Could not read server body (%s/%s:%d)\n", ToServer.GetIP().c_str(), ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
@@ -826,6 +841,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
                 }
 
                 //Exit bodyloop
+                Scanners.HaveCompleteFile();
                 break;
             }
             //Received MAXSCANSIZE, need to finish tempfile
@@ -880,7 +896,11 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
         }
 
         //Exit bodyloop because file is complete
-        if ( ContentLength == ContentLengthReference ) break;
+        if ( ContentLength == ContentLengthReference )
+        {
+            Scanners.HaveCompleteFile();
+            break;
+        }
 
 #ifndef NOMAND
         //Check if virus was found or all scanners said clean already
@@ -992,7 +1012,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
 #endif
 
         //Read more of body
-        if ( (BodyLength = ToServer.ReadBodyPart( BodyTemp )) < 0 )
+        if ( (BodyLength = ToServer.ReadBodyPart( BodyTemp, ChunkedTransfer )) < 0 )
         {
             DropServer = true;
             if (LL>0) LogFile::ErrorMessage("(%s) Could not read server body (%s/%s:%d)\n", ToServer.GetIP().c_str(), ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
@@ -1020,9 +1040,13 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
 
                 //We need a rescan if no full unlock done yet
                 if ( AnswerDone == false ) ReScan = true;
+
+                //Exit bodyloop
+                break;
             }
                 
             //Exit bodyloop
+            Scanners.HaveCompleteFile();
             break;
         }
 
@@ -1190,7 +1214,7 @@ int ProxyHandler::CommunicationSSL()
             for(;;)
             {
                 //Read Body
-                if ( (BodyLength = ToServer.ReadBodyPart( BodyTemp )) < 0 )
+                if ( (BodyLength = ToServer.ReadBodyPart( BodyTemp, false )) < 0 )
                 {
                     if (LL>0) LogFile::ErrorMessage("(%s) Could not read server body (%s/%s:%d)\n", ToServer.GetIP().c_str(), ToBrowser.GetIP().c_str(), ParentHost.c_str(), ParentPort);
                     DropServer = true;
@@ -1258,14 +1282,14 @@ int ProxyHandler::CommunicationSSL()
     {
         if ( ret == 2 )
         {
-            BodyLength = ToServer.ReadBodyPart( BodyTemp );
+            BodyLength = ToServer.ReadBodyPart( BodyTemp, false );
             if ( BodyLength < 1 ) break;
             if ( ToBrowser.Send( BodyTemp ) == false ) break;
             continue;
         }
         else if ( ret == 1 )
         {
-            BodyLength = ToBrowser.ReadBodyPart( BodyTemp );
+            BodyLength = ToBrowser.ReadBodyPart( BodyTemp, false );
             if ( BodyLength < 1 ) break;
             if ( ToServer.Send( BodyTemp ) == false ) break;
             continue;
@@ -1390,6 +1414,11 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT, string Answer )
 
         case -232:
             message = "Server sent forbidden Transfer-Encoding header";
+            filename = ERROR_REQUEST;
+            break;
+
+        case -233:
+            message = "Server sent Chunked response with Content-Length";
             filename = ERROR_REQUEST;
             break;
 

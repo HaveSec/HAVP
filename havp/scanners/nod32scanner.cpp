@@ -24,9 +24,9 @@ bool NOD32Scanner::InitDatabase()
 }
 
 
-bool NOD32Scanner::ReloadDatabase()
+int NOD32Scanner::ReloadDatabase()
 {
-    return false;
+    return 0;
 }
 
 string NOD32Scanner::Scan( const char *FileName )

@@ -38,7 +38,7 @@ public:
 
 bool ReadHeader( string &headerT );
 int AnalyseHeader( string &linesT );
-ssize_t ReadBodyPart( string &bodyT );
+ssize_t ReadBodyPart( string &bodyT, bool Chunked );
 bool SendHeader( string header, bool ConnectionClose );
 
 HTTPHandler();

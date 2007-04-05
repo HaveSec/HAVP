@@ -212,17 +212,88 @@ int HTTPHandler::AnalyseHeader( string &linesT )
 
 
 //Read part of Body
-ssize_t HTTPHandler::ReadBodyPart( string &bodyT )
+ssize_t HTTPHandler::ReadBodyPart( string &bodyT, bool Chunked )
 {
     bodyT = "";
     ssize_t count;
 
-    if ( (count = SocketHandler::Recv( bodyT, true, -1 )) < 0)
+    if ( Chunked == false )
     {
+        if ( (count = SocketHandler::Recv( bodyT, true, -1 )) < 0)
+        {
+            return -1;
+        }
+
+        return count;
+    }
+
+    // Handle Chunked encoding, return one chunk
+
+    string Temp = "";
+    int received = 0;
+    int read;
+    unsigned int csize;
+    string::size_type position, hpos;
+
+    // Read header
+    for(;;)
+    {
+        read = SocketHandler::Recv( Temp, false, -1 );
+
+        if ( read < 1 ) return -1;
+
+        if ( (position = Temp.find("\r\n")) != string::npos )
+        {
+            if ( position == 0 )
+            {
+                SocketHandler::RecvLength( Temp, 2 );
+                Temp = "";
+                continue;
+            }
+
+            string UTemp = UpperCase(Temp);
+            hpos = UTemp.find_first_not_of("0123456789ABCDEF");
+
+            // Read max 8 hex = 4gb
+            if ( hpos == string::npos || hpos < 1 || hpos > 7 )
+            {
+                LogFile::ErrorMessage("Invalid Chunked-header received\n");
+                return -1;
+            }
+
+            if ( sscanf( UTemp.substr(0, hpos).c_str(), "%x", &csize ) != 1 )
+            {
+                LogFile::ErrorMessage("Invalid Chunked-header received\n");
+                return -1;
+            }
+
+            SocketHandler::RecvLength( Temp, position + 2 );
+
+            break;
+        }
+
+        received += read;
+
+        if ( received > 256 )
+        {
+            LogFile::ErrorMessage("Too large Chunked-header received (>256)\n");
+            return -1;
+        }
+    }
+
+    // All chunks received?
+    if ( csize == 0 ) return 0;
+
+    // Does someone send over 1MB chunks?
+    if ( csize > 1048576 )
+    {
+        LogFile::ErrorMessage("Too large Chunked-body size received (>1MB)\n");
         return -1;
     }
 
-    return count;
+    if ( RecvLength( bodyT, csize ) == false ) return -1;
+
+    return csize;
 }
 
 

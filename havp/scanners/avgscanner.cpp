@@ -24,9 +24,9 @@ bool AVGScanner::InitDatabase()
 }
 
 
-bool AVGScanner::ReloadDatabase()
+int AVGScanner::ReloadDatabase()
 {
-    return false;
+    return 0;
 }
 
 
@@ -78,7 +78,7 @@ string AVGScanner::Scan( const char *FileName )
 
     if ( Response.length() < 20 )
     {
-        LogFile::ErrorMessage("AVG: Invalid response from scanner\n");
+        LogFile::ErrorMessage("AVG: Invalid response from scanner, report to developer (%s)\n", Response.c_str());
         ScannerAnswer = "2Invalid response from scanner";
         return ScannerAnswer;
     }
@@ -91,22 +91,19 @@ string AVGScanner::Scan( const char *FileName )
 
     string::size_type Position;
 
-    if ( ( Position = Response.find( "Virus identified " )) != string::npos )
+    if ( ( Position = Response.find( "\n403 File" )) != string::npos )
     {
-        string::size_type PositionEnd;
+        string::size_type PositionEnd, PositionStart;
 
-        if ( (PositionEnd = Response.find_first_of(" (\r\n", Position + 17 )) != string::npos )
-        {
-            ScannerAnswer = "1" + Response.substr( Position + 17, PositionEnd - (Position + 17) );
-        }
-        else
-        {
-            ScannerAnswer = "1Unknown";
-        }
+        PositionEnd = Response.find("\n", Position + 10);
+        PositionStart = Response.rfind(" ", PositionEnd);
+
+        ScannerAnswer = "1" + Response.substr( PositionStart + 1, PositionEnd - PositionStart - 2);
 
         return ScannerAnswer;
     }
 
+    LogFile::ErrorMessage("AVG: Unknown response from scanner, report to developer (%s)\n", Response.c_str());
     ScannerAnswer = "2Unknown response from scanner";
     return ScannerAnswer;
 }

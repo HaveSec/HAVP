@@ -35,7 +35,7 @@ char Ready[2];
 public:
 
 bool InitDatabase();
-bool ReloadDatabase();
+int ReloadDatabase();
 void FreeDatabase();
 string Scan( const char *FileName );
 

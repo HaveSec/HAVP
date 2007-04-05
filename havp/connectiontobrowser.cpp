@@ -181,7 +181,7 @@ string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, bool UsePar
         else if ( MatchBegin( it, "RANGE:", 6 ) || MatchBegin( it, "IF-RANGE", 8 ) )
         {
             //Range allowed when whitelisted or streaming User-Agent
-            if ( Params::GetConfigBool("RANGE") == false && ScannerOff == false && StreamAgent == false )
+            if ( Params::GetConfigBool("RANGE") == false && ScannerOff == false && IsStreamAgent == false )
             {
                 continue;
             }
@@ -257,11 +257,11 @@ int ConnectionToBrowser::AnalyseHeaderLine( string &RequestT )
         {
             if ( MatchSubstr( RequestU, "KEEP-ALIVE", 12 ) )
             {
-                KeepAlive = true;
+                IsKeepAlive = true;
             }
             else
             {
-                KeepAlive = false;
+                IsKeepAlive = false;
             }
 
             return 0;
@@ -273,11 +273,11 @@ int ConnectionToBrowser::AnalyseHeaderLine( string &RequestT )
 
             if ( MatchSubstr( RequestU, "KEEP-ALIVE", 18 ) )
             {
-                KeepAlive = true;
+                IsKeepAlive = true;
             }
             else
             {
-                KeepAlive = false;
+                IsKeepAlive = false;
             }
 
             return 0;
@@ -303,7 +303,7 @@ int ConnectionToBrowser::AnalyseHeaderLine( string &RequestT )
             {
                 if ( RequestU.find(*UAi, 12) != string::npos )
                 {
-                    StreamAgent = true;
+                    IsStreamAgent = true;
                 }
             }
         }
@@ -428,7 +428,7 @@ int ConnectionToBrowser::GetHostAndPortOfRequest( string &RequestT, string::size
                 if ( RequestU.find( "HTTP/1.1", LastPosition + 1 ) != string::npos )
                 {
                     //KeepAlive by default for HTTP/1.1 clients
-                    KeepAlive = true;
+                    IsKeepAlive = true;
                 }
 
                 RequestProtocol = "http";
@@ -473,7 +473,7 @@ int ConnectionToBrowser::GetHostAndPortOfRequest( string &RequestT, string::size
     if ( RequestU.find( "HTTP/1.1", LastPosition + 1 ) != string::npos )
     {
         //KeepAlive by default for HTTP/1.1 clients
-        KeepAlive = true;
+        IsKeepAlive = true;
     }
 
     //Split domain and path
@@ -625,15 +625,15 @@ string ConnectionToBrowser::GetIP()
    return IP;
 }
 
-bool ConnectionToBrowser::KeepItAlive()
+bool ConnectionToBrowser::IsItKeepAlive()
 {
-    return KeepAlive;
+    return IsKeepAlive;
 }
 
 
-bool ConnectionToBrowser::StreamingAgent()
+bool ConnectionToBrowser::IsItStreamAgent()
 {
-    return StreamAgent;
+    return IsStreamAgent;
 }
 
 #ifdef REWRITE
@@ -653,7 +653,7 @@ void ConnectionToBrowser::ClearVars()
 {
     RequestProtocol = RequestType = Request = Host = IP = FtpUser = FtpPass = UserAgent = "";
     Port = ContentLength = -1;
-    KeepAlive = ProxyConnection = StreamAgent = false;
+    IsKeepAlive = ProxyConnection = IsStreamAgent = false;
 }
 
 

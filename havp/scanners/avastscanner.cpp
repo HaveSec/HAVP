@@ -24,9 +24,9 @@ bool AvastScanner::InitDatabase()
 }
 
 
-bool AvastScanner::ReloadDatabase()
+int AvastScanner::ReloadDatabase()
 {
-    return false;
+    return 0;
 }
 
 

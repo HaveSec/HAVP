@@ -56,7 +56,7 @@ bool ClamLibScanner::InitDatabase()
 }
 
 
-bool ClamLibScanner::ReloadDatabase()
+int ClamLibScanner::ReloadDatabase()
 {
     int ret = cl_statchkdir(&dbstat);
 
@@ -76,14 +76,14 @@ bool ClamLibScanner::ReloadDatabase()
 #endif
         {
             LogFile::ErrorMessage("ClamAV: Could not reload database: %s\n", cl_strerror(ret));
-            return false;
+            return -1;
         }
 
         if ( (ret = cl_build(root)) != 0 )
         {
             LogFile::ErrorMessage("ClamAV: Database initialization error: %s\n", cl_strerror(ret));
             cl_free(root);
-            return false;
+            return -1;
         }
 
         LogFile::ErrorMessage("ClamAV: Reloaded %d signatures (engine %s)\n", no, cl_retver());
@@ -93,14 +93,14 @@ bool ClamLibScanner::ReloadDatabase()
         memset(&dbstat, 0, sizeof(struct cl_stat));
         cl_statinidir(dbdir, &dbstat);
 
-        return true;
+        return 1;
     }
     else if ( ret != 0 )
     {
         LogFile::ErrorMessage("ClamAV: Error on database check: %s\n", cl_strerror(ret));
     }
 
-    return false;
+    return 0;
 }
 
 
@@ -180,6 +180,10 @@ ClamLibScanner::ClamLibScanner()
     if ( Params::GetConfigBool("CLAMBLOCKENCRYPTED") )
     {
         scanopts = scanopts | CL_SCAN_BLOCKENCRYPTED;
+    }
+    if ( Params::GetConfigBool("CLAMBLOCKBROKEN") )
+    {
+        scanopts = scanopts | CL_SCAN_BLOCKBROKEN;
     }
 
     //Set up archive limits

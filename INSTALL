@@ -32,6 +32,16 @@ Installation:
   # make
   # make install
 
+You can use the following path options in configure:
+
+  --prefix         base directory, default "/usr/local"
+  --sbindir        location of havp-binary, default "$prefix/sbin"
+  --sysconfdir     location of etc, default "$prefix/etc" (+ /havp)
+  --localstatedir  location of pidfile, default "/var" (+ /run/havp)
+
+  Also "make install DESTDIR=/tmp/havp" is supported for helping
+  in creating packages etc.
+
 It is recommended to create a havp user:
 
   # groupadd havp 
