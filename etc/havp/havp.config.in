@@ -160,6 +160,8 @@ REMOVETHISLINE deleteme
 # reasons. Enable this if you use your own parent proxy after HAVP, so it
 # will see the original client IP.
 #
+# Disabling this also disables Via: header generation.
+#
 # Default:
 # X_FORWARDED_FOR false
 
@@ -308,6 +310,12 @@ REMOVETHISLINE deleteme
 # TRICKLING 30
 
 #
+# Send this many bytes to browser every TRICKLING seconds, see above
+#
+# Default:
+# TRICKLINGBYTES 1
+
+#
 # Downloads larger than MAXDOWNLOADSIZE will be blocked.
 # Only if not Whitelisted!
 #
@@ -375,10 +383,11 @@ ENABLECLAMLIB false
 # CLAMBLOCKMAX false
 
 # Scanning limits _inside_ archives (filesize = MB):
-# Read clamd.conf for more info.
+# Read clamd.conf for more info. Maxfiles is good performance
+# setting, by default only first 50 files are scanned.
 #
 # Default:
-# CLAMMAXFILES 1000
+# CLAMMAXFILES 50
 # CLAMMAXFILESIZE 10
 # CLAMMAXRECURSION 8
 # CLAMMAXRATIO 250
@@ -417,6 +426,20 @@ ENABLEFPROT false
 # Default:
 # FPROTSERVER 127.0.0.1
 # FPROTPORT 10200
+
+# F-Prot options (only for version 6+ !)
+#
+# See "fpscand-client.sh --help" for possible options.
+#
+# At the moment:
+#  --scanlevel=<n>  Which scanlevel to use, 0-4 (2).
+#  --heurlevel=<n>  How aggressive heuristics should be used, 0-4 (2).
+#  --archive=<n>    Scan inside supported archives n levels deep 1-99 (5).
+#  --adware         Instructs the daemon to flag adware.
+#  --applications   Instructs the daemon to flag potentially unwanted applications.
+#
+# Default: NONE
+# FPROTOPTIONS --scanlevel=2 --heurlevel=2
 
 
 #####
@@ -465,7 +488,7 @@ ENABLETROPHIE false
 # Scanning limits inside archives (filesize = MB):
 #
 # Default:
-# TROPHIEMAXFILES 1000
+# TROPHIEMAXFILES 50
 # TROPHIEMAXFILESIZE 10
 # TROPHIEMAXRATIO 250
 
@@ -519,4 +542,35 @@ ENABLEARCAVIR false
 #
 # Default:
 # ARCAVIRSOCKET /var/run/arcavird.socket
+
+
+#####
+##### DrWeb Socket Scanner
+#####
+
+ENABLEDRWEB false
+
+# Enable heuristic scanning?
+#
+# Default:
+# DRWEBHEURISTIC true
+
+# Enable malware detection?
+# (Adware, Dialer, Joke, Riskware, Hacktool)
+#
+# Default:
+# DRWEBMALWARE true
+
+# Path to drwebd socket
+#
+# Default:
+# DRWEBSOCKET /var/drweb/run/.daemon
+
+# ..OR if you use drwebd TCP socket, uncomment to enable use
+#
+# DrWeb daemon needs to run on the same server as HAVP
+#
+# Default: NONE
+# DRWEBSERVER 127.0.0.1
+# DRWEBPORT 3000
 

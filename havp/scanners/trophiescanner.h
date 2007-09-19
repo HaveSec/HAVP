@@ -68,7 +68,7 @@ unsigned int info; /* As a decimal number: MNNNVV
 };
 
 /* trophiescanner.cpp */
-extern int VSInit(pid_t, char *, int, int *);
+extern int VSInit(pid_t, const char *, int, int *);
 extern int VSReadVirusPattern(int, int, int, int *);
 extern int VSGetVirusPatternInfoEx(int, int *);
 extern int VSGetVSCInfo(struct trophie_vs_type *);

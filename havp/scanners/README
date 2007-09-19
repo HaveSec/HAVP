@@ -1,0 +1,29 @@
+
+Some notes on the code
+======================
+
+Scanners _must_ have these public functions:
+
+ bool InitDatabase();
+  Return: true .. database successfully initialized
+  Return: false .. loading failed, HAVP will terminate
+   Note: always return true when using a daemon, since we don't handle this
+
+ int ReloadDatabase();
+  Return: -1 .. error reloading, HAVP will terminate
+  Return: 0 .. no reloading done, databases are current
+  Return: 1 .. database was reloaded, childs will be restarted
+   Note: always return 0 when using a daemon, since we don't handle this
+
+ void FreeDatabase();
+   Note: not actually used right now.. maybe in future
+
+ string Scan( const char *FileName );
+
+Scanners may have these public functions:
+
+ void CloseSocket();
+   Note: if persistent connections to daemon are used, we call Close() here,
+         used when HAVP initially tests scanner and forks. we don't want to
+         pass the open file descriptor.
+

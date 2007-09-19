@@ -35,14 +35,15 @@ time_t LastError;
 string ScannerAnswer;
 char Ready[2];
 
+string ScanV25( const char *FileName );
+string ScanV21( const char *FileName );
+
 public:
 
 bool InitDatabase();
 int ReloadDatabase();
 void FreeDatabase();
 string Scan( const char *FileName );
-string ScanV25( const char *FileName );
-string ScanV21( const char *FileName );
 
 NOD32Scanner();
 ~NOD32Scanner();

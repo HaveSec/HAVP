@@ -53,6 +53,7 @@ void ProxyHandler::Proxy( SocketHandler &ProxyServerT, ScannerHandler &Scanners 
         ToBrowser.ClearVars();
         ToServer.ClearVars();
 
+        Header = "";
         ScannerUsed = UnlockDone = AnswerDone = ReinitDone = HeaderSend = DropServer = false;
         TransferredHeader = TransferredBody = 0;
 
@@ -271,6 +272,7 @@ void ProxyHandler::Proxy( SocketHandler &ProxyServerT, ScannerHandler &Scanners 
 
 int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
 {
+    string HeaderToServer = ToBrowser.PrepareHeaderForServer( ScannerOff, UseParentProxy );
 
     long long ContentLengthReference = ToBrowser.GetContentLength();
 
@@ -329,13 +331,11 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
     //We are now connected
     ServerConnected = true;
 
-    string HeaderServer = ToBrowser.PrepareHeaderForServer( ScannerOff, UseParentProxy );
-
     //Update requested URL to Scannerhandler, we can report it on some errors then
-    Scanners.LastURL( ToBrowser.GetCompleteRequest().c_str() );
+    Scanners.LastURL( ToBrowser.GetCompleteRequest() );
 
     //Send header to server
-    if ( ToServer.SendHeader( HeaderServer, DropBrowser ) == false )
+    if ( ToServer.SendHeader( HeaderToServer, DropBrowser ) == false )
     {
         if (LL>0) LogFile::ErrorMessage("(%s) Could not send header to server (%s/%s:%d)\n", ToServer.GetIP().c_str(), ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
         DropServer = true;
@@ -483,7 +483,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
             ssize_t BodyLength = ToServer.Recv( BodyTemp, true, -1 );
             if ( (BodyLength > 0) && (BodyTemp.find_first_not_of( "\r\n", 0 ) != string::npos) )
             {
-                LogFile::ErrorMessage("(%s) Server tried to send body when not expected (%s/%s:%d)\n", ToServer.GetIP().c_str(), ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
+                if (LL>0) LogFile::ErrorMessage("(%s) Server tried to send body when not expected (%s/%s:%d)\n", ToServer.GetIP().c_str(), ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
                 DropServer = true;
             }
         }
@@ -679,7 +679,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
 
         if ( Scanners.SetTempFileSize( TempLengthReference ) == false )
         {
-            LogFile::ErrorMessage("(%s) Could not create tempfile, check disk space! (%lld bytes from %s/%s:%d)\n", ToServer.GetIP().c_str(), ToBrowser.GetIP().c_str(), ContentLengthReference, ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
+            LogFile::ErrorMessage("(%s) Could not create tempfile, check disk space! (%lld bytes from %s/%s:%d)\n", ToServer.GetIP().c_str(), ContentLengthReference, ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
             return -100;
         }
 
@@ -740,7 +740,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
         string RangeStr = "Range: bytes=" + OffsetStart + "-" + OffsetEnd;
         RangeStr += "\r\nConnection: close\r\n\r\n";
 
-        string HeaderToSend = HeaderServer + RangeStr;
+        string HeaderToSend = HeaderToServer + RangeStr;
 
         for(;;)
         {
@@ -836,7 +836,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
 
                 if ( Scanners.ExpandTempFile( BodyTemp, PartlyUnlock ) == false )
                 {
-                    LogFile::ErrorMessage("(%s) Could not expand tempfile, check disk space! (%lld bytes from %s/%s:%d)\n", ToServer.GetIP().c_str(), ToBrowser.GetIP().c_str(), ContentLengthReference, ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
+                    LogFile::ErrorMessage("(%s) Could not expand tempfile, check disk space! (%lld bytes from %s/%s:%d)\n", ToServer.GetIP().c_str(), ContentLengthReference, ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
                     return -100;
                 }
 
@@ -851,7 +851,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
 
                 if ( Scanners.ExpandTempFile( BodyTemp2, PartlyUnlock ) == false )
                 {
-                    LogFile::ErrorMessage("(%s) Could not expand tempfile, check disk space! (%lld bytes from %s/%s:%d)\n", ToServer.GetIP().c_str(), ToBrowser.GetIP().c_str(), ContentLengthReference, ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
+                    LogFile::ErrorMessage("(%s) Could not expand tempfile, check disk space! (%lld bytes from %s/%s:%d)\n", ToServer.GetIP().c_str(), ContentLengthReference, ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
                     return -100;
                 }
 
@@ -890,7 +890,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
         {
             if ( Scanners.ExpandTempFile( BodyTemp, PartlyUnlock ) == false )
             {
-                LogFile::ErrorMessage("(%s) Could not expand tempfile, check disk space! (%lld bytes from %s/%s:%d)\n", ToServer.GetIP().c_str(), ToBrowser.GetIP().c_str(), ContentLengthReference, ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
+                LogFile::ErrorMessage("(%s) Could not expand tempfile, check disk space! (%lld bytes from %s/%s:%d)\n", ToServer.GetIP().c_str(), ContentLengthReference, ToBrowser.GetIP().c_str(), ToBrowser.GetHost().c_str(), ToBrowser.GetPort());
                 return -100;
             }
         }
@@ -932,11 +932,10 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
         Now = time(NULL);
 
 #ifdef NOMAND
-            //Send data if scanning was clean
-            if ( TempScannerAnswer == 0 )
-            {
-
-                TransferData = BodyQueue.begin();
+        //Send data if scanning was clean
+        if ( TempScannerAnswer == 0 )
+        {
+            TransferData = BodyQueue.begin();
 #else
         //Wait for KeepBackTime to pass
         if ( NoKeepBack || (LastTrickling + KeepBackTime < Now) )
@@ -975,7 +974,7 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
                 BodyQueue.erase( TransferData );
             }
             //Else check trickling
-            else if ( (TricklingTime > 0) && (LastTrickling + TricklingTime < Now) )
+            else if ( TricklingTime > 0 && BodyQueue.size() > 0 && LastTrickling + TricklingTime < Now )
             {
                 //Send header only once
                 if ( HeaderSend == false )
@@ -992,15 +991,20 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
 
                 LastTrickling = Now;
 
-                TransferDataLength -= 1; //send one character
+                string TData = "";
 
-                TransferData = BodyQueue.begin();
-                string character = TransferData->substr(0,1);
-                TransferData->erase(0,1);
+                do
+                {
+                    TransferData = BodyQueue.begin();
+                    TData += TransferData->substr( 0, TricklingBytes );
+                    TransferData->erase( 0, TricklingBytes );
+                    if ( TransferData->size() == 0 ) BodyQueue.erase( TransferData );
+                }
+                while ( TData.size() < TricklingBytes && BodyQueue.size() > 0 );
 
-                if ( TransferData->size() == 0 ) BodyQueue.erase( TransferData );
+                TransferDataLength -= TData.size();
 
-                if ( ToBrowser.Send( character ) == false )
+                if ( ToBrowser.Send( TData ) == false )
                 {
                     BrowserDropped = true;
                     if (LL>0) if (alivecount==1) LogFile::ErrorMessage("(%s) Could not send body to browser\n", ToBrowser.GetIP().c_str());
@@ -1551,6 +1555,8 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT, string Answer )
         if ( Response != "" )
         {
             SearchReplace( Response, "<!--message-->", message );
+            SearchReplace( Response, "<!--clientip-->", ToBrowser.GetIP() );
+            SearchReplace( Response, "<!--url-->", ToBrowser.GetCompleteRequest() );
             if ( ToBrowser.Send( Response ) == false ) BrowserDropped = true;
         } 
     }
@@ -1576,6 +1582,7 @@ ProxyHandler::ProxyHandler()
     MaxDownloadSize = Params::GetConfigInt("MAXDOWNLOADSIZE");
     KeepBackTime = Params::GetConfigInt("KEEPBACKTIME");
     TricklingTime = Params::GetConfigInt("TRICKLING");
+    TricklingBytes = Params::GetConfigInt("TRICKLINGBYTES");
     KeepBackBuffer = Params::GetConfigInt("KEEPBACKBUFFER");
 
     Header.reserve(20000);

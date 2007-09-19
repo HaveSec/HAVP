@@ -1,4 +1,15 @@
 
+*HAVP 0.87 released
+ - DrWeb scanner support
+ - F-Prot support for v6.0 added (also check FPROTOPTIONS)
+ - If false, X_FORWARDED_FOR drops also Via: header for privacy
+ - Fix Avast and AVG bugs
+ - Templates support <!--url--> and <!--clientip--> tags
+ - Uses supplementary groups for user if defined
+ - Added TRICKLINGBYTES config
+ - Reduced *MAXFILES settings to 50 for performance
+ - Add missing HTTP methods (MKACTIVITY, CHECKOUT, MERGE) 
+
 *HAVP 0.86 released
  - Experimental support for chunked Transfer-Encoding, fixes some broken sites
  - Added IGNOREVIRUS config for whitelisting virus names

@@ -25,7 +25,7 @@ havp: $(OBJECTS)
 
 install: all
 	$(INSTALL) -d $(DESTDIR)$(sbindir)
-	$(INSTALL) -s -m 755 havp $(DESTDIR)$(sbindir)/havp
+	$(INSTALL) -m 755 havp $(DESTDIR)$(sbindir)/havp
 	$(INSTALL) -d -m 755 $(DESTDIR)$(localstatedir)/log/havp
 	$(INSTALL) -d -m 755 $(DESTDIR)$(localstatedir)/tmp/havp
 	$(INSTALL) -d -m 755 $(DESTDIR)$(localstatedir)/run/havp

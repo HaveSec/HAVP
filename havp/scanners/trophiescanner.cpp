@@ -62,7 +62,7 @@ bool TrophieScanner::InitDatabase()
     memset(&pattern_info_ex, 0, sizeof(pattern_info_ex));
     memset(&trophie_vs, 0, sizeof(trophie_vs_type));
 
-    if ((ret = VSInit(getpid(), "VSCAN", -1, &vs_addr)) != 0)
+    if ((ret = VSInit(getpid(), (const char*)"VSCAN", -1, &vs_addr)) != 0)
     {
         LogFile::ErrorMessage("Trophie: VSInit() failed: %d\n", ret);
         return false;

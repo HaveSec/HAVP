@@ -36,6 +36,7 @@
 #include "scanners/sophiescanner.h"
 #include "scanners/avastscanner.h"
 #include "scanners/arcavirscanner.h"
+#include "scanners/drwebscanner.h"
 
 #include <sys/types.h>
 #include <signal.h>
@@ -95,6 +96,10 @@ bool ScannerHandler::InitScanners()
     if ( Params::GetConfigBool("ENABLEAVAST") )
     {
         VirusScanner.push_back(new AvastScanner);
+    }
+    if ( Params::GetConfigBool("ENABLEDRWEB") )
+    {
+        VirusScanner.push_back(new DrwebScanner);
     }
     if ( Params::GetConfigBool("ENABLEARCAVIR") )
     {

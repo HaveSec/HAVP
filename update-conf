@@ -12,6 +12,8 @@
 if [ ! -f "$1" ]; then exit 0; fi
 if [ ! -f "$1.default" ]; then exit 0; fi
 
+cp "$1" "$1.old"
+
 perl -e '
 	open(OLDCONF, "$ARGV[0]") or die;
 	while (<OLDCONF>)

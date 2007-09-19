@@ -5,7 +5,8 @@ AR = @AR@
 
 OBJECTS = avgscanner.o f-protscanner.o kasperskyscanner.o \
           nod32scanner.o clamdscanner.o sophiescanner.o \
-          avastscanner.o arcavirscanner.o @SCANNEROBJECTS@
+          avastscanner.o arcavirscanner.o drwebscanner.o \
+          @SCANNEROBJECTS@
 
 all: scanners
 

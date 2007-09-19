@@ -103,8 +103,19 @@ string AVGScanner::Scan( const char *FileName )
         return ScannerAnswer;
     }
 
-    LogFile::ErrorMessage("AVG: Unknown response from scanner, report to developer (%s)\n", Response.c_str());
-    ScannerAnswer = "2Unknown response from scanner";
+    //If AVG is reloading patterns, it will give error, just skip it
+    if ( MatchSubstr( Response, "\n406 Error", -1 ) )
+    {
+        ScannerAnswer = "0Clean";
+        return ScannerAnswer;
+    }
+
+    //LogFile::ErrorMessage("AVG: Unknown response from scanner, report to developer (%s)\n", Response.c_str());
+    //ScannerAnswer = "2Unknown response from scanner";
+    //return ScannerAnswer;
+
+    //Just return clean for anything else right now..
+    ScannerAnswer = "0Clean";
     return ScannerAnswer;
 }
 

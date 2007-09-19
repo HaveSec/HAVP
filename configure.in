@@ -23,6 +23,8 @@ fi
 
 AC_CHECK_PROG(PERL, perl, perl, no)
 
+AC_CHECK_FUNCS(initgroups setgroups)
+
 if test "$PERL" = "no"; then
 	AC_MSG_ERROR([perl not found in PATH])
 fi
@@ -96,7 +98,7 @@ then
 		echo " Error finding ClamAV installation!"
 		echo " Add ClamAV binaries path to PATH and run configure again."
 		echo ""
-		echo " To disable ClamAV, use --disable-clamav (not recommended!)."
+		echo " To disable ClamAV library support, use --disable-clamav."
 		echo ""
 
 		exit 1
@@ -145,7 +147,7 @@ else
 fi
 
 LDFLAGS="$LDFLAGS $OSLIBS"
-CFLAGS="$CFLAGS -Wall -O2"
+CFLAGS="$CFLAGS -Wall -g -O2"
 
 test "$prefix" = "NONE" && prefix=/usr/local
 test "$localstatedir" = '${prefix}/var' && localstatedir=/var || localstatedir=$localstatedir

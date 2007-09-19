@@ -1,7 +1,7 @@
 /***************************************************************************
-                          helper.h  -  description
+                          drwebscanner.h  -  description
                              -------------------
-    begin                : Sa M� 5 2005
+    begin                : Sa Feb 12 2005
     copyright            : (C) 2005 by Christian Hilgers
     email                : christian@hilgers.ag
  ***************************************************************************/
@@ -15,18 +15,39 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef HELPER_H
-#define HELPER_H
+#ifndef DRWEBSCANNER_H
+#define DRWEBSCANNER_H
 
-#include <unistd.h>
-#include <string>
+#include "../genericscanner.h"
 
-bool MakeDaemon();
-bool HardLockTest();
-bool ChangeUserAndGroup( string usr, string grp );
-string GetUser();
-string GetGroup();
-bool WritePidFile( pid_t pid );
-int InstallSignal( int level );
+class DrwebScanner : public GenericScanner {
+
+private:
+
+bool UseSocket;
+
+string ScannerAnswer;
+char Ready[2];
+
+SocketHandler Scanner;
+time_t LastError;
+
+string ScannerCmd;
+
+int Opts;
+
+bool ConnectScanner();
+
+public:
+
+bool InitDatabase();
+int ReloadDatabase();
+void FreeDatabase();
+string Scan( const char *FileName );
+
+DrwebScanner();
+~DrwebScanner();
+
+};
 
 #endif

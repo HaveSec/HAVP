@@ -298,45 +298,75 @@ bool HardLockTest()
 
 bool ChangeUserAndGroup( string usr, string grp )
 {
-    if ( grp != "" )
+    if ( geteuid() != 0 ) return true;
+
+    if ( usr == "" || grp == "" )
     {
-        struct group *my_group;
-
-        if ( (my_group = getgrnam( grp.c_str() )) == NULL )
-        {
-            cout << "Group does not exist: " << grp << endl;
-            cout << "You need to: groupadd " << grp << endl;
-            return false;
-        }
-
-        if ( setgid( my_group->gr_gid ) < 0 )
-        {
-            cout << "Could not change group to: " << grp << endl;
-            return false;
-        }
+        cout << "You must define User and Group" << endl;
+        return false;
     }
 
-    if ( usr != "" )
+    struct passwd *user;
+    struct group *my_group;
+
+    if ( (user = getpwnam( usr.c_str() )) == NULL )
     {
-        struct passwd *user;
+        cout << "User does not exist: " << usr << endl;
+        cout << "You need to: useradd " << usr << endl;
+        return false;
+    }
 
-        if ( (user = getpwnam( usr.c_str() )) == NULL )
-        {
-            cout << "User does not exist: " << usr << endl;
-            cout << "You need to: useradd " << usr << endl;
-            return false;
-        }
+    if ( (my_group = getgrnam( grp.c_str() )) == NULL )
+    {
+        cout << "Group does not exist: " << grp << endl;
+        cout << "You need to: groupadd " << grp << endl;
+        return false;
+    }
 
-        if ( setuid( user->pw_uid ) < 0 )
-        {
-            cout << "Could not change user to: " << usr << endl;
-            return false;
-        }
+#ifdef HAVE_INITGROUPS
+    if ( initgroups( usr.c_str(), user->pw_gid ) )
+    {
+        cout << "Group initialization failed (initgroups)" << endl;
+        return false;
+    }
+#else
+#if HAVE_SETGROUPS
+    if ( setgroups(1, &user->pw_gid) )
+    {
+        cout << "Group initialization failed (setgroups)" << endl;
+        return false;
+    }
+#endif
+#endif
+
+    if ( setgid( my_group->gr_gid ) < 0 )
+    {
+        cout << "Could not change group to: " << grp << endl;
+        return false;
+    }
+
+    if ( setuid( user->pw_uid ) < 0 )
+    {
+        cout << "Could not change user to: " << usr << endl;
+        return false;
     }
 
     return true;
 }
 
+string GetUser()
+{
+    struct passwd *user = getpwuid( geteuid() );
+    if ( user == NULL ) return "<error>";
+    return (string)user->pw_name;
+}
+
+string GetGroup()
+{
+    struct group *my_group = getgrgid( getegid() );
+    if ( my_group == NULL ) return "<error>";
+    return (string)my_group->gr_name;
+}
 
 bool WritePidFile( pid_t havp_pid )
 {

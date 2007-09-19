@@ -30,7 +30,7 @@ bool ClamLibScanner::InitDatabase()
     LogFile::ErrorMessage("ClamAV: Using database directory: %s\n", dbdir);
 
 #ifdef CL_DB_STDOPT
-    if ( (ret = cl_load(dbdir, &root, &no, CL_DB_STDOPT)) != 0 )
+    if ( (ret = cl_load(dbdir, &root, &no, 0)) != 0 )
 #else
     if ( (ret = cl_loaddbdir(dbdir, &root, &no)) != 0 )
 #endif
@@ -70,7 +70,7 @@ int ClamLibScanner::ReloadDatabase()
         cl_settempdir(Params::GetConfigString("TEMPDIR").c_str(), 0);
 
 #ifdef CL_DB_STDOPT
-        if ( (ret = cl_load(dbdir, &root, &no, CL_DB_STDOPT)) != 0 )
+        if ( (ret = cl_load(dbdir, &root, &no, 0)) != 0 )
 #else
         if ( (ret = cl_loaddbdir(dbdir, &root, &no)) != 0 )
 #endif
@@ -109,7 +109,11 @@ string ClamLibScanner::Scan( const char *FileName )
     int ret = cl_scanfile(FileName, &virname, NULL, root, &limits, scanopts);
 
     //Clean?
+#ifdef CL_ERAR
     if ( ret == CL_CLEAN || ret == CL_ERAR )
+#else
+    if ( ret == CL_CLEAN )
+#endif
     {
         ScannerAnswer = "0Clean";
         return ScannerAnswer;

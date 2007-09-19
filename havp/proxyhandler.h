@@ -57,6 +57,7 @@ int ParentPort;
 int MaxDownloadSize;
 int KeepBackTime;
 int TricklingTime;
+unsigned int TricklingBytes;
 int KeepBackBuffer;
 
 int TransferredHeader;

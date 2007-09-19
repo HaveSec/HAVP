@@ -159,7 +159,7 @@ string AvastScanner::Scan( const char *FileName )
             }
         }
     }
-    while ( MatchBegin( Response, "221", 3 ) == false );
+    while ( Response != "" && MatchBegin( Response, "221", 3 ) == false );
     
     //Connection will be closed
     AvastSocket.Close();

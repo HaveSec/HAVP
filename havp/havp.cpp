@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
     if ( LogFile::InitLogFiles(Params::GetConfigString("ACCESSLOG").c_str(), Params::GetConfigString("ERRORLOG").c_str()) == false )
     {
         cout << "Could not open logfiles!" << endl;
-        cout << "Invalid permissions? Maybe you need: chown " << Params::GetConfigString("USER") << " " << Params::GetConfigString("ACCESSLOG").substr(0, Params::GetConfigString("ACCESSLOG").rfind("/")) << endl;
+        cout << "Invalid permissions? Maybe you need: chown " << GetUser() << " " << Params::GetConfigString("ACCESSLOG").substr(0, Params::GetConfigString("ACCESSLOG").rfind("/")) << endl;
         cout << "Exiting.." << endl;
         exit(1);
     }
@@ -101,8 +101,7 @@ int main(int argc, char *argv[])
     LogFile::ErrorMessage("=== Mandatory locking disabled! KEEPBACK settings not used!\n");
 #endif
 
-    LogFile::ErrorMessage("Change to user %s\n", Params::GetConfigString("USER").c_str());
-    LogFile::ErrorMessage("Change to group %s\n", Params::GetConfigString("GROUP").c_str());
+    LogFile::ErrorMessage("Running as user: %s, group: %s\n", GetUser().c_str(), GetGroup().c_str());
 
     //Create lists
     if ( Whitelist.CreateURLList( Params::GetConfigString("WHITELIST") ) == false )
@@ -120,7 +119,7 @@ int main(int argc, char *argv[])
 
     if ( Params::GetConfigString("PARENTPROXY") != "" )
     {
-        LogFile::ErrorMessage("Use parent proxy: %s %d\n", Params::GetConfigString("PARENTPROXY").c_str(), Params::GetConfigInt("PARENTPORT"));
+        LogFile::ErrorMessage("Use parent proxy: %s:%d\n", Params::GetConfigString("PARENTPROXY").c_str(), Params::GetConfigInt("PARENTPORT"));
     }
 
     if ( Params::GetConfigBool("TRANSPARENT") )

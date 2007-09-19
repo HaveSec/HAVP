@@ -140,7 +140,11 @@ If you choose to use clamd (which is not recommended as library support has
 less overhead), you need to enable AllowSupplementaryGroups in clamd.conf,
 and add clamav user to havp group.
 
-Remember to have freshclam running.
+
+
+== NOTICE: ==
+You must check your antivirus license before using HAVP with commercial
+scanners. Usage might not be allowed. We do not give any warranty!
 
 
 Kaspersky 
@@ -151,8 +155,6 @@ Server package.
 
 You should set ReportLevel=1 at [aveserver.report] section, so log will not
 fill disk.
-
-Daemon is required to be running.
 
 
 Trend Micro (Trophie)
@@ -181,13 +183,11 @@ Recommended changes to avg.conf:
  # Raise number of daemons atleast equal to SERVERNUMBER/MAXSERVERS
  numOfDaemons = xx 
 
-Daemon is required to be running. 
-
 
 F-Prot 
 ------
 
-Daemon is required to be running.
+Supported.
 
 
 NOD32
@@ -195,8 +195,6 @@ NOD32
 
 Tested with Linux Mail Server and Linux File Server packages.
 File Server version can not display virus names.
-
-Daemon is required to be running.
 
 
 Sophos (Sophie)
@@ -207,8 +205,6 @@ http://www.clanfield.info/sophie/
 
 Change user or group to havp user in sophie.cfg, so it can read tempfiles.
 Also change maxproc value to atleast SERVERNUMBER/MAXSERVERS value!
-
-Sophie daemon is required to be running.
 
 
 Avast!
@@ -226,13 +222,20 @@ Recommended changes to avastd.conf:
  testall = 1
  testfull = 0
 
-Daemon is required to be running.
-
 
 Arcavir
 -------
 
 Start arcavird with enough processes, like "arcavird 16".
 
-Daemon is required to be running.
+
+DrWeb
+-----
+
+Recommended changes to drweb32.ini: 
+
+; Raise number to atleast equal of SERVERNUMBER 
+MaxChildren = xx 
+PreFork = Yes
+
 

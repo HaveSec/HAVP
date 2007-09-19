@@ -57,6 +57,7 @@ void Params::SetDefaults()
     SetConfig("KEEPBACKBUFFER",	"200000");
     SetConfig("KEEPBACKTIME",	"5");
     SetConfig("TRICKLING",	"30");
+    SetConfig("TRICKLINGBYTES",	"1");
     SetConfig("WHITELISTFIRST",	"true");
     SetConfig("WHITELIST",	WHITELISTFILE);
     SetConfig("BLACKLIST",	BLACKLISTFILE);
@@ -81,7 +82,7 @@ void Params::SetDefaults()
         SetConfig("CLAMBLOCKBROKEN","false");
         SetConfig("CLAMBLOCKMAX","false");
         SetConfig("CLAMBLOCKENCRYPTED","false");
-        SetConfig("CLAMMAXFILES","1000");
+        SetConfig("CLAMMAXFILES","50");
         SetConfig("CLAMMAXFILESIZE","10");
         SetConfig("CLAMMAXRECURSION","8");
         SetConfig("CLAMMAXRATIO","250");
@@ -97,11 +98,12 @@ void Params::SetDefaults()
     SetConfig("ENABLEFPROT","false");
         SetConfig("FPROTPORT","10200");
         SetConfig("FPROTSERVER","127.0.0.1");
+        SetConfig("FPROTOPTIONS","");
     SetConfig("ENABLENOD32","false");
         SetConfig("NOD32SOCKET","/tmp/nod32d.sock");
         SetConfig("NOD32VERSION","25");
     SetConfig("ENABLETROPHIE","false");
-        SetConfig("TROPHIEMAXFILES","1000");
+        SetConfig("TROPHIEMAXFILES","50");
         SetConfig("TROPHIEMAXFILESIZE","10");
         SetConfig("TROPHIEMAXRATIO","250");
     SetConfig("ENABLESOPHIE","false");
@@ -112,6 +114,12 @@ void Params::SetDefaults()
         SetConfig("AVASTPORT","5036");
     SetConfig("ENABLEARCAVIR","false");
         SetConfig("ARCAVIRSOCKET","/var/run/arcavird.socket");
+    SetConfig("ENABLEDRWEB","false");
+        SetConfig("DRWEBSOCKET","/var/drweb/run/.daemon");
+        SetConfig("DRWEBSERVER","");
+        SetConfig("DRWEBPORT","3000");
+        SetConfig("DRWEBHEURISTIC","true");
+        SetConfig("DRWEBMALWARE","true");
 }
 
 bool Params::ReadConfig( string file )
@@ -410,6 +418,11 @@ bool Params::TestConfig()
     if ( Params::GetConfigString("PARENTPROXY") != "" && Params::GetConfigInt("PARENTPORT") < 1 )
     {
         cout << "Invalid Config: Invalid PARENTPROXY/PARENTPORT" << endl;
+        return false;
+    }
+    if ( Params::GetConfigInt("TRICKLING") > 0 && Params::GetConfigInt("TRICKLINGBYTES") < 1 )
+    {
+        cout << "Invalid Config: TRICKLINGBYTES needs to be greater than 0" << endl;
         return false;
     }
 

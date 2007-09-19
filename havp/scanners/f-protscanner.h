@@ -29,11 +29,20 @@ int ServerPort;
 
 string ScannerCmd;
 
-SocketHandler FProtSocket;
+SocketHandler Scanner;
 time_t LastError;
 
 string ScannerAnswer;
 char Ready[2];
+
+bool Connected;
+int Version;
+string Opts;
+
+string ScanV6( const char *FileName );
+string ScanV4( const char *FileName );
+int TestVersion();
+bool ConnectScanner();
 
 public:
 
@@ -41,6 +50,7 @@ bool InitDatabase();
 int ReloadDatabase();
 void FreeDatabase();
 string Scan( const char *FileName );
+void CloseSocket();
 
 FProtScanner();
 ~FProtScanner();

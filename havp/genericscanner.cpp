@@ -33,7 +33,8 @@ bool GenericScanner::StartScanning( int fromhandler, int tohandler, const char *
         
         if ( fd < 0 )
         {
-            LogFile::ErrorMessage("Could not open tempfile: %s\n", strerror(errno));
+            LogFile::ErrorMessage("Could not open tempfile: %s %s\n", TempFileName, strerror(errno));
+            break;
         }
         else
         {

@@ -196,11 +196,12 @@ string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, bool UsePar
         header += "X-Forwarded-For: ";
         header += GetIP();
         header += "\r\n";
+
+        header += "Via: 1.0 HAVP";
+        header += via;
+        header += "\r\n";
     }
 
-    header += "Via: 1.0 HAVP";
-    header += via;
-    header += "\r\n";
 
     return header;
 }
@@ -332,7 +333,7 @@ int ConnectionToBrowser::GetHostAndPortOfHostLine( string &HostLineT )
     {
         Host = HostwithPort.substr( 0, PositionPort );
 
-        if ( Host.length() > 67 )
+        if ( Host.length() > 256 )
         {
             return -210;
         }
@@ -384,7 +385,7 @@ int ConnectionToBrowser::GetHostAndPortOfRequest( string &RequestT, string::size
                 {
                     Host = HostwithPort.substr( 0, Begin );
 
-                    if (Host.length() > 67)
+                    if (Host.length() > 256)
                     {
                         return -210;
                     }
@@ -561,7 +562,7 @@ int ConnectionToBrowser::GetHostAndPortOfRequest( string &RequestT, string::size
     }
 
     //Sanity check - TODO: Config variable for allowed ports?
-    if ( Host.length() > 73 )
+    if ( Host.length() > 256 )
     {
         return -210;
     }
@@ -651,7 +652,7 @@ bool ConnectionToBrowser::RewriteHost()
 
 void ConnectionToBrowser::ClearVars()
 {
-    RequestProtocol = RequestType = Request = Host = IP = FtpUser = FtpPass = UserAgent = "";
+    RequestProtocol = RequestType = Request = Host = IP = FtpUser = FtpPass = UserAgent = CompleteRequest = "";
     Port = ContentLength = -1;
     IsKeepAlive = ProxyConnection = IsStreamAgent = false;
 }
