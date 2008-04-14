@@ -41,8 +41,11 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <time.h>
+#include <cstdlib>
 
 extern char TempFileName[MAXSCANTEMPFILELENGTH+1];
 extern int fd_tempfile;
@@ -222,6 +225,9 @@ bool ScannerHandler::CreateScanners( SocketHandler &ProxyServerT )
                 LogFile::ErrorMessage("Could not close scanner pipe: %s\n", strerror(errno));
                 exit(1);
             }
+
+            //Make sure each child has unique random seed, atleast ClamAV needs it
+            srand(getpid() ^ time((time_t *) 0));
 
             //Enter scanning loop, pass used pipe fds and filename
             VirusScanner[i]->StartScanning( sh_to_sc[0], sc_to_sh[1], TempFileName );
@@ -590,9 +596,17 @@ int ScannerHandler::GetAnswer()
     }
 
     //Return error only if all scanners had one and we want errors
-    if ( (ErrorMsg.size() == (unsigned int)totalscanners) && Params::GetConfigBool("FAILSCANERROR") )
+    if ( ErrorMsg.size() == (unsigned int)totalscanners )
     {
-        return 2;
+        string Errors = ErrorMsg[0];
+        for ( unsigned int i = 1; i < ErrorMsg.size(); ++i ) { Errors += ", " + ErrorMsg[i]; }
+        LogFile::ErrorMessage("Scanner errors: %s (lasturl: %s)\n", Errors.c_str(), LastRequestURL.c_str());
+
+        if ( Params::GetConfigBool("FAILSCANERROR") )
+        {
+            return 2;
+        }
+
     }
 
     //It's clean.. hopefully

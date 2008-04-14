@@ -63,6 +63,10 @@ int KeepBackBuffer;
 int TransferredHeader;
 long long TransferredBody;
 
+bool DontLockBINHEX;
+bool DontLockPDF;
+bool DontLockZIP;
+
 bool ProxyMessage( int CommunicationAnswerT, string Answer );
 int CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff );
 int CommunicationFTP( ScannerHandler &Scanners, bool ScannerOff );

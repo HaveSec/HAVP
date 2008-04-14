@@ -27,6 +27,8 @@
 #include <fcntl.h>
 #include <syslog.h>
 #include <map>
+#include <cstdlib>
+#include <cstring>
 
 #define LOGSTRINGLENGTH 1000
 

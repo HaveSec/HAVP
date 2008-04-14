@@ -195,7 +195,14 @@ ClamLibScanner::ClamLibScanner()
     limits.maxfiles = Params::GetConfigInt("CLAMMAXFILES");
     limits.maxfilesize = 1048576 * Params::GetConfigInt("CLAMMAXFILESIZE");
     limits.maxreclevel = Params::GetConfigInt("CLAMMAXRECURSION");
+
+// Clamav 0.93+ has this defined, maxratio deprecated
+#ifdef CL_DB_CVDNOTMP
+    limits.maxscansize = 1048576 * Params::GetConfigInt("CLAMMAXSCANSIZE");
+#else
     limits.maxratio = Params::GetConfigInt("CLAMMAXRATIO");
+#endif
+
     limits.archivememlim = 0;
 
     ScannerAnswer.reserve(100);

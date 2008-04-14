@@ -45,10 +45,11 @@ REMOVETHISLINE deleteme
 # For performance reasons several instances of HAVP have to run.
 # Specify how many servers (child processes) are simultaneously
 # listening on port PORT for a connection. Minimum value should be
-# the peak requests-per-second expected + 5 for headroom.
+# the peak requests-per-second expected + 5 for headroom. For best
+# performance, you should have atleast 1 CPU core per 16 processes.
 #
 # For single user home use, 8 should be minimum.
-# For 500 users corporate use, start at 40.
+# For 500+ users corporate use, start at 40.
 #
 # Value can and should be higher than recommended. Memory and
 # CPU usage is only affected by the number of concurrent requests.
@@ -346,6 +347,23 @@ REMOVETHISLINE deleteme
 # STREAMSCANSIZE 20000
 
 #
+# Disable mandatory locking (dynamic scanning) for certain file types.
+# This is intended for fixing cases where a scanner forces use of mmap()
+# call. Mandatory locking might not allow this, so you could get errors
+# regarding memory allocation or I/O. You can test the "None" option
+# anyway, as it might even work depending on your OS (some Linux seems
+# to allow mand+mmap).
+# 
+# Allowed values:
+#   None
+#   ClamAV:BinHex  (mmap forced in all versions, no ETA for fix)
+#   ClamAV:PDF     (mmap forced in all versions, no ETA for fix)
+#   ClamAV:ZIP     (mmap forced in 0.93.x, should work in 0.94)
+#
+# Default:
+# DISABLELOCKINGFOR ClamAV:BinHex ClamAV:PDF ClamAV:ZIP
+
+#
 # Whitelist specific viruses by case-insensitive substring match.
 # For example, "Oversized." and "Encrypted." are good candidates,
 # if you can't disable those checks any other way.
@@ -382,14 +400,22 @@ ENABLECLAMLIB false
 # Default:
 # CLAMBLOCKMAX false
 
-# Scanning limits _inside_ archives (filesize = MB):
-# Read clamd.conf for more info. Maxfiles is good performance
-# setting, by default only first 50 files are scanned.
+# Scanning limits?
+# You can find some additional info from documentation or clamd.conf
 #
-# Default:
+# Stop when this many total bytes scanned (MB) (only for 0.93+ !)
+# CLAMMAXSCANSIZE 20
+#
+# Stop when this many files have been scanned
 # CLAMMAXFILES 50
-# CLAMMAXFILESIZE 10
+#
+# Don't scan files over this size (MB)
+# CLAMMAXFILESIZE 100
+#
+# Maximum archive recursion
 # CLAMMAXRECURSION 8
+#
+# Maximum compression ratio for a file (setting deprecated in 0.93+ !)
 # CLAMMAXRATIO 250
 
 
@@ -540,8 +566,17 @@ ENABLEARCAVIR false
 
 # Path to arcavird socket
 #
+# For version 2008, default socket is /var/run/arcad.ctl
+#
 # Default:
 # ARCAVIRSOCKET /var/run/arcavird.socket
+
+# Used Arcavir version
+#  2007 = Version 2007 and earlier
+#  2008 = Version 2008 and later
+#
+# Default:
+# ARCAVIRVERSION 2007
 
 
 #####

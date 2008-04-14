@@ -30,6 +30,8 @@
 #include <errno.h>
 #include <iostream>
 #include <fstream>
+#include <cstdlib>
+#include <cstring>
 
 extern char TempFileName[MAXSCANTEMPFILELENGTH+1];
 extern int fd_tempfile;

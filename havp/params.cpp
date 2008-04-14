@@ -24,6 +24,7 @@
 #include <arpa/inet.h>
 #include <iostream>
 #include <fstream>
+#include <cstdlib>
 
 #ifndef INADDR_NONE
 #define INADDR_NONE ((unsigned long) -1)
@@ -76,14 +77,16 @@ void Params::SetDefaults()
     SetConfig("MAXDOWNLOADSIZE","0");
     SetConfig("SCANNERTIMEOUT",	"10");
     SetConfig("IGNOREVIRUS",	"");
+    SetConfig("DISABLELOCKINGFOR","ClamAV:BinHex ClamAV:PDF ClamAV:ZIP");
 //SCANNERS
     SetConfig("ENABLECLAMLIB","false");
         SetConfig("CLAMDBDIR","");
         SetConfig("CLAMBLOCKBROKEN","false");
         SetConfig("CLAMBLOCKMAX","false");
         SetConfig("CLAMBLOCKENCRYPTED","false");
+        SetConfig("CLAMMAXSCANSIZE","20");
         SetConfig("CLAMMAXFILES","50");
-        SetConfig("CLAMMAXFILESIZE","10");
+        SetConfig("CLAMMAXFILESIZE","100");
         SetConfig("CLAMMAXRECURSION","8");
         SetConfig("CLAMMAXRATIO","250");
     SetConfig("ENABLECLAMD","false");
@@ -114,6 +117,7 @@ void Params::SetDefaults()
         SetConfig("AVASTPORT","5036");
     SetConfig("ENABLEARCAVIR","false");
         SetConfig("ARCAVIRSOCKET","/var/run/arcavird.socket");
+        SetConfig("ARCAVIRVERSION","2007");
     SetConfig("ENABLEDRWEB","false");
         SetConfig("DRWEBSOCKET","/var/drweb/run/.daemon");
         SetConfig("DRWEBSERVER","");

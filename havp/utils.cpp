@@ -21,6 +21,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <time.h>
+#include <cstring>
 
 string UpperCase( string CaseString )
 {

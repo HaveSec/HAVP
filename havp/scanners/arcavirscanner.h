@@ -26,11 +26,18 @@ private:
 
 string ScannerCmd;
 
-SocketHandler ArcavirSocket;
+SocketHandler Scanner;
 time_t LastError;
 
 string ScannerAnswer;
 char Ready[2];
+
+bool Connected;
+int Version;
+
+string ScanV2007( const char *FileName );
+string ScanV2008( const char *FileName );
+bool ConnectScanner();
 
 public:
 
@@ -38,6 +45,7 @@ bool InitDatabase();
 int ReloadDatabase();
 void FreeDatabase();
 string Scan( const char *FileName );
+void CloseSocket();
 
 ArcavirScanner();
 ~ArcavirScanner();

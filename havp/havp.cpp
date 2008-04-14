@@ -32,6 +32,7 @@
 #include <time.h>
 #include <errno.h>
 #include <iostream>
+#include <cstdlib>
 
 URLList Whitelist;
 URLList Blacklist;

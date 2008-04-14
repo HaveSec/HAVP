@@ -92,9 +92,9 @@ bool HTTPHandler::ReadHeader( string &headerT )
         received += read;
 
         //Too big header
-        if ( received > 20480 )
+        if ( received > MAXHTTPHEADERLENGTH )
         {
-            LogFile::ErrorMessage("Too large header received (>20kB)\n");
+            LogFile::ErrorMessage("Too large header received (>%d)\n", MAXHTTPHEADERLENGTH);
             return false;
         }
 

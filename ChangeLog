@@ -1,4 +1,14 @@
 
+*HAVP 0.88 released
+ - ClamAV library 0.93 support (recompile needed, new option CLAMMAXSCANSIZE)
+ - CLAMMAXFILESIZE default is now 100MB (so 0.93 even starts scanning big files)
+ - Fix random seed issue (ClamAV generated some temporary file errors)
+ - Added DISABLELOCKINGFOR config (fix for ZIP handling in ClamAV 0.93)
+ - Arcavir version 2008 support (set ARCAVIRVERSION)
+ - Log scanner errors to errorlog
+ - Relaxed SSL/CONNECT port limits
+   (It is _not_ recommended to use --enable-ssl-tunnel, you should use Squid)
+
 *HAVP 0.87 released
  - DrWeb scanner support
  - F-Prot support for v6.0 added (also check FPROTOPTIONS)

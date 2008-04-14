@@ -392,17 +392,19 @@ int ConnectionToBrowser::GetHostAndPortOfRequest( string &RequestT, string::size
 
                     string PortString = HostwithPort.substr( Begin );
 
-                    //Normally only 443 and 563 are allowed ports
-                    if ( PortString != ":443" && PortString != ":563" )
-                    {
-                        return -211;
-                    }
-
                     if ( sscanf(PortString.c_str(), ":%d", &Port) == 1 )
                     {
                         Request = HostwithPort;
 
-                        return 0;
+                        //If you want more control, edit or use Squid in front
+                        if ( Port >= 80 && Port <= 65535 )
+                        {
+                            return 0;
+                        }
+                        else
+                        {
+                            return -211;
+                        }
                     }
                 }
             }
