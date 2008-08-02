@@ -201,7 +201,10 @@ string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, bool UsePar
         header += via;
         header += "\r\n";
     }
-
+    else
+    {
+        header += "Via: 1.0 PROXY\r\n";
+    }
 
     return header;
 }

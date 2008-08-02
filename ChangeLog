@@ -1,4 +1,8 @@
 
+*HAVP 0.89 released
+ - Fix possible retry loop and hang (thanks to Peter Warasin @ endian.it)
+ - Always send Via: header, fixes some IIS problems (e.g. MSNBC)
+
 *HAVP 0.88 released
  - ClamAV library 0.93 support (recompile needed, new option CLAMMAXSCANSIZE)
  - CLAMMAXFILESIZE default is now 100MB (so 0.93 even starts scanning big files)

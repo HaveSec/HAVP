@@ -623,6 +623,7 @@ SocketHandler::SocketHandler()
     my_u_addr.sun_family = AF_LOCAL;
 
     ip_count = 0;
+    ips = 0;
 
     //No socket exists yet
     sock_fd = -1;
