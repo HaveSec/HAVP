@@ -15,37 +15,98 @@
  *                                                                         *
  ***************************************************************************/
 
+extern int LL;
+
 #include "clamlibscanner.h"
 
 
 bool ClamLibScanner::InitDatabase()
 {
-    unsigned int no = 0;
+    unsigned int sigs = 0;
     int ret;
+    if (LL>2) cl_debug();
 
-    root = NULL;
+#ifdef CL_INIT_DEFAULT
+    if ( (ret = cl_init(CL_INIT_DEFAULT)) != CL_SUCCESS )
+    {
+        printf("ClamAV: cl_init() error: %s\n", cl_strerror(ret));
+        return false;
+    }
+    if ( !(engine = cl_engine_new()) )
+    {
+        printf("ClamAV: cl_engine_new() failed\n");
+        return false;
+    }
 
+    // Limits
+    if ( (ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANSIZE, (long long)1048576 * Params::GetConfigInt("CLAMMAXSCANSIZE"))) )
+    {
+        LogFile::ErrorMessage("ClamAV: set CL_ENGINE_MAX_SCANSIZE failed: %s\n", cl_strerror(ret));
+        cl_engine_free(engine);
+        return false;
+    }
+
+    if ( (ret = cl_engine_set_num(engine, CL_ENGINE_MAX_FILESIZE, (long long)1048576 * Params::GetConfigInt("CLAMMAXFILESIZE"))) )
+    {
+        LogFile::ErrorMessage("ClamAV: set CL_ENGINE_MAX_FILESIZE failed: %s\n", cl_strerror(ret));
+        cl_engine_free(engine);
+        return false;
+    }
+
+    if ( (ret = cl_engine_set_num(engine, CL_ENGINE_MAX_FILES, (long long)Params::GetConfigInt("CLAMMAXFILES"))) )
+    {
+        LogFile::ErrorMessage("ClamAV: set CL_ENGINE_MAX_FILES failed: %s\n", cl_strerror(ret));
+        cl_engine_free(engine);
+        return false;
+    }
+
+    if ( (ret = cl_engine_set_num(engine, CL_ENGINE_MAX_RECURSION, (long long)Params::GetConfigInt("CLAMMAXRECURSION"))) )
+    {
+        LogFile::ErrorMessage("ClamAV: set CL_ENGINE_MAX_RECURSION failed: %s\n", cl_strerror(ret));
+        cl_engine_free(engine);
+        return false;
+    }
+
+    // Tempdir
+    if ( (ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, Params::GetConfigString("TEMPDIR").c_str())) )
+    {
+        LogFile::ErrorMessage("ClamAV: set CL_ENGINE_TMPDIR failed: %s\n", cl_strerror(ret));
+        cl_engine_free(engine);
+        return false;
+    }
+
+#else
+    engine = NULL;
     cl_settempdir(Params::GetConfigString("TEMPDIR").c_str(), 0);
+#endif
 
     LogFile::ErrorMessage("ClamAV: Using database directory: %s\n", dbdir);
 
-#ifdef CL_DB_STDOPT
-    if ( (ret = cl_load(dbdir, &root, &no, 0)) != 0 )
+#ifdef CL_INIT_DEFAULT
+    if ( (ret = cl_load(dbdir, engine, &sigs, 0)) != CL_SUCCESS )
 #else
-    if ( (ret = cl_loaddbdir(dbdir, &root, &no)) != 0 )
+    if ( (ret = cl_load(dbdir, &engine, &sigs, 0)) != 0 )
 #endif
     {
         LogFile::ErrorMessage("ClamAV: Could not load database: %s\n", cl_strerror(ret));
         return false;
     }
 
-    LogFile::ErrorMessage("ClamAV: Loaded %d signatures (engine %s)\n", no, cl_retver());
+    LogFile::ErrorMessage("ClamAV: Loaded %d signatures (engine %s)\n", sigs, cl_retver());
 
     //Build engine
-    if ( (ret = cl_build(root)) != 0 )
+#ifdef CL_INIT_DEFAULT
+    if ( (ret = cl_engine_compile(engine)) != CL_SUCCESS )
+#else
+    if ( (ret = cl_build(engine)) != 0 )
+#endif
     {
         LogFile::ErrorMessage("ClamAV: Database initialization error: %s\n", cl_strerror(ret));
-        cl_free(root);
+#ifdef CL_INIT_DEFAULT
+        cl_engine_free(engine);
+#else
+        cl_free(engine);
+#endif
         return false;
     }
 
@@ -62,31 +123,67 @@ int ClamLibScanner::ReloadDatabase()
 
     if ( ret == 1 )
     {
-        unsigned int no = 0;
+        unsigned int sigs = 0;
+        struct cl_settings *settings = NULL;
 
-        cl_free(root);
-        root = NULL;
-
-        cl_settempdir(Params::GetConfigString("TEMPDIR").c_str(), 0);
-
-#ifdef CL_DB_STDOPT
-        if ( (ret = cl_load(dbdir, &root, &no, 0)) != 0 )
+#ifdef CL_INIT_DEFAULT
+        if ( engine )
+        {
+            settings = cl_engine_settings_copy(engine);
+            if ( !settings ) LogFile::ErrorMessage("ClamAV: cl_engine_settings_copy() failed\n");
+            cl_engine_free(engine);
+        }
+        if ( !(engine = cl_engine_new()) )
+        {
+            printf("ClamAV: cl_engine_new() failed\n");
+            return false;
+        }
+        if ( settings )
+        {
+            if ( (ret = cl_engine_settings_apply(engine, settings)) != CL_SUCCESS )
+            {
+                LogFile::ErrorMessage("ClamAV: cl_engine_settings_apply() failed: %s\n", cl_strerror(ret));
+            }
+            cl_engine_settings_free(settings);
+        }
 #else
-        if ( (ret = cl_loaddbdir(dbdir, &root, &no)) != 0 )
+        cl_free(engine);
+        engine = NULL;
+        cl_settempdir(Params::GetConfigString("TEMPDIR").c_str(), 0);
+#endif
+
+
+#ifdef CL_INIT_DEFAULT
+        if ( (ret = cl_load(dbdir, engine, &sigs, 0)) != CL_SUCCESS )
+#else
+        if ( (ret = cl_load(dbdir, &engine, &sigs, 0)) != 0 )
 #endif
         {
             LogFile::ErrorMessage("ClamAV: Could not reload database: %s\n", cl_strerror(ret));
+#ifdef CL_INIT_DEFAULT
+            cl_engine_free(engine);
+#else
+            cl_free(engine);
+#endif
             return -1;
         }
 
-        if ( (ret = cl_build(root)) != 0 )
+#ifdef CL_INIT_DEFAULT
+        if ( (ret = cl_engine_compile(engine)) != CL_SUCCESS )
+#else
+        if ( (ret = cl_build(engine)) != 0 )
+#endif
         {
             LogFile::ErrorMessage("ClamAV: Database initialization error: %s\n", cl_strerror(ret));
-            cl_free(root);
+#ifdef CL_INIT_DEFAULT
+            cl_engine_free(engine);
+#else
+            cl_free(engine);
+#endif
             return -1;
         }
 
-        LogFile::ErrorMessage("ClamAV: Reloaded %d signatures (engine %s)\n", no, cl_retver());
+        LogFile::ErrorMessage("ClamAV: Reloaded %d signatures (engine %s)\n", sigs, cl_retver());
 
         cl_statfree(&dbstat);
 
@@ -106,14 +203,14 @@ int ClamLibScanner::ReloadDatabase()
 
 string ClamLibScanner::Scan( const char *FileName )
 {
-    int ret = cl_scanfile(FileName, &virname, NULL, root, &limits, scanopts);
+#ifdef CL_INIT_DEFAULT
+    int ret = cl_scanfile(FileName, &virname, NULL, engine, scanopts);
+#else
+    int ret = cl_scanfile(FileName, &virname, NULL, engine, &limits, scanopts);
+#endif
 
     //Clean?
-#ifdef CL_ERAR
-    if ( ret == CL_CLEAN || ret == CL_ERAR )
-#else
     if ( ret == CL_CLEAN )
-#endif
     {
         ScannerAnswer = "0Clean";
         return ScannerAnswer;
@@ -143,7 +240,15 @@ string ClamLibScanner::Scan( const char *FileName )
 
 void ClamLibScanner::FreeDatabase()
 {
-    cl_free(root);
+#ifdef CL_INIT_DEFAULT
+    int ret = cl_engine_free(engine);
+    if ( ret != CL_SUCCESS )
+    {
+        LogFile::ErrorMessage("ClamAV: cl_engine_free() failed: %s\n", cl_strerror(ret));
+    }
+#else
+    cl_free(engine);
+#endif
 }
 
 
@@ -191,19 +296,14 @@ ClamLibScanner::ClamLibScanner()
     }
 
     //Set up archive limits
+#ifndef CL_INIT_DEFAULT
     memset(&limits, 0, sizeof(limits));
     limits.maxfiles = Params::GetConfigInt("CLAMMAXFILES");
     limits.maxfilesize = 1048576 * Params::GetConfigInt("CLAMMAXFILESIZE");
     limits.maxreclevel = Params::GetConfigInt("CLAMMAXRECURSION");
-
-// Clamav 0.93+ has this defined, maxratio deprecated
-#ifdef CL_DB_CVDNOTMP
     limits.maxscansize = 1048576 * Params::GetConfigInt("CLAMMAXSCANSIZE");
-#else
-    limits.maxratio = Params::GetConfigInt("CLAMMAXRATIO");
-#endif
-
     limits.archivememlim = 0;
+#endif
 
     ScannerAnswer.reserve(100);
 }

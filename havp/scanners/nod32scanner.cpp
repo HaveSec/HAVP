@@ -31,12 +31,138 @@ int NOD32Scanner::ReloadDatabase()
 
 string NOD32Scanner::Scan( const char *FileName )
 {
-    if ( Version == 25 )
-    {
-        return ScanV25( FileName );
-    }
+    if ( Version == 25 ) return ScanV25( FileName );
+    if ( Version == 30 ) return ScanV30( FileName );
 
     return ScanV21( FileName );
+}
+
+string NOD32Scanner::ScanV30( const char *FileName )
+{
+    //Connect
+    if ( NOD32Socket.ConnectToSocket( Params::GetConfigString("NOD32SOCKET"), 1 ) == false )
+    {
+        //Prevent log flooding, show error only once per minute
+        if ( (LastError == 0) || (LastError + 60 < time(NULL)) )
+        {
+            LogFile::ErrorMessage("NOD32: Could not connect to scanner! Scanner down?\n");
+            LastError = time(NULL);
+        }
+
+        ScannerAnswer = "2Could not connect to scanner socket";
+        return ScannerAnswer;
+    }
+
+    string Response;
+
+    //Get initial response
+    if ( NOD32Socket.GetLine( Response, "\n\n", 600 ) == false )
+    {
+        NOD32Socket.Close();
+
+        ScannerAnswer = "2Could not read from scanner socket";
+        return ScannerAnswer;
+    }
+
+    //Check greeting
+    if ( MatchBegin( Response, "200", 3 ) == false )
+    {
+        NOD32Socket.Close();
+
+        LogFile::ErrorMessage("NOD32: Invalid greeting from scanner\n");
+        ScannerAnswer = "2Invalid greeting from scanner";
+        return ScannerAnswer;
+    }
+
+    //Send HELO and PARAMS
+    ScannerCmd = "HELO\ncli\nhavp\n\n";
+
+    //Send command
+    if ( NOD32Socket.Send( ScannerCmd ) == false )
+    {
+        NOD32Socket.Close();
+
+        LogFile::ErrorMessage("NOD32: Could not write command to scanner\n");
+        ScannerAnswer = "2Scanner connection failed";
+        return ScannerAnswer;
+    }
+
+    if ( NOD32Socket.GetLine( Response, "\n\n", 600 ) == false )
+    {
+        NOD32Socket.Close();
+
+        LogFile::ErrorMessage("NOD32: Could not write command to scanner\n");
+        ScannerAnswer = "2Scanner connection failed";
+        return ScannerAnswer;
+    }
+
+    if ( MatchBegin( Response, "200", 3 ) == false )
+    {
+        NOD32Socket.Close();
+
+        LogFile::ErrorMessage("NOD32: Invalid response from scanner: %s\n", Response.c_str());
+        ScannerAnswer = "2Invalid response from scanner";
+        return ScannerAnswer;
+    }
+
+    ScannerCmd = "HOPFR\n";
+    ScannerCmd += FileName;
+    ScannerCmd += "\n\nQUIT\n\n";
+
+    //Send command
+    if ( NOD32Socket.Send( ScannerCmd ) == false )
+    {
+        NOD32Socket.Close();
+
+        LogFile::ErrorMessage("NOD32: Could not write command to scanner\n");
+        ScannerAnswer = "2Scanner connection failed";
+        return ScannerAnswer;
+    }
+
+    Response = "";
+
+    if ( NOD32Socket.GetLine( Response, "\n\n", 600 ) == false )
+    {
+        NOD32Socket.Close();
+
+        ScannerAnswer = "2Could not read from scanner socket";
+        return ScannerAnswer;
+    }
+
+    NOD32Socket.Close();
+
+    //Clean
+    if ( MatchBegin( Response, "0", 1 ) )
+    {
+        ScannerAnswer = "0Clean";
+        return ScannerAnswer;
+    }
+
+    //Infected
+    if ( MatchBegin( Response, "3", 1 ) )
+    {
+        string::size_type Position;
+
+        ScannerAnswer = "";
+
+        if ( (Position = Response.find("|")) != string::npos )
+        {
+            string::size_type PositionEnd;
+
+            if ( (PositionEnd = Response.find("|", Position + 1)) != string::npos )
+            {
+                if ( PositionEnd - Position > 1 )
+                    ScannerAnswer = "1" + Response.substr( Position + 1, PositionEnd - Position - 1 );
+            }
+        }
+
+        if ( ScannerAnswer == "" ) ScannerAnswer = "1Unknown";
+        return ScannerAnswer;
+    }
+
+    LogFile::ErrorMessage("NOD32: Unknown response from scanner: %s\n", Response.c_str());
+    ScannerAnswer = "2Unknown scanner response";
+    return ScannerAnswer;
 }
 
 string NOD32Scanner::ScanV25( const char *FileName )
@@ -343,7 +469,7 @@ NOD32Scanner::NOD32Scanner()
     //Assume we have NOD32 v2.5+ for Linux Mail Server by default
     Agent = "cli";
     Version = Params::GetConfigInt("NOD32VERSION");
-    if ( Version != 25 && Version != 21 ) { Version = 25; }
+    if ( Version != 25 && Version != 21 && Version != 30 ) { Version = 25; }
 
     ScannerAnswer.reserve(100);
 }

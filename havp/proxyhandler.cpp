@@ -714,7 +714,8 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
     string Zipheader = "";
 
     //Try to get ZIP header first for large files
-    if ( ContentLengthReference > 1000000
+    if ( (Params::GetConfigBool("PRELOADZIPHEADER") == true)
+         &&  ( ContentLengthReference > 1000000 )
 #ifndef NOMAND
          && ( MaxScanSize == 0 || MaxScanSize > 1000000 )
 #else
@@ -1448,7 +1449,7 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT, string Answer )
 #endif
 
         case 1: //Virus
-            LogFile::AccessMessage("%s %s %d %s %d+%lld VIRUS %s\n", ToBrowser.GetIP().c_str(), ToBrowser.GetRequestType().c_str(), ToServer.GetResponse(), ToBrowser.GetCompleteRequest().c_str(), TransferredHeader, TransferredBody, Answer.c_str());
+            LogFile::VirusMessage("%s %s %d %s %d+%lld VIRUS %s\n", ToBrowser.GetIP().c_str(), ToBrowser.GetRequestType().c_str(), ToServer.GetResponse(), ToBrowser.GetCompleteRequest().c_str(), TransferredHeader, TransferredBody, Answer.c_str());
             SearchReplace( Answer, ", ", "<BR>" );
             message = Answer;
             filename = VIRUS_FOUND;

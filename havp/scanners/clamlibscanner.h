@@ -33,8 +33,12 @@ char Ready[2];
 
 const char *virname;
 
-struct cl_node *root;
+#ifdef CL_INIT_DEFAULT
+struct cl_engine *engine;
+#else
+struct cl_node *engine;
 struct cl_limits limits;
+#endif
 struct cl_stat dbstat;
 char dbdir[255];
 

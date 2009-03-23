@@ -35,6 +35,7 @@ time_t LastError;
 string ScannerAnswer;
 char Ready[2];
 
+string ScanV30( const char *FileName );
 string ScanV25( const char *FileName );
 string ScanV21( const char *FileName );
 

@@ -36,6 +36,7 @@ int LogFile::Access_fd = -1;
 int LogFile::Error_fd = -1;
 bool LogFile::UseSyslog = false;
 int LogFile::SyslogLevel;
+int LogFile::SyslogVirusLevel;
 
 
 //Open access and error logfiles
@@ -48,6 +49,7 @@ bool LogFile::InitLogFiles( const char *AccessLogFileT, const char *ErrorLogFile
 
         UseSyslog = true;
         SyslogLevel = GetSyslogLevel();
+        SyslogVirusLevel = GetSyslogVirusLevel();
 
         openlog(Params::GetConfigString("SYSLOGNAME").c_str(), LOG_CONS | LOG_PID, GetSyslogFacility());
 
@@ -84,6 +86,36 @@ void LogFile::AccessMessage( const char *formatT , ... )
     if ( UseSyslog )
     {
         syslog(SyslogLevel, "%s", str);
+    }
+    else
+    {
+        char strt[LOGSTRINGLENGTH+1];
+        char tmpdate[51];
+
+        time_t now = time(NULL);
+        struct tm TmDate = *localtime(&now);
+        strftime(tmpdate, 50, TIMEFORMAT, &TmDate);
+
+        strncpy(strt, tmpdate, sizeof(tmpdate));
+        strncat(strt, str, LOGSTRINGLENGTH - sizeof(tmpdate) - 2);
+
+        write(Access_fd, strt, strlen(strt));
+    }
+}
+
+//Log virus messages
+void LogFile::VirusMessage( const char *formatT , ... )
+{
+    char str[LOGSTRINGLENGTH+1];
+
+    va_list args;
+    va_start(args, formatT);
+    vsnprintf(str, LOGSTRINGLENGTH, formatT, args);
+    va_end(args);
+
+    if ( UseSyslog )
+    {
+        syslog(SyslogVirusLevel, "%s", str);
     }
     else
     {
@@ -141,11 +173,30 @@ int LogFile::GetSyslogLevel()
     if ( Level == "CRIT" ) return LOG_CRIT;
     if ( Level == "ERR" ) return LOG_ERR;
     if ( Level == "WARNING" ) return LOG_WARNING;
+    if ( Level == "WARN" ) return LOG_WARNING;
     if ( Level == "NOTICE" ) return LOG_NOTICE;
     if ( Level == "INFO" ) return LOG_INFO;
     if ( Level == "DEBUG" ) return LOG_DEBUG;
 
     return LOG_INFO;
+}
+
+int LogFile::GetSyslogVirusLevel()
+{
+    string Level = UpperCase(Params::GetConfigString("SYSLOGVIRUSLEVEL"));
+    SearchReplace( Level, "LOG_", "" );
+
+    if ( Level == "EMERG") return LOG_EMERG;
+    if ( Level == "ALERT" ) return LOG_ALERT;
+    if ( Level == "CRIT" ) return LOG_CRIT;
+    if ( Level == "ERR" ) return LOG_ERR;
+    if ( Level == "WARNING" ) return LOG_WARNING;
+    if ( Level == "WARN" ) return LOG_WARNING;
+    if ( Level == "NOTICE" ) return LOG_NOTICE;
+    if ( Level == "INFO" ) return LOG_INFO;
+    if ( Level == "DEBUG" ) return LOG_DEBUG;
+
+    return LOG_WARNING;
 }
 
 int LogFile::GetSyslogFacility()

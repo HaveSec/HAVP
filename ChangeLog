@@ -1,4 +1,10 @@
 
+*HAVP 0.90 released
+ - ClamAV library 0.95 support (recompile needed)
+ - Support NOD32 version 3 (set NOD32VERSION 30 in config)
+ - Add PRELOADZIPHEADER config (Squid 3.x might not work if enabled)
+ - Add SYSLOGVIRUSLEVEL config
+
 *HAVP 0.89 released
  - Fix possible retry loop and hang (thanks to Peter Warasin @ endian.it)
  - Always send Via: header, fixes some IIS problems (e.g. MSNBC)

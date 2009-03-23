@@ -53,6 +53,7 @@ void Params::SetDefaults()
     SetConfig("SYSLOGNAME",	"havp");
     SetConfig("SYSLOGFACILITY",	"daemon");
     SetConfig("SYSLOGLEVEL",	"info");
+    SetConfig("SYSLOGVIRUSLEVEL","warning");
     SetConfig("SCANIMAGES",	"true");
     SetConfig("MAXSCANSIZE",	"5000000");
     SetConfig("KEEPBACKBUFFER",	"200000");
@@ -68,6 +69,7 @@ void Params::SetDefaults()
     SetConfig("PIDFILE",	PIDFILE);
     SetConfig("TRANSPARENT",	"false");
     SetConfig("RANGE",		"false");
+    SetConfig("PRELOADZIPHEADER","true");
     SetConfig("FORWARDED_IP",	"false");
     SetConfig("X_FORWARDED_FOR","false");
     SetConfig("STREAMUSERAGENT","");
@@ -88,7 +90,6 @@ void Params::SetDefaults()
         SetConfig("CLAMMAXFILES","50");
         SetConfig("CLAMMAXFILESIZE","100");
         SetConfig("CLAMMAXRECURSION","8");
-        SetConfig("CLAMMAXRATIO","250");
     SetConfig("ENABLECLAMD","false");
 	SetConfig("CLAMDSOCKET","/tmp/clamd");
 	SetConfig("CLAMDSERVER","");

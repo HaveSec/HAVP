@@ -31,14 +31,17 @@ static int Access_fd;
 
 static bool UseSyslog;
 static int SyslogLevel;
+static int SyslogVirusLevel;
 
 static int GetSyslogLevel();
+static int GetSyslogVirusLevel();
 static int GetSyslogFacility();
 
 public:
 
 static bool InitLogFiles( const char *AccessLogFileT, const char *ErrorLogFileT );
 static void AccessMessage( const char *formatT, ... );
+static void VirusMessage( const char *formatT, ... );
 static void ErrorMessage( const char *formatT, ... );
    
 };

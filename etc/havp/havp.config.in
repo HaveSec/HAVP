@@ -77,6 +77,7 @@ REMOVETHISLINE deleteme
 # SYSLOGNAME havp
 # SYSLOGFACILITY daemon
 # SYSLOGLEVEL info
+# SYSLOGVIRUSLEVEL warning
 
 #
 # true: Log every request to access log
@@ -250,6 +251,15 @@ REMOVETHISLINE deleteme
 # RANGE false
 
 #
+# Allow HTTP Range request to get the ZIP header first?
+#
+# This allows (partial) scanning of ZIP files that are bigger than
+# MAXSCANSIZE. Scanning is done up to that many bytes into the file.
+#
+# Default:
+# PRELOADZIPHEADER true
+
+#
 # If you really need more performance, you can disable scanning of
 # JPG, GIF and PNG files. These are probably the most common files
 # around, so it will save lots of CPU. But be warned, image exploits
@@ -403,7 +413,7 @@ ENABLECLAMLIB false
 # Scanning limits?
 # You can find some additional info from documentation or clamd.conf
 #
-# Stop when this many total bytes scanned (MB) (only for 0.93+ !)
+# Stop when this many total bytes scanned (MB)
 # CLAMMAXSCANSIZE 20
 #
 # Stop when this many files have been scanned
@@ -414,9 +424,6 @@ ENABLECLAMLIB false
 #
 # Maximum archive recursion
 # CLAMMAXRECURSION 8
-#
-# Maximum compression ratio for a file (setting deprecated in 0.93+ !)
-# CLAMMAXRATIO 250
 
 
 #####
@@ -527,12 +534,16 @@ ENABLENOD32 false
 
 # Path to nod32d socket
 #
+# For 3.0+ version, try /tmp/esets.sock
+#
 # Default:
 # NOD32SOCKET /tmp/nod32d.sock
 
 # Used NOD32 Version
+#
+#  30 = 3.0+
 #  25 = 2.5+
-#  21 = 2.x (try this if 25 doesn't work)
+#  21 = 2.x (very old)
 #
 # Default:
 # NOD32VERSION 25

@@ -196,6 +196,9 @@ NOD32
 Tested with Linux Mail Server and Linux File Server packages.
 File Server version can not display virus names.
 
+For version 3.0+, see settings in /etc/esets/esets.cfg (num_thrd etc). Also
+you want to disable syslogging.
+
 
 Sophos (Sophie)
 ---------------
