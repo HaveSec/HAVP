@@ -171,7 +171,7 @@ not running.
 AVG 
 ---
 
-Recommended changes to avg.conf: 
+Recommended changes to avg.conf (version 7.5): 
 
  [AvgCommon] 
 

@@ -79,7 +79,7 @@ void Params::SetDefaults()
     SetConfig("MAXDOWNLOADSIZE","0");
     SetConfig("SCANNERTIMEOUT",	"10");
     SetConfig("IGNOREVIRUS",	"");
-    SetConfig("DISABLELOCKINGFOR","ClamAV:BinHex ClamAV:PDF ClamAV:ZIP");
+    SetConfig("DISABLELOCKINGFOR","ClamAV:BinHex ClamAV:PDF ClamAV:ZIP AVG:ALL");
 //SCANNERS
     SetConfig("ENABLECLAMLIB","false");
         SetConfig("CLAMDBDIR","");

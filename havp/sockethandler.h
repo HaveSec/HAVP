@@ -38,7 +38,6 @@ private:
 struct sockaddr_un my_u_addr;
 struct sockaddr_in l_addr;
 struct sockaddr_in peer_addr;
-struct in_addr ip_addr;
 struct hostent *server;
 struct timeval Timeout;
 

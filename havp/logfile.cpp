@@ -24,6 +24,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <fcntl.h>
 #include <syslog.h>
 #include <map>

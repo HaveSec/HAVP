@@ -47,10 +47,21 @@ string AVGScanner::Scan( const char *FileName )
         return ScannerAnswer;
     }
 
+    string Response;
+    AVGSocket.Recv( Response, true, 5 );
+
+    if ( MatchSubstr( Response, "220 Ready", -1 ) == false )
+    {
+        AVGSocket.Close();
+        LogFile::ErrorMessage("AVG: Invalid greeting from scanner (%s)\n", Response.c_str());
+        ScannerAnswer = "2Invalid greeting from scanner";
+        return ScannerAnswer;
+    }
+
     //Construct command for scanner
     ScannerCmd = "SCAN ";
     ScannerCmd += FileName;
-    ScannerCmd += "\r\nQUIT\r\n";
+    ScannerCmd += "\r\n";
 
     if ( AVGSocket.Send( ScannerCmd ) == false )
     {
@@ -60,30 +71,32 @@ string AVGScanner::Scan( const char *FileName )
         return ScannerAnswer;
     }
 
-    string Response;
+    Response = "";
     int ret;
 
-    while ( (ret = AVGSocket.Recv( Response, true, 600 )) != 0 )
+    ret = AVGSocket.Recv( Response, true, 600 );
+    if (ret < 0)
     {
-        if (ret < 0)
-        {
-            AVGSocket.Close();
-            LogFile::ErrorMessage("AVG: Could not read scanner response\n");
-            ScannerAnswer = "2Could not read scanner response";
-            return ScannerAnswer;
-        }
+        AVGSocket.Close();
+        LogFile::ErrorMessage("AVG: Could not read scanner response\n");
+        ScannerAnswer = "2Could not read scanner response";
+        return ScannerAnswer;
     }
 
+    string Quit = "QUIT\r\n";
+    AVGSocket.Send( Quit );
+    AVGSocket.Recv( Quit, true, 2 );
     AVGSocket.Close();
 
-    if ( Response.length() < 20 )
+    if ( Response.length() < 5 )
     {
         LogFile::ErrorMessage("AVG: Invalid response from scanner, report to developer (%s)\n", Response.c_str());
         ScannerAnswer = "2Invalid response from scanner";
         return ScannerAnswer;
     }
 
-    if ( MatchSubstr( Response, "\n200 OK", -1 ) )
+    if ( MatchSubstr( Response, "200 ok", -1 )
+         || MatchSubstr( Response, "200 OK", -1 ) )
     {
         ScannerAnswer = "0Clean";
         return ScannerAnswer;
@@ -91,27 +104,37 @@ string AVGScanner::Scan( const char *FileName )
 
     string::size_type Position;
 
-    if ( ( Position = Response.find( "\n403 File" )) != string::npos )
+    if ( ( Position = Response.find( "403 File" )) != string::npos )
     {
         string::size_type PositionEnd, PositionStart;
 
         PositionEnd = Response.find("\n", Position + 10);
-        PositionStart = Response.rfind(" ", PositionEnd);
+        PositionStart = Response.rfind(" ", PositionEnd - 3);
+        string vname = Response.substr( PositionStart + 1, PositionEnd - PositionStart - 2);
+        if (vname.rfind(" ") == vname.length() - 1) vname = vname.substr( 0, vname.length() - 1 );
 
-        ScannerAnswer = "1" + Response.substr( PositionStart + 1, PositionEnd - PositionStart - 2);
+        ScannerAnswer = "1" + vname;
 
         return ScannerAnswer;
     }
 
     //If AVG is reloading patterns, it will give error, just skip it
-    if ( MatchSubstr( Response, "\n406 Error", -1 ) )
+    if ( MatchSubstr( Response, "406 Error", -1 ) )
     {
         ScannerAnswer = "0Clean";
         return ScannerAnswer;
     }
 
+    // Log errors
+    if ( MatchSubstr( Response, "local error", -1 ) )
+    {
+        LogFile::ErrorMessage("AVG: Scanner error: %s\n", Response.c_str());
+        ScannerAnswer = "2Scanner error";
+        return ScannerAnswer;
+    }
+
     //LogFile::ErrorMessage("AVG: Unknown response from scanner, report to developer (%s)\n", Response.c_str());
-    //ScannerAnswer = "2Unknown response from scanner";
+    //ScannerAnswer = "2Unknown response from scanner: " + Response;
     //return ScannerAnswer;
 
     //Just return clean for anything else right now..

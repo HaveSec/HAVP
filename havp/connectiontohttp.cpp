@@ -19,6 +19,8 @@
 #include "logfile.h"
 #include "utils.h"
 
+#include <stdio.h>
+
 extern int LL; //LogLevel
 
 //Prepare Header for Browser

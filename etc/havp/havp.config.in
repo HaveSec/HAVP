@@ -369,9 +369,10 @@ REMOVETHISLINE deleteme
 #   ClamAV:BinHex  (mmap forced in all versions, no ETA for fix)
 #   ClamAV:PDF     (mmap forced in all versions, no ETA for fix)
 #   ClamAV:ZIP     (mmap forced in 0.93.x, should work in 0.94)
+#   AVG:ALL        (AVG 8.5 does not work, uses mmap MAP_SHARED)
 #
 # Default:
-# DISABLELOCKINGFOR ClamAV:BinHex ClamAV:PDF ClamAV:ZIP
+# DISABLELOCKINGFOR ClamAV:BinHex ClamAV:PDF ClamAV:ZIP AVG:ALL
 
 #
 # Whitelist specific viruses by case-insensitive substring match.

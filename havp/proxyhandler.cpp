@@ -688,13 +688,14 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
         //Check if we need to work around ClamAV mmap() handling (for example)
         //These can fail if trying to scan locked file: BinHex, PDF
         //Also Zip files for 0.93
-        if ( (DontLockBINHEX && MatchBegin( BodyTemp, "(This file", 10 )) ||
-             (DontLockPDF && MatchBegin( BodyTemp, "%PDF-", 5 )) ||
-             (DontLockZIP &&
-                 (MatchBegin( BodyTemp, "PK\003\004", 4 ) ||
-                  MatchBegin( BodyTemp, "PK00PK\003\004", 8))
-             )
-           )
+        if ( DontLock ||
+             (
+                 (DontLockBINHEX && MatchBegin( BodyTemp, "(This file", 10 )) ||
+                 (DontLockPDF && MatchBegin( BodyTemp, "%PDF-", 5 )) ||
+                 (DontLockZIP &&
+                     (MatchBegin( BodyTemp, "PK\003\004", 4 ) ||
+                      MatchBegin( BodyTemp, "PK00PK\003\004", 8)) )
+             ) )
         {
             //No partial unlock
             PartlyUnlock = false;
@@ -1596,13 +1597,17 @@ ProxyHandler::ProxyHandler()
 
     Header.reserve(20000);
 
-    string DontLock = UpperCase( Params::GetConfigString("DISABLELOCKINGFOR") );
-    DontLockBINHEX = DontLockPDF = DontLockZIP = false;
+    string DontLockStr = UpperCase( Params::GetConfigString("DISABLELOCKINGFOR") );
+    DontLock = DontLockBINHEX = DontLockPDF = DontLockZIP = false;
     if ( Params::GetConfigBool("ENABLECLAMLIB") || Params::GetConfigBool("ENABLECLAMD") )
     {
-        if ( MatchSubstr( DontLock, "CLAMAV:BINHEX", -1 ) ) DontLockBINHEX = true;
-        if ( MatchSubstr( DontLock, "CLAMAV:PDF", -1 ) ) DontLockPDF = true;
-        if ( MatchSubstr( DontLock, "CLAMAV:ZIP", -1 ) ) DontLockZIP = true;
+        if ( MatchSubstr( DontLockStr, "CLAMAV:BINHEX", -1 ) ) DontLockBINHEX = true;
+        if ( MatchSubstr( DontLockStr, "CLAMAV:PDF", -1 ) ) DontLockPDF = true;
+        if ( MatchSubstr( DontLockStr, "CLAMAV:ZIP", -1 ) ) DontLockZIP = true;
+    }
+    if ( Params::GetConfigBool("ENABLEAVG") )
+    {
+        if ( MatchSubstr( DontLockStr, "AVG:ALL", -1 ) ) DontLock = true;
     }
 }
 

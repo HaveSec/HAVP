@@ -482,34 +482,39 @@ bool SocketHandler::SetDomainAndPort( string domainT, int portT )
     if ( domainT == "" ) return false;
     if ( portT < 1 || portT > 65536 ) return false;
 
-    domainT = domainT.substr(0, 250);
+    int domlen = domainT.length();
+
+    if (domlen > 250) domainT = domainT.substr(0, 250);
     my_s_addr.sin_port = htons(portT);
 
     //IP?
-    if ( inet_aton( domainT.c_str(), &ip_addr ) != 0 )
+    if ( domlen >= 7 && domlen <= 15 && domainT.find_first_not_of("0123456789.") == string::npos )
     {
-        my_s_addr.sin_addr = ip_addr;
-
-        return true;
+        LastHost = "";
+        if ( inet_aton( domainT.c_str(), &my_s_addr.sin_addr ) != 0 ) return true;
+        return false;
     }
+
     //Same host as last time, use next IP
-    else if ( LastHost == domainT )
+    if ( server && LastHost == domainT )
     {
-        if ( ++ip_count == ips ) ip_count = 0;
+        if ( ips == 1 ) return true;
 
-        memcpy(&my_s_addr.sin_addr, server->h_addr_list[ip_count], server->h_length);
+        if ( ++ip_count == ips ) ip_count = 0;
+        memcpy((char *) &my_s_addr.sin_addr.s_addr, server->h_addr_list[ip_count], server->h_length);
 
         return true;
     }
+
     //Resolve host
-    else if ( (server = gethostbyname( domainT.c_str() )) )
+    if ( (server = gethostbyname( domainT.c_str() )) )
     {
         //Count IPs
-        for ( ips = 0; server->h_addr_list[ips] != NULL && ips != 16; ips++ );
+        for ( ips = 0; server->h_addr_list[ips] != NULL && server->h_addrtype == AF_INET && ips != 16; ips++ );
 
         if ( !ips ) return false;
 
-        memcpy(&my_s_addr.sin_addr, server->h_addr_list[0], server->h_length);
+        memcpy((char *) &my_s_addr.sin_addr.s_addr, server->h_addr_list[0], server->h_length);
 
         ip_count = 0;
         LastHost = domainT;
@@ -517,6 +522,7 @@ bool SocketHandler::SetDomainAndPort( string domainT, int portT )
         return true;
     }
 
+    LastHost = "";
     return false;
 }
 

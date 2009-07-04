@@ -63,6 +63,7 @@ int KeepBackBuffer;
 int TransferredHeader;
 long long TransferredBody;
 
+bool DontLock;
 bool DontLockBINHEX;
 bool DontLockPDF;
 bool DontLockZIP;

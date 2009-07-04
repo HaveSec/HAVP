@@ -20,6 +20,8 @@
 #include "utils.h"
 #include "default.h"
 
+#include <stdio.h>
+
 //Read header
 bool HTTPHandler::ReadHeader( string &headerT )
 {

@@ -1,4 +1,10 @@
 
+*HAVP 0.91 released
+ - Fix possible segfault on dns lookups (thanks Gavin McCullagh)
+ - Fix compiling with gcc 4.4
+ - Support AVG version 8.5 (default AVGPORT 54322) (thanks Markus Wigge)
+   (note: you may need DISABLELOCKINGFOR AVG:ALL, which is now default)
+
 *HAVP 0.90 released
  - ClamAV library 0.95 support (recompile needed)
  - Support NOD32 version 3 (set NOD32VERSION 30 in config)

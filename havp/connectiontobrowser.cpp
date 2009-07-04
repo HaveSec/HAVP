@@ -20,6 +20,7 @@
 #include "params.h"
 #include "utils.h"
 
+#include <stdio.h>
 #include <arpa/inet.h>
 
 //Prepare Header for Server
