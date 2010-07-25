@@ -33,7 +33,10 @@
 
 #define LOGSTRINGLENGTH 1000
 
+string LogFile::TimeFormat;
+
 int LogFile::Access_fd = -1;
+int LogFile::Virus_fd = -1;
 int LogFile::Error_fd = -1;
 bool LogFile::UseSyslog = false;
 int LogFile::SyslogLevel;
@@ -41,8 +44,10 @@ int LogFile::SyslogVirusLevel;
 
 
 //Open access and error logfiles
-bool LogFile::InitLogFiles( const char *AccessLogFileT, const char *ErrorLogFileT )
+bool LogFile::InitLogFiles( const char *AccessLogFileT, const char *VirusLogFileT, const char *ErrorLogFileT )
 {
+    TimeFormat = Params::GetConfigString("TIMEFORMAT") + " ";
+
     if ( Params::GetConfigBool("USESYSLOG") )
     {
         //Already open?
@@ -58,6 +63,7 @@ bool LogFile::InitLogFiles( const char *AccessLogFileT, const char *ErrorLogFile
     }
 
     if ( Error_fd > -1 ) close(Error_fd);
+    if ( Virus_fd != Access_fd && Virus_fd > -1 ) close(Virus_fd);
     if ( Access_fd > -1 ) close(Access_fd);
 
     if ( (Error_fd = open(ErrorLogFileT, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP)) < 0)
@@ -66,6 +72,15 @@ bool LogFile::InitLogFiles( const char *AccessLogFileT, const char *ErrorLogFile
     }
 
     if ( (Access_fd = open(AccessLogFileT, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP)) < 0)
+    {
+        return false;
+    }
+
+    if ( strcmp(VirusLogFileT, AccessLogFileT) == 0 || strlen(VirusLogFileT) == 0 )
+    {
+        Virus_fd = Access_fd;
+    }
+    else if ( (Virus_fd = open(VirusLogFileT, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP)) < 0)
     {
         return false;
     }
@@ -95,7 +110,7 @@ void LogFile::AccessMessage( const char *formatT , ... )
 
         time_t now = time(NULL);
         struct tm TmDate = *localtime(&now);
-        strftime(tmpdate, 50, TIMEFORMAT, &TmDate);
+        strftime(tmpdate, 50, TimeFormat.c_str(), &TmDate);
 
         strncpy(strt, tmpdate, sizeof(tmpdate));
         strncat(strt, str, LOGSTRINGLENGTH - sizeof(tmpdate) - 2);
@@ -125,12 +140,12 @@ void LogFile::VirusMessage( const char *formatT , ... )
 
         time_t now = time(NULL);
         struct tm TmDate = *localtime(&now);
-        strftime(tmpdate, 50, TIMEFORMAT, &TmDate);
+        strftime(tmpdate, 50, TimeFormat.c_str(), &TmDate);
 
         strncpy(strt, tmpdate, sizeof(tmpdate));
         strncat(strt, str, LOGSTRINGLENGTH - sizeof(tmpdate) - 2);
 
-        write(Access_fd, strt, strlen(strt));
+        write(Virus_fd, strt, strlen(strt));
     }
 }
 
@@ -155,7 +170,7 @@ void LogFile::ErrorMessage( const char *formatT , ... )
 
         time_t now = time(NULL);
         struct tm TmDate = *localtime(&now);
-        strftime(tmpdate, 50, TIMEFORMAT, &TmDate);
+        strftime(tmpdate, 50, TimeFormat.c_str(), &TmDate);
 
         strncpy(strt, tmpdate, sizeof(tmpdate));
         strncat(strt, str, LOGSTRINGLENGTH - sizeof(tmpdate) - 2);

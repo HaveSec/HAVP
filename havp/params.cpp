@@ -45,8 +45,12 @@ void Params::SetDefaults()
     SetConfig("SOURCE_ADDRESS",	"");
     SetConfig("PARENTPROXY",	"");
     SetConfig("PARENTPORT",	"0");
+    SetConfig("PARENTUSER",	"");
+    SetConfig("PARENTPASSWORD",	"");
     SetConfig("ACCESSLOG",	ACCESSLOG);
+    SetConfig("VIRUSLOG",	"");
     SetConfig("ERRORLOG",	ERRORLOG);
+    SetConfig("TIMEFORMAT",	"%d/%m/%Y %H:%M:%S");
     SetConfig("LOG_OKS",	"true");
     SetConfig("LOGLEVEL",	"0");
     SetConfig("USESYSLOG",	"false");
@@ -55,6 +59,8 @@ void Params::SetDefaults()
     SetConfig("SYSLOGLEVEL",	"info");
     SetConfig("SYSLOGVIRUSLEVEL","warning");
     SetConfig("SCANIMAGES",	"true");
+    SetConfig("SKIPMIME",	"");
+    SetConfig("SCANMIME",	"");
     SetConfig("MAXSCANSIZE",	"5000000");
     SetConfig("KEEPBACKBUFFER",	"200000");
     SetConfig("KEEPBACKTIME",	"5");
@@ -79,7 +85,7 @@ void Params::SetDefaults()
     SetConfig("MAXDOWNLOADSIZE","0");
     SetConfig("SCANNERTIMEOUT",	"10");
     SetConfig("IGNOREVIRUS",	"");
-    SetConfig("DISABLELOCKINGFOR","ClamAV:BinHex ClamAV:PDF ClamAV:ZIP AVG:ALL");
+    SetConfig("DISABLELOCKINGFOR","AVG:ALL");
 //SCANNERS
     SetConfig("ENABLECLAMLIB","false");
         SetConfig("CLAMDBDIR","");
@@ -380,15 +386,17 @@ bool Params::SetParams( int argvT, char* argcT[] )
     return TestConfig();
 }
 
+//Test that some options are sane
 bool Params::TestConfig()
 {
-    //Test that some options are sane
     if ( Params::GetConfigInt("SERVERNUMBER") < 1 )
     {
         cout << "Invalid Config: SERVERNUMBER needs to be greater than 0" << endl;
         return false;
     }
-    if ( Params::GetConfigString("ACCESSLOG").substr(0,1) != "/" || Params::GetConfigString("ERRORLOG").substr(0,1) != "/" )
+    if ( Params::GetConfigString("ACCESSLOG").substr(0,1) != "/"
+         || (Params::GetConfigString("VIRUSLOG") != "" && Params::GetConfigString("VIRUSLOG").substr(0,1) != "/")
+         || Params::GetConfigString("ERRORLOG").substr(0,1) != "/" )
     {
         cout << "Invalid Config: Log paths need to be abolute" << endl;
         return false;

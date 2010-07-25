@@ -26,7 +26,10 @@ class LogFile {
 
 private:
 
+static string TimeFormat;
+
 static int Error_fd;
+static int Virus_fd;
 static int Access_fd;
 
 static bool UseSyslog;
@@ -39,7 +42,7 @@ static int GetSyslogFacility();
 
 public:
 
-static bool InitLogFiles( const char *AccessLogFileT, const char *ErrorLogFileT );
+static bool InitLogFiles( const char *AccessLogFileT, const char *VirusLogFileT, const char *ErrorLogFileT );
 static void AccessMessage( const char *formatT, ... );
 static void VirusMessage( const char *formatT, ... );
 static void ErrorMessage( const char *formatT, ... );

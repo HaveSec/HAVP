@@ -67,6 +67,14 @@ REMOVETHISLINE deleteme
 # Default:
 # ACCESSLOG @localstatedir@/log/havp/access.log
 # ERRORLOG @localstatedir@/log/havp/havp.log
+# VIRUSLOG (same as ACCESSLOG)
+
+#
+# Format for timestamps in logfile messages.
+# See: man strftime
+#
+# Default:
+# TIMEFORMAT %d/%m/%Y %H:%M:%S
 
 #
 # Syslog can be used instead of logging to file.
@@ -140,10 +148,14 @@ REMOVETHISLINE deleteme
 
 #
 # Specify a parent proxy (e.g. Squid) HAVP should use.
+# If needed, user and password authentication can be used,
+# but only Basic-authentication scheme is supported.
 #
 # Default: NONE
 # PARENTPROXY localhost
 # PARENTPORT 3128
+# PARENTUSER username
+# PARENTPASSWORD password
 
 #
 # Write X-Forwarded-For: to log instead of connecters IP?
@@ -265,8 +277,37 @@ REMOVETHISLINE deleteme
 # around, so it will save lots of CPU. But be warned, image exploits
 # exist and more could be found. Think twice if you want to disable!
 #
+# In addition of checking Content-Type: image/*, this setting uses
+# file magic to make sure the file is really image.
+#
+# Also see SCANMIME/SKIPMIME settings to control scanning based
+# on just the Content-Type header.
+#
 # Default:
 # SCANIMAGES true
+
+#
+# What MIME types NOT to scan. For performance reasons, you could
+# exclude all media types.
+#
+# Based on Content-Type: header as given by the HTTP server.
+# Note that it is easy to forge and should not be trusted.
+#
+# Basic wildcard match supported.
+#
+# Default: NONE
+# SKIPMIME image/* video/* audio/*
+
+#
+# If set, then ONLY these MIME types will be scanned.
+#
+# Based on Content-Type: header as given by the HTTP server.
+# Note that it is easy to forge and should not be trusted.
+#
+# Basic wildcard match supported.
+#
+# Default: NONE
+# SCANMIME application/*
 
 #
 # Temporary file will grow only up to this size. This means scanner
@@ -366,13 +407,13 @@ REMOVETHISLINE deleteme
 # 
 # Allowed values:
 #   None
-#   ClamAV:BinHex  (mmap forced in all versions, no ETA for fix)
-#   ClamAV:PDF     (mmap forced in all versions, no ETA for fix)
+#   ClamAV:BinHex  (mmap forced in versions older than 0.96)
+#   ClamAV:PDF     (mmap forced in versions older than 0.96)
 #   ClamAV:ZIP     (mmap forced in 0.93.x, should work in 0.94)
 #   AVG:ALL        (AVG 8.5 does not work, uses mmap MAP_SHARED)
 #
 # Default:
-# DISABLELOCKINGFOR ClamAV:BinHex ClamAV:PDF ClamAV:ZIP AVG:ALL
+# DISABLELOCKINGFOR AVG:ALL
 
 #
 # Whitelist specific viruses by case-insensitive substring match.

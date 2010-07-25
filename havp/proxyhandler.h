@@ -27,8 +27,25 @@
 
 using namespace std;
 
-class ProxyHandler {
+class ProxyDetails {
+private:
+    bool UseParentProxy;
+	string ParentHost;
+	int ParentPort;
+	bool UseParentProxyAuth;
+	string ParentUser;
+	string ParentPassword;
+public:
+	ProxyDetails();
+	bool useProxy() {return UseParentProxy;};
+	bool useProxyAuth() {return UseParentProxyAuth;};
+	string getHost() {return ParentHost;};
+	int getPort() {return ParentPort;};
+	string getUser() {return ParentUser;};
+	string getPassword() {return ParentPassword;};
+};
 
+class ProxyHandler {
 private:
 
 bool HeaderSend;
@@ -49,10 +66,7 @@ string Header;
 
 ConnectionToBrowser ToBrowser;
 ConnectionToHTTP ToServer;
-
-bool UseParentProxy;
-string ParentHost;
-int ParentPort;
+ProxyDetails parentProxy;
 
 int MaxDownloadSize;
 int KeepBackTime;

@@ -1,4 +1,12 @@
 
+*HAVP 0.92 released
+ - Add SCANMIME and SKIPMIME options
+ - Add TIMEFORMAT option
+ - Add VIRUSLOG option
+ - Add PARENTUSER/PARENTPASSWORD (thanks to James Brotchie)
+ - DISABLELOCKINGFOR default has changed in favor of ClamAV 0.96,
+   it only contains AVG:ALL now
+
 *HAVP 0.91 released
  - Fix possible segfault on dns lookups (thanks Gavin McCullagh)
  - Fix compiling with gcc 4.4

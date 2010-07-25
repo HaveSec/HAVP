@@ -25,6 +25,8 @@
 
 using namespace std; 
 
+class ProxyDetails;
+
 class ConnectionToBrowser : public HTTPHandler  {
 
 private:
@@ -58,7 +60,7 @@ map <string,string> URLRewrite;
 
 public:
 
-string PrepareHeaderForServer( bool ScannerOff, bool UseParentProxy );
+string PrepareHeaderForServer( bool ScannerOff, ProxyDetails &parentProxy );
 string GetIP();
 const string GetHost();
 const string GetRequest();

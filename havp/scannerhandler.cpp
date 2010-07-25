@@ -1038,22 +1038,7 @@ ScannerHandler::ScannerHandler()
     //Whitelisted viruses
     if ( Params::GetConfigString("IGNOREVIRUS") != "" )
     {
-        string Tokens = UpperCase( Params::GetConfigString("IGNOREVIRUS") );
-        string::size_type Position;
-
-        while ( (Position = Tokens.find(" ")) != string::npos )
-        {
-            if ( Position == 0 )
-            {
-                Tokens.erase( 0, 1 );
-                continue;
-            }
-
-            IgnoredViruses.push_back( Tokens.substr( 0, Position ));
-            Tokens.erase( 0, Position + 1 );
-        }
-
-        IgnoredViruses.push_back( Tokens );
+        Tokenize( UpperCase(Params::GetConfigString("IGNOREVIRUS")), IgnoredViruses );
     }
 
     DeadScanner = false;

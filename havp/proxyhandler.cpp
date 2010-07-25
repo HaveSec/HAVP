@@ -120,7 +120,7 @@ void ProxyHandler::Proxy( SocketHandler &ProxyServerT, ScannerHandler &Scanners 
         {
             if ( Blacklist.URLFound( ToBrowser.GetHost(), ToBrowser.GetRequest() ) )
             {
-                ToBrowser.PrepareHeaderForServer( false, UseParentProxy );
+                ToBrowser.PrepareHeaderForServer( false, parentProxy );
                 ProxyMessage( -45, "" );
                 DropBrowser = true;
                 continue;
@@ -145,7 +145,7 @@ void ProxyHandler::Proxy( SocketHandler &ProxyServerT, ScannerHandler &Scanners 
         //FTP REQUEST
         else if ( ToBrowser.GetRequestProtocol() == "ftp" )
         {
-            if ( UseParentProxy )
+            if ( parentProxy.useProxy() )
             {
                 CommunicationAnswer = CommunicationHTTP( Scanners, ScannerOff );
             }
@@ -273,7 +273,7 @@ void ProxyHandler::Proxy( SocketHandler &ProxyServerT, ScannerHandler &Scanners 
 
 int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
 {
-    string HeaderToServer = ToBrowser.PrepareHeaderForServer( ScannerOff, UseParentProxy );
+    string HeaderToServer = ToBrowser.PrepareHeaderForServer( ScannerOff, parentProxy );
 
     long long ContentLengthReference = ToBrowser.GetContentLength();
 
@@ -286,18 +286,18 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
     }
 
     //Make server connection
-    if ( UseParentProxy )
+    if ( parentProxy.useProxy() )
     {
         if ( ServerConnected == false )
         {
-            if ( ToServer.SetDomainAndPort( ParentHost, ParentPort ) == false )
+            if ( ToServer.SetDomainAndPort( parentProxy.getHost(), parentProxy.getPort() ) == false )
             {
-                LogFile::ErrorMessage("Could not resolve parent proxy (%s)\n", ParentHost.c_str());
+                LogFile::ErrorMessage("Could not resolve parent proxy (%s)\n", parentProxy.getHost().c_str());
                 return -51;
             }
             if ( ToServer.ConnectToServer() == false )
             {
-                LogFile::ErrorMessage("Could not connect to parent proxy (%s/%s:%d)\n", ToServer.GetIP().c_str(), ParentHost.c_str(), ParentPort);
+                LogFile::ErrorMessage("Could not connect to parent proxy (%s/%s:%d)\n", ToServer.GetIP().c_str(), parentProxy.getHost().c_str(), parentProxy.getPort());
                 return -61;
             }
         }
@@ -553,8 +553,13 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
         return 0;
     }
 
+    // ScanMime / SkipMime ACL
+    if ( ToServer.IsScannableMime() == false )
+    {
+        ScannerOff = true;
+    }
     //Scan JPG? GIF? PNG?
-    if ( Params::GetConfigBool("SCANIMAGES") == false
+    else if ( Params::GetConfigBool("SCANIMAGES") == false
          && ToServer.IsItImage()
          && ( MatchBegin( BodyTemp, "\255\216\255\224", 4 )
               || MatchBegin( BodyTemp, "GIF8", 4 )
@@ -728,10 +733,10 @@ int ProxyHandler::CommunicationHTTP( ScannerHandler &Scanners, bool ScannerOff )
         string RangeServer;
         int RangePort;
 
-        if ( UseParentProxy )
+        if ( parentProxy.useProxy() )
         {
-            RangeServer = ParentHost;
-            RangePort = ParentPort;
+            RangeServer = parentProxy.getHost();
+            RangePort = parentProxy.getPort();
         }
         else
         {
@@ -1170,18 +1175,18 @@ int ProxyHandler::CommunicationSSL()
     string BodyTemp;
     ssize_t BodyLength;
 
-    Header = ToBrowser.PrepareHeaderForServer( false, UseParentProxy );
+    Header = ToBrowser.PrepareHeaderForServer( false, parentProxy );
 
-    if ( UseParentProxy )
+    if ( parentProxy.useProxy() )
     {
-        if ( ToServer.SetDomainAndPort( ParentHost, ParentPort ) == false )
+        if ( ToServer.SetDomainAndPort( parentProxy.getHost(), parentProxy.getPort() ) == false )
         {
-            LogFile::ErrorMessage("Could not resolve parent proxy (%s)\n", ParentHost.c_str() );
+            LogFile::ErrorMessage("Could not resolve parent proxy (%s)\n", parentProxy.getHost().c_str() );
             return -51;
         }
         if ( ToServer.ConnectToServer() == false )
         {
-            LogFile::ErrorMessage("Could not connect to parent proxy (%s/%s:%d)\n", ToServer.GetIP().c_str(), ParentHost.c_str(), ParentPort);
+            LogFile::ErrorMessage("Could not connect to parent proxy (%s/%s:%d)\n", ToServer.GetIP().c_str(), parentProxy.getHost().c_str(), parentProxy.getPort());
             return -61;
         }
 
@@ -1230,7 +1235,7 @@ int ProxyHandler::CommunicationSSL()
                 //Read Body
                 if ( (BodyLength = ToServer.ReadBodyPart( BodyTemp, false )) < 0 )
                 {
-                    if (LL>0) LogFile::ErrorMessage("(%s) Could not read server body (%s/%s:%d)\n", ToServer.GetIP().c_str(), ToBrowser.GetIP().c_str(), ParentHost.c_str(), ParentPort);
+                    if (LL>0) LogFile::ErrorMessage("(%s) Could not read server body (%s/%s:%d)\n", ToServer.GetIP().c_str(), ToBrowser.GetIP().c_str(), parentProxy.getHost().c_str(), parentProxy.getPort());
                     DropServer = true;
                     return -75;
                 }
@@ -1248,7 +1253,7 @@ int ProxyHandler::CommunicationSSL()
 
                     ContentLength = ContentLengthReference;
 
-                    if (LL>0) LogFile::ErrorMessage("(%s) Server sent more than Content-Length (%s/%s:%d)\n", ToServer.GetIP().c_str(), ToBrowser.GetIP().c_str(), ParentHost.c_str(), ParentPort);
+                    if (LL>0) LogFile::ErrorMessage("(%s) Server sent more than Content-Length (%s/%s:%d)\n", ToServer.GetIP().c_str(), ToBrowser.GetIP().c_str(), parentProxy.getHost().c_str(), parentProxy.getPort());
                 }
 
                 //Send body to browser
@@ -1578,16 +1583,6 @@ bool ProxyHandler::ProxyMessage( int CommunicationAnswerT, string Answer )
 //Constructor
 ProxyHandler::ProxyHandler()
 {
-    if ( Params::GetConfigString("PARENTPROXY") != "" )
-    {
-        UseParentProxy = true;
-        ParentHost = Params::GetConfigString("PARENTPROXY");
-        ParentPort = Params::GetConfigInt("PARENTPORT");
-    }
-    else
-    {
-        UseParentProxy = false;
-    }
 
     MaxDownloadSize = Params::GetConfigInt("MAXDOWNLOADSIZE");
     KeepBackTime = Params::GetConfigInt("KEEPBACKTIME");
@@ -1615,5 +1610,28 @@ ProxyHandler::ProxyHandler()
 //Destructor
 ProxyHandler::~ProxyHandler()
 {
+}
+
+ProxyDetails::ProxyDetails() : UseParentProxy(false),
+                               ParentHost(""),
+                               ParentPort(-1),
+                               UseParentProxyAuth(false),
+                               ParentUser(""),
+                               ParentPassword("")
+{
+    if ( Params::GetConfigString("PARENTPROXY") != "" )
+    {
+        UseParentProxy = true;
+        ParentHost = Params::GetConfigString("PARENTPROXY");
+        ParentPort = Params::GetConfigInt("PARENTPORT");
+    }
+
+    if (UseParentProxy && \
+        (Params::GetConfigString("PARENTUSER") != "" || \
+         Params::GetConfigString("PARENTPASSWORD") != "")){
+        UseParentProxyAuth = true;
+        ParentUser = Params::GetConfigString("PARENTUSER");
+        ParentPassword = Params::GetConfigString("PARENTPASSWORD");
+    }
 }
 

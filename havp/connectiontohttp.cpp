@@ -18,6 +18,7 @@
 #include "connectiontohttp.h"
 #include "logfile.h"
 #include "utils.h"
+#include "params.h"
 
 #include <stdio.h>
 
@@ -102,67 +103,84 @@ int ConnectionToHTTP::AnalyseFirstHeaderLine( string &RequestT )
 
 int ConnectionToHTTP::AnalyseHeaderLine( string &RequestT )
 {
-    //Optimize checks.. no need to match if header line not long enough
+    //Uppercase for matching
+    string RequestU = UpperCase(RequestT);
 
-    //"Content-Length: x" needs atleast 17 chars
-    //"Connection: Keep-Alive" needs atleast 22 chars
-
-    if ( RequestT.length() > 16 )
+    if ( RequestU.length() > 16 && MatchBegin( RequestU, "CONTENT-LENGTH: ", 16 ) )
     {
-        //Uppercase for matching
-        string RequestU = UpperCase(RequestT);
-
-        if ( MatchBegin( RequestU, "CONTENT-LENGTH: ", 16 ) )
+        if ( RequestU.find_first_not_of("0123456789", 16) != string::npos )
         {
-            if ( RequestU.find_first_not_of("0123456789", 16) != string::npos )
-            {
-                //Invalid Content-Length
-                return 0;
-            }
-
-            string LengthToken = RequestT.substr( 16 );
-
-            //Sanity check for invalid huge Content-Length
-            if ( LengthToken.length() > 18 ) return 0;
-
-            if ( sscanf(LengthToken.c_str(), "%lld", &ContentLength) != 1 )
-            {
-                ContentLength = -1;
-            }
-
+            //Invalid Content-Length
             return 0;
         }
 
-        if ( MatchSubstr( RequestU, "CONNECTION: KEEP-ALIVE", -1 ) )
-        {
-            IsKeepAlive = true;
+        string LengthToken = RequestT.substr( 16 );
 
-            return 0;
+        //Sanity check for invalid huge Content-Length
+        if ( LengthToken.length() > 18 ) return 0;
+
+        if ( sscanf(LengthToken.c_str(), "%lld", &ContentLength) != 1 )
+        {
+            ContentLength = -1;
         }
 
-        if ( MatchBegin( RequestU, "CONTENT-TYPE: IMAGE/", 20 ) )
-        {
-            IsImage = true;
+        return 0;
+    }
 
-            return 0;
+    if ( MatchSubstr( RequestU, "CONNECTION: KEEP-ALIVE", -1 ) )
+    {
+        IsKeepAlive = true;
+
+        return 0;
+    }
+
+    if ( RequestU.length() > 14 && MatchBegin( RequestU, "CONTENT-TYPE: ", 14 ) )
+    {
+        string::size_type Start = RequestU.find_first_not_of(" \t", 14);
+        if (Start == string::npos) return 0;
+
+        string::size_type End = RequestU.find_first_of("; \t", Start);
+        if (End == string::npos)
+        {
+            ContentType = RequestU.substr(Start);
+        }
+        else
+        {
+            ContentType = RequestU.substr(Start, End - Start);
         }
 
-        if ( MatchBegin( RequestU, "TRANSFER-ENCODING: CHUNKED", 26 ) )
-        {
-            IsChunked = true;
+        if ( MatchBegin( ContentType, "IMAGE/", 6 ) ) IsImage = true;
 
-            return 0;
-        }
+        return 0;
+    }
 
-        if ( MatchBegin( RequestU, "TRANSFER-ENCODING: ", 19 ) )
-        {
-            //Not allowed on HTTP/1.0
-            return -232;
-        }
+    if ( MatchBegin( RequestU, "TRANSFER-ENCODING: CHUNKED", 26 ) )
+    {
+        IsChunked = true;
 
-    }//End >16 check
+        return 0;
+    }
+
+    if ( MatchBegin( RequestU, "TRANSFER-ENCODING: ", 19 ) )
+    {
+        //Not allowed on HTTP/1.0
+        return -232;
+    }
 
     return 0;
+}
+
+bool ConnectionToHTTP::IsScannableMime()
+{
+    for (vector<string>::iterator Mime = SkipMimes.begin(); Mime != SkipMimes.end(); ++Mime)
+    {
+        if ( MatchWild( ContentType.c_str(), (*Mime).c_str() ) ) return false;
+    }
+    for (vector<string>::iterator Mime = ScanMimes.begin(); Mime != ScanMimes.end(); ++Mime)
+    {
+        if ( MatchWild( ContentType.c_str(), (*Mime).c_str() ) ) return true;
+    }
+    return true;
 }
 
 long long ConnectionToHTTP::GetContentLength()
@@ -193,6 +211,7 @@ bool ConnectionToHTTP::IsItChunked()
 void ConnectionToHTTP::ClearVars()
 {
     ContentLength = -1;
+    ContentType = "";
     IsKeepAlive = IsImage = IsChunked = false;
 }
 
@@ -202,6 +221,15 @@ ConnectionToHTTP::ConnectionToHTTP()
 {
     HTMLResponse = 0;
     ProxyConnection = false;
+
+    if (Params::GetConfigString("SCANMIME") != "")
+    {
+        Tokenize( UpperCase(Params::GetConfigString("SCANMIME")), ScanMimes );
+    }
+    if (Params::GetConfigString("SKIPMIME") != "")
+    {
+        Tokenize( UpperCase(Params::GetConfigString("SKIPMIME")), SkipMimes );
+    }
 }
 
 

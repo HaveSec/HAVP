@@ -88,7 +88,9 @@ int main(int argc, char *argv[])
     }
 
     //Open logs
-    if ( LogFile::InitLogFiles(Params::GetConfigString("ACCESSLOG").c_str(), Params::GetConfigString("ERRORLOG").c_str()) == false )
+    if ( LogFile::InitLogFiles( Params::GetConfigString("ACCESSLOG").c_str(),
+                                Params::GetConfigString("VIRUSLOG").c_str(),
+                                Params::GetConfigString("ERRORLOG").c_str() ) == false )
     {
         cout << "Could not open logfiles!" << endl;
         cout << "Invalid permissions? Maybe you need: chown " << GetUser() << " " << Params::GetConfigString("ACCESSLOG").substr(0, Params::GetConfigString("ACCESSLOG").rfind("/")) << endl;
@@ -129,19 +131,12 @@ int main(int argc, char *argv[])
     }
 
     //Test that mandatory locking works (this leaves file with EICAR data on disk)
-    int locktry = 0;
-    while ( HardLockTest() == false )
+    if ( HardLockTest() == false )
     {
         if (fd_tempfile > -1) while (close(fd_tempfile) < 0 && errno == EINTR);
         while (unlink(TempFileName) < 0 && (errno == EINTR || errno == EBUSY));
-
-        if ( ++locktry > 3 )
-        {
-            cout << "Too many tries - Exiting.." << endl;
-            exit(1);
-        }
-
-        sleep(1);
+        cout << "Exiting.." << endl;
+        exit(1);
     }
 
     //Tempfile descriptor not needed anymore
@@ -225,7 +220,9 @@ int main(int argc, char *argv[])
             Blacklist.ReloadURLList( Params::GetConfigString("BLACKLIST") );
 
             //Reopen logs
-            LogFile::InitLogFiles(Params::GetConfigString("ACCESSLOG").c_str(), Params::GetConfigString("ERRORLOG").c_str());
+            LogFile::InitLogFiles( Params::GetConfigString("ACCESSLOG").c_str(),
+                                   Params::GetConfigString("VIRUSLOG").c_str(),
+                                   Params::GetConfigString("ERRORLOG").c_str() );
             if ( Params::GetConfigBool("USESYSLOG") == false ) restartchilds = true;
 
             LastRefresh = time(NULL);

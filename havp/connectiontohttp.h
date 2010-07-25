@@ -26,9 +26,13 @@ private:
 
 int HTMLResponse;
 long long ContentLength;
+string ContentType;
 bool IsKeepAlive;
 bool IsImage;
 bool IsChunked;
+
+vector<string> ScanMimes;
+vector<string> SkipMimes;
 
 int AnalyseFirstHeaderLine( string &RequestT );
 int AnalyseHeaderLine( string &RequestT );
@@ -38,6 +42,7 @@ public:
 string PrepareHeaderForBrowser();
 int GetResponse();
 long long GetContentLength();
+bool IsScannableMime();
 bool IsItKeepAlive();
 bool IsItImage();
 bool IsItChunked();

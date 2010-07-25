@@ -20,11 +20,13 @@
 #include "params.h"
 #include "utils.h"
 
+#include "proxyhandler.h"
+
 #include <stdio.h>
 #include <arpa/inet.h>
 
 //Prepare Header for Server
-string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, bool UseParentProxy )
+string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, ProxyDetails &parentProxy )
 {
     string PortString = "";
 
@@ -38,7 +40,7 @@ string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, bool UsePar
     string header;
     header.reserve(20000);
 
-    if ( UseParentProxy )
+    if ( parentProxy.useProxy() )
     {
         //HTTP
         if ( RequestProtocol == "http" )
@@ -49,6 +51,12 @@ string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, bool UsePar
             header += PortString;
             header += Request;
             header += " HTTP/1.0\r\n";
+
+            /* Use proxy auth if required */
+            if ( parentProxy.useProxyAuth() ) {
+                header += "Proxy-Authorization: Basic " + \
+                           base64_encode(parentProxy.getUser() + ":" + parentProxy.getPassword()) + "\r\n";
+            }
 
             CompleteRequest = "http://";
             CompleteRequest += Host;
@@ -152,7 +160,7 @@ string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, bool UsePar
         if ( MatchBegin( it, "PROXY", 5 ) )
         {
             //Pass Proxy-Authorization to parent proxy if used
-            if (! (UseParentProxy && MatchBegin( it, "PROXY-AUTHORIZATION", 19 )) )
+            if (! (parentProxy.useProxy() && MatchBegin( it, "PROXY-AUTHORIZATION", 19 )) )
             {
                 continue;
             }
@@ -681,22 +689,7 @@ ConnectionToBrowser::ConnectionToBrowser()
 
     if (Params::GetConfigString("STREAMUSERAGENT") != "")
     {
-        string Tokens = UpperCase(Params::GetConfigString("STREAMUSERAGENT"));
-        string::size_type Position;
-        
-        while ((Position = Tokens.find(" ")) != string::npos)
-        {
-            if (Position == 0)
-            {
-                Tokens.erase(0, 1);
-                continue;
-            }
-                                    
-            StreamUA.push_back(Tokens.substr(0, Position));
-            Tokens.erase(0, Position + 1);
-        }
-
-        StreamUA.push_back(Tokens);
+        Tokenize( UpperCase(Params::GetConfigString("STREAMUSERAGENT")), StreamUA );
     }
 
     Transparent = Params::GetConfigBool("TRANSPARENT");

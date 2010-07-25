@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -30,5 +31,8 @@ void SearchReplace( string &source, string search, string replace );
 int select_eintr( int fds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *timeout );
 bool MatchSubstr(string &hay, const char* needle, int startpos);
 bool MatchBegin(string &hay, const char *needle, int needlelength);
+bool MatchWild(const char *str, const char *pat);
+void Tokenize(const string& str, vector<string>& tokens);
+string base64_encode(string input);
     
 #endif
