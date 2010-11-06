@@ -1,3 +1,5 @@
+*HAVP 0.92a - Security Fix
+ - Add missing dot to sourceforge for safety
 
 *HAVP 0.92 released
  - Add SCANMIME and SKIPMIME options

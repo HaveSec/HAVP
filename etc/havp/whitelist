@@ -17,7 +17,7 @@
 # www.server-side.de/*novirus*
 
 # Whitelist clamav download
-*sourceforge.net/*clamav-*
+*.sourceforge.net/*clamav-*
 
 # Whitelist Windowsupdate, so RANGE is allowed too
 *.microsoft.com/*
