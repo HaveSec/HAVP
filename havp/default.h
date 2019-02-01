@@ -1,9 +1,8 @@
 /***************************************************************************
                           default.h  -  description
                              -------------------
-    begin                : Sa Feb 12 2005
-    copyright            : (C) 2005 by Christian Hilgers
-    email                : christian@hilgers.ag
+    begin                : 2005/02/12
+    last                 : 2019/02/02
  ***************************************************************************/
 
 /***************************************************************************
@@ -19,11 +18,11 @@
 #ifndef DEFAULT_H
 #define DEFAULT_H
 
-#define VERSION "0.92"
+#define VERSION "0.93"
 
 //##############################################################
 //Define if you want to rewrite a URL
-//#define REWRITE URLRewrite["havp"]="www.server-side.de"; URLRewrite["www.havp"]="www.server-side.de";
+//#define REWRITE URLRewrite["havp"]="www.havp.org"; URLRewrite["www.havp"]="www.havp.org";
 
 //##############################################################
 //Parameters in Configurationfile
@@ -36,6 +35,7 @@
  "USESYSLOG","SYSLOGNAME","SYSLOGFACILITY","SYSLOGLEVEL","SYSLOGVIRUSLEVEL","IGNOREVIRUS", \
  "DISPLAYINITIALMESSAGES","DBRELOAD","SCANTEMPFILE","TEMPLATEPATH","DISABLELOCKINGFOR", \
  "PARENTPROXY","PARENTPORT","MAXSERVERS","FORWARDED_IP","X_FORWARDED_FOR","FAILSCANERROR", \
+ "SSLTIMEOUT", \
  "MAXDOWNLOADSIZE","SCANNERTIMEOUT","STREAMUSERAGENT","STREAMSCANSIZE","SCANIMAGES", \
  "SKIPMIME","SCANMIME", \
  "ENABLECLAMLIB","CLAMDBDIR","CLAMBLOCKBROKEN","CLAMBLOCKMAX","CLAMBLOCKENCRYPTED", \
@@ -102,19 +102,6 @@
 #define ERROR_BLACKLIST	"blacklist.html"
 #define ERROR_MAXSIZE	"maxsize.html"
 
-// DONT TOUCH - run configure
-#undef CONFIGFILE
-#undef WHITELISTFILE
-#undef BLACKLISTFILE
-#undef TEMPLATEPATH
-#undef ACCESSLOG
-#undef ERRORLOG
-#undef PIDFILE
-#undef NOMAND
-#undef SSLTUNNEL
-#undef USECLAMLIB
-#undef USETROPHIE
-#undef HAVE_SETGROUPS
-#undef HAVE_INITGROUPS
+#include "_default.h"
 
 #endif

@@ -3,7 +3,7 @@
                              -------------------
     begin                : Sa Feb 12 2005
     copyright            : (C) 2005 by Christian Hilgers
-    email                : christian@hilgers.ag
+    email                : christian@havp.org
  ***************************************************************************/
 
 /***************************************************************************
@@ -210,10 +210,14 @@ string ConnectionToBrowser::PrepareHeaderForServer( bool ScannerOff, ProxyDetail
         header += via;
         header += "\r\n";
     }
-    else
-    {
-        header += "Via: 1.0 PROXY\r\n";
-    }
+//    else
+//    {
+// Version 0.89: Always send Via: header, fixes some IIS problems (e.g. MSNBC)
+// Sebastian Andrzej Siewior: I haven't noticed anything wrong with a few IIS6 and IIS7 servers google
+// found for me to test :)
+//        header += "Via: 1.0 PROXY\r\n";
+//    }
+
 
     return header;
 }

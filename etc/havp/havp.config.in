@@ -13,10 +13,10 @@
 # Extra spaces and tabs are ignored.
 #
 
-# You must remove this line for HAVP to start.
-# This makes sure you have (hopefully) reviewed the configuration. :)
+# This line must me remove or a comment for HAVP to start.
 # Hint: You must enable some scanner! Find them in the end..
-REMOVETHISLINE deleteme
+# ClamAV is enabled by default. So maybe you don't need to change this file.
+# REMOVETHISLINE deleteme
 
 #
 # For reasons of security it is recommended to run a proxy program
@@ -113,7 +113,7 @@ REMOVETHISLINE deleteme
 # These characters are used by system to create unique named files.
 #
 # Default:
-# SCANTEMPFILE /var/tmp/havp/havp-XXXXXX
+# SCANTEMPFILE /var/spool/havp/havp-XXXXXX
 
 #
 # Directory for ClamAV and other scanner created tempfiles.
@@ -139,7 +139,7 @@ REMOVETHISLINE deleteme
 #
 # If you don't know what this means read the mini-howto
 # TransparentProxy written by Daniel Kiracofe.
-# (e.g.: http://www.tldp.org/HOWTO/mini/TransparentProxy.html)
+# (e.g.: http://www.tldp.org/HOWTO/TransparentProxy.html)
 # Definitely you have more to do than setting this to true.
 # You are warned!
 #
@@ -198,6 +198,11 @@ REMOVETHISLINE deleteme
 #
 # Default: NONE
 # SOURCE_ADDRESS 1.2.3.4
+
+# SSLTIMEOUT - Number of seconds to wait for SSL timeout
+#
+# Default: 20
+# SSLTIMEOUT 20
 
 #
 # Path to template files.
@@ -428,14 +433,14 @@ REMOVETHISLINE deleteme
 ##### ClamAV Library Scanner (libclamav)
 #####
 
-ENABLECLAMLIB false
+ENABLECLAMLIB true
 
 # HAVP uses libclamav hardcoded pattern directory, which usually is
-# /usr/local/share/clamav. You only need to set CLAMDBDIR, if you are
+# /usr/share/clamav. You only need to set CLAMDBDIR, if you are
 # using non-default DatabaseDirectory setting in clamd.conf.
 #
 # Default: NONE
-# CLAMDBDIR /path/to/directory
+# CLAMDBDIR /var/lib/clamav
 
 # Should we block broken executables?
 #
@@ -479,7 +484,7 @@ ENABLECLAMD false
 # Path to clamd socket
 #
 # Default:
-# CLAMDSOCKET /tmp/clamd
+# CLAMDSOCKET /var/run/clamav/clamd.ctl
 
 # ..OR if you use clamd TCP socket, uncomment to enable use
 #

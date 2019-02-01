@@ -23,7 +23,7 @@ you have your own, make sure it is not in any default directory.
 BASIC INSTALLATION
 ==================
 
-HAVP has been tested only with GCC 3.4+.
+HAVP has been tested only with GCC.
 Other compilers like Sun Studio have some problems currently.
 
 Installation:
@@ -53,23 +53,21 @@ If Linux is used, you need to enable mandatory locking for the partition
 where your tempfiles are located. Solaris supports mandatory locking
 without these extra steps:
 
-  If you only have root partition available, you can enable mandatory
-  locking support like this:
-
-  # mount -o remount,mand /
-
-  You can naturally use this for /var or any other partition. Also add
-  mand-option to /etc/fstab so it will stay after reboot.
+  The default location for logfiles is /var/spool/havp
+  Don't use mandatory locking for /
 
   Using tmpfs might have some problems, make sure you test it properly.
+  Add mand-option to /etc/fstab so it will stay after reboot e.g:
+  
+  echo "none /var/spool/havp tmpfs mand,nodev,nosuid,noexec,nodiratime,size=50M 0 0" >> /etc/fstab
 
   NOTE: Mandatory locking could make it possible for evil local accounts
   to hang the system. You should run HAVP anyway on non-public server.
 
 Make sure the directories you are using have correct permissions:
 
-  # chown havp /var/tmp/havp /var/log/havp /var/run/havp
-  # chmod 700 /var/tmp/havp /var/log/havp /var/run/havp
+  # chown havp /var/spool/havp /var/log/havp /var/run/havp
+  # chmod 700 /var/spool/havp /var/log/havp /var/run/havp
 
 Start havp:
 

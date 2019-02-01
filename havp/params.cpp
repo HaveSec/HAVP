@@ -1,9 +1,8 @@
 /***************************************************************************
                           params.cpp  -  description
                              -------------------
-    begin                : So Feb 20 2005
-    copyright            : (C) 2005 by Peter Sebald / Christian Hilgers
-    email                : christian@hilgers.ag
+    begin                : 2005/02/20
+    last		 : 2019/02/02
  ***************************************************************************/
 
 /***************************************************************************
@@ -70,8 +69,8 @@ void Params::SetDefaults()
     SetConfig("WHITELIST",	WHITELISTFILE);
     SetConfig("BLACKLIST",	BLACKLISTFILE);
     SetConfig("TEMPLATEPATH",	TEMPLATEPATH);
-    SetConfig("TEMPDIR",	"/var/tmp");
-    SetConfig("SCANTEMPFILE",	"/var/tmp/havp/havp-XXXXXX");
+    SetConfig("TEMPDIR",	"/var/spool/havp");
+    SetConfig("SCANTEMPFILE",	"/var/spool/havp/havp-XXXXXX");
     SetConfig("PIDFILE",	PIDFILE);
     SetConfig("TRANSPARENT",	"false");
     SetConfig("RANGE",		"false");
@@ -86,6 +85,7 @@ void Params::SetDefaults()
     SetConfig("SCANNERTIMEOUT",	"10");
     SetConfig("IGNOREVIRUS",	"");
     SetConfig("DISABLELOCKINGFOR","AVG:ALL");
+    SetConfig("SSLTIMEOUT", "20");
 //SCANNERS
     SetConfig("ENABLECLAMLIB","false");
         SetConfig("CLAMDBDIR","");
@@ -97,7 +97,7 @@ void Params::SetDefaults()
         SetConfig("CLAMMAXFILESIZE","100");
         SetConfig("CLAMMAXRECURSION","8");
     SetConfig("ENABLECLAMD","false");
-	SetConfig("CLAMDSOCKET","/tmp/clamd");
+	SetConfig("CLAMDSOCKET","/var/run/clamav/clamd.ctl");
 	SetConfig("CLAMDSERVER","");
 	SetConfig("CLAMDPORT","3310");
     SetConfig("ENABLEAVG","false");

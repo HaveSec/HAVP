@@ -8,7 +8,7 @@ AC_PROG_CXX
 
 AC_PREFIX_DEFAULT(/usr/local)
 
-AC_CONFIG_HEADER(havp/default.h)
+AC_CONFIG_HEADER(havp/_default.h)
 
 AC_ARG_ENABLE(locking,[  --disable-locking       Disable mandatory locking (not needed on Linux/Solaris system)], enable_locking=$enableval, enable_locking=yes)
 AC_ARG_ENABLE(ssl-tunnel,[  --enable-ssl-tunnel     Enable SSL proxying (not scanned, only forwarded!)], enable_ssl_tunnel=$enableval, enable_ssl_tunnel=no)
@@ -22,7 +22,7 @@ if test "$AR" = "no"; then
 fi
 
 AC_CHECK_PROG(PERL, perl, perl, no)
-
+AC_SYS_LARGEFILE
 AC_CHECK_FUNCS(initgroups setgroups)
 
 if test "$PERL" = "no"; then
@@ -55,7 +55,7 @@ if test "$enable_locking" = "no"
 then
 	AC_MSG_RESULT([disabled, no dynamic scanning!])
 
-	AC_DEFINE(NOMAND)
+	AC_DEFINE(NOMAND, 1, [Do not use mandatory locking])
 else
 	if test "$mandatory" = "yes"
 	then
@@ -80,7 +80,7 @@ fi
 
 if test "$enable_ssl_tunnel" = "yes"
 then
-	AC_DEFINE(SSLTUNNEL)
+	AC_DEFINE(SSLTUNNEL, 1, [Use SSL tunnel])
 fi
 
 AC_MSG_CHECKING(for ClamAV scanner library)
@@ -120,7 +120,7 @@ then
 	LDFLAGS="$LDFLAGS -lclamav"
 
 	SCANNEROBJECTS="clamlibscanner.o"
-	AC_DEFINE(USECLAMLIB)
+	AC_DEFINE(USECLAMLIB, 1, [Have clamav scanner])
 
 	AC_MSG_RESULT([found $clamversion in $clamprefix])
 else
@@ -138,7 +138,7 @@ then
 		SCANNEROBJECTS="$SCANNEROBJECTS trophiescanner.o"
 		LDFLAGS="-L/etc/iscan -lvsapi $LDFLAGS"
 
-		AC_DEFINE(USETROPHIE)
+		AC_DEFINE(USETROPHIE, 1, [Use trophie scanner])
 	else
 		AC_MSG_RESULT([/etc/iscan/libvsapi.so not found, disabled])
 	fi
@@ -153,14 +153,14 @@ test "$prefix" = "NONE" && prefix=/usr/local
 test "$localstatedir" = '${prefix}/var' && localstatedir=/var || localstatedir=$localstatedir
 sysconfdir=`eval echo $sysconfdir | $PERL -pe 's#/havp/?$##'`
 localstatedir=`eval echo $localstatedir`
-AC_DEFINE_UNQUOTED(CONFIGFILE, "$sysconfdir/havp/havp.config")
-AC_DEFINE_UNQUOTED(WHITELISTFILE, "$sysconfdir/havp/whitelist")
-AC_DEFINE_UNQUOTED(BLACKLISTFILE, "$sysconfdir/havp/blacklist")
-AC_DEFINE_UNQUOTED(TEMPLATEPATH, "$sysconfdir/havp/templates/en")
-AC_DEFINE_UNQUOTED(ACCESSLOG, "$localstatedir/log/havp/access.log")
-AC_DEFINE_UNQUOTED(ERRORLOG, "$localstatedir/log/havp/error.log")
-AC_DEFINE_UNQUOTED(SCANTEMPFILE, "$localstatedir/tmp/havp/havp-XXXXXX")
-AC_DEFINE_UNQUOTED(PIDFILE, "$localstatedir/run/havp/havp.pid")
+AC_DEFINE_UNQUOTED(CONFIGFILE, "$sysconfdir/havp/havp.config", [Location of the conig file])
+AC_DEFINE_UNQUOTED(WHITELISTFILE, "$sysconfdir/havp/whitelist", [Location of the whitelist file])
+AC_DEFINE_UNQUOTED(BLACKLISTFILE, "$sysconfdir/havp/blacklist", [Location of the blacklist file])
+AC_DEFINE_UNQUOTED(TEMPLATEPATH, "$sysconfdir/havp/templates/en", [Path to templates])
+AC_DEFINE_UNQUOTED(ACCESSLOG, "$localstatedir/log/havp/access.log", [Location of the access log file])
+AC_DEFINE_UNQUOTED(ERRORLOG, "$localstatedir/log/havp/error.log", [Location of the error log file])
+AC_DEFINE_UNQUOTED(SCANTEMPFILE, "$localstatedir/tmp/havp/havp-XXXXXX", [Temporary scan path])
+AC_DEFINE_UNQUOTED(PIDFILE, "$localstatedir/run/havp/havp.pid", [Location of the PID file])
 
 AC_SUBST(SCANNEROBJECTS)
 AC_SUBST(CFLAGS)

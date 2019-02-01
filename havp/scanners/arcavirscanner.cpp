@@ -3,7 +3,7 @@
                              -------------------
     begin                : Sa Feb 12 2005
     copyright            : (C) 2005 by Christian Hilgers
-    email                : christian@hilgers.ag
+    email                : christian@havp.org
 
  Help for Version 2008 received from Anthony Have (a.have@sysun-technologies.com)
 

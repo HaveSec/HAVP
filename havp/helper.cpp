@@ -1,9 +1,8 @@
 /***************************************************************************
                           helper.cpp  -  description
                              -------------------
-    begin                : Sa M� 5 2005
-    copyright            : (C) 2005 by Christian Hilgers
-    email                : christian@hilgers.ag
+    begin                : 2005/02/12
+    last                 : 2019/02/02
  ***************************************************************************/
 
 /***************************************************************************
@@ -14,6 +13,15 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
+
+/* Fix https://bugs.debian.org/524045
+The init script sends a SIGHUP to the main process. The main process
+sends a SIGUSR1 to all its children. The child process should restart
+which happens but not immediately.
+This patch re-opens the logfiles from within the signal handler so the
+old files (after a rename) are no longer in use. As per signal(7) it is
+allowed to use open() and close() from within the signal handler.
+*/
 
 #include "default.h"
 #include "params.h"
@@ -53,10 +61,18 @@ static void RereadAll( int SignalNo )
     rereadall = true;
 }
 
+static void ReopenLogFiles( int SignalNo )
+{
+    LogFile::InitLogFiles(Params::GetConfigString("ACCESSLOG").c_str(),
+			  Params::GetConfigString("VIRUSLOG").c_str(),
+			  Params::GetConfigString("ERRORLOG").c_str());
+}
+
 static void RestartChild( int SignalNo )
 {
     extern bool childrestart;
     childrestart = true;
+    ReopenLogFiles(SignalNo);
 }
 
 static void ExitProcess( int SignalNo )
@@ -131,7 +147,7 @@ int InstallSignal( int level )
     }
     else if ( level == 2 ) //Scanner Process
     {
-        Signal.sa_handler = SIG_IGN;
+        Signal.sa_handler = ReopenLogFiles;
         if (sigaction(SIGUSR1, &Signal, NULL) != 0) return -1;
     }
 

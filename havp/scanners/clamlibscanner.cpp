@@ -1,9 +1,8 @@
 /***************************************************************************
                           clamlibscanner.cpp  -  description
                              -------------------
-    begin                : Sa Feb 12 2005
-    copyright            : (C) 2005 by Christian Hilgers
-    email                : christian@hilgers.ag
+    begin                : 2005/02/12
+    last                 : 2019/02/02
  ***************************************************************************/
 
 /***************************************************************************
@@ -204,7 +203,7 @@ int ClamLibScanner::ReloadDatabase()
 string ClamLibScanner::Scan( const char *FileName )
 {
 #ifdef CL_INIT_DEFAULT
-    int ret = cl_scanfile(FileName, &virname, NULL, engine, scanopts);
+    int ret = cl_scanfile(FileName, &virname, NULL, engine, &cl_options);
 #else
     int ret = cl_scanfile(FileName, &virname, NULL, engine, &limits, scanopts);
 #endif
@@ -280,20 +279,32 @@ ClamLibScanner::ClamLibScanner()
     }
 
     //Set scanning options
-    scanopts = CL_SCAN_STDOPT;
+    memset(&cl_options, 0, sizeof(struct cl_scan_options));
+
+    cl_options.general = CL_SCAN_GENERAL_ALLMATCHES;
+    cl_options.parse = ~0;
+
+    /* scanopts = CL_SCAN_STDOPT; */
 
     if ( Params::GetConfigBool("CLAMBLOCKMAX") )
     {
-        scanopts = scanopts | CL_SCAN_BLOCKMAX;
+        /* scanopts = scanopts | CL_SCAN_BLOCKMAX; */
+	cl_options.heuristic |= CL_SCAN_HEURISTIC_EXCEEDS_MAX;
     }
     if ( Params::GetConfigBool("CLAMBLOCKENCRYPTED") )
     {
-        scanopts = scanopts | CL_SCAN_BLOCKENCRYPTED;
+        /* scanopts = scanopts | CL_SCAN_BLOCKENCRYPTED; */
+	cl_options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
+	cl_options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
     }
     if ( Params::GetConfigBool("CLAMBLOCKBROKEN") )
     {
-        scanopts = scanopts | CL_SCAN_BLOCKBROKEN;
+        /* scanopts = scanopts | CL_SCAN_BLOCKBROKEN; */
+	cl_options.heuristic |= CL_SCAN_HEURISTIC_BROKEN;
+
     }
+    if (cl_options.heuristic != 0)
+	    cl_options.general |= CL_SCAN_GENERAL_HEURISTICS;
 
     //Set up archive limits
 #ifndef CL_INIT_DEFAULT

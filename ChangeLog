@@ -1,3 +1,13 @@
+*HAVP 0.93 released (2019/02/02)
+- Add support for clamav 0.101: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+- Enable LFS & fix autoreconf: Sebastian Andrzej Siewior
+- Add SSLTIMEOUT config option: Rene Mayrhofer, adapted from a patch by Heiko Schlittermann
+- Fix missing re-opens of logfiles after signal(7): Sebastian Andrzej Siewior
+- Remove the VIA header completely if disabled: Sebastian Andrzej Siewior
+- Change default PID file and SCANTEMPFILE location: <mfladischer@home.fladi.at> adapted and cleaned up by Rene Mayrhofer
+- Change default clamd socket: Scott Kitterman
+- Update transparent proxy documentation link: Sebastian Andrzej Siewior
+
 *HAVP 0.92a - Security Fix
  - Add missing dot to sourceforge for safety
 

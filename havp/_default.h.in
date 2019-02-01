@@ -1,0 +1,15 @@
+// DONT TOUCH - run configure
+#undef CONFIGFILE
+#undef WHITELISTFILE
+#undef BLACKLISTFILE
+#undef TEMPLATEPATH
+#undef ACCESSLOG
+#undef ERRORLOG
+#undef PIDFILE
+#undef NOMAND
+#undef SSLTUNNEL
+#undef USECLAMLIB
+#undef USETROPHIE
+#undef HAVE_SETGROUPS
+#undef HAVE_INITGROUPS
+

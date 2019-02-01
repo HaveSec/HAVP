@@ -1,9 +1,8 @@
 /***************************************************************************
                           clamlibscanner.h  -  description
                              -------------------
-    begin                : Sa Feb 12 2005
-    copyright            : (C) 2005 by Christian Hilgers
-    email                : christian@hilgers.ag
+    begin                : 2005/02/12
+    last                 : 2019/02/02
  ***************************************************************************/
 
 /***************************************************************************
@@ -42,7 +41,7 @@ struct cl_limits limits;
 struct cl_stat dbstat;
 char dbdir[255];
 
-int scanopts;
+struct cl_scan_options cl_options;
 
 public:
 

@@ -1,9 +1,8 @@
 /***************************************************************************
                           sockethandler.cpp  -  description
                              -------------------
-    begin                : Sa Feb 12 2005
-    copyright            : (C) 2005 by Christian Hilgers
-    email                : christian@hilgers.ag
+    begin                : 2005/02/12
+    last                 : 2019/02/02
  ***************************************************************************/
 
 /***************************************************************************
@@ -582,7 +581,7 @@ int SocketHandler::CheckForSSLData( int sockBrowser, int sockServer )
         fds = sockServer;
     }
 
-    Timeout.tv_sec = 20;
+    Timeout.tv_sec = Timeout.tv_sec = Params::GetConfigInt("SSLTIMEOUT");
     Timeout.tv_usec = 0;
 
     int ret = select_eintr(fds+1, &readfd, NULL, NULL, &Timeout);
