@@ -581,7 +581,7 @@ int SocketHandler::CheckForSSLData( int sockBrowser, int sockServer )
         fds = sockServer;
     }
 
-    Timeout.tv_sec = Timeout.tv_sec = Params::GetConfigInt("SSLTIMEOUT");
+    Timeout.tv_sec = Params::GetConfigInt("SSLTIMEOUT");
     Timeout.tv_usec = 0;
 
     int ret = select_eintr(fds+1, &readfd, NULL, NULL, &Timeout);
